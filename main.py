@@ -1,13 +1,13 @@
 import sys
 import argparse
+from dataclasses import dataclass
+
 import pygame
 
 from file_manager import load_image_stack, load_map
 from physics_engine import (
-    update_position,
-    update_rotation,
-    update_speed,
-    update_velocity,
+    PhysicsState,
+    step_physics,
 )
 from render import (
     build_map_cache,
@@ -41,8 +41,17 @@ BASE_MAP_ZOOM = 7.0
 STACK_SPREAD = -1
 DIRS = 36
 ROTATION_SNAP_DEGREES = 360.0 / DIRS
-SLIDE_FACTOR = 0.3
 BASE_CAR_DISPLAY_SCALE = 3.0
+
+
+@dataclass(slots=True)
+class InputState:
+    left_pressed: bool = False
+    right_pressed: bool = False
+    steer_input: int = 0
+    up_input: bool = False
+    down_input: bool = False
+    handbrake_input: bool = False
 
 
 def parse_resolution(value: str) -> tuple[int, int]:
@@ -58,7 +67,7 @@ def parse_resolution(value: str) -> tuple[int, int]:
     return width, height
 
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         add_help=False,
         description="Launch options.",
@@ -91,50 +100,49 @@ def parse_args():
     return parser.parse_args()
 
 
-def handle_events(
-    left_pressed: bool,
-    right_pressed: bool,
-    steer_input: int,
-    up_input: bool,
-    down_input: bool,
-    handbrake_input: bool,
-):
+def _quit_game() -> None:
+    pygame.quit()
+    sys.exit()
+
+
+def handle_events(state: InputState) -> InputState:
     for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE:
-                pygame.quit()
-                sys.exit()
-            elif event.key == pygame.K_a:
-                left_pressed = True
-                steer_input = 1
-            elif event.key == pygame.K_d:
-                right_pressed = True
-                steer_input = -1
-            elif event.key == pygame.K_w:
-                up_input = True
-            elif event.key == pygame.K_s:
-                down_input = True
-            elif event.key == pygame.K_SPACE:
-                handbrake_input = True
-        elif event.type == pygame.KEYUP:
-            if event.key == pygame.K_a:
-                left_pressed = False
-                if steer_input == 1:
-                    steer_input = -1 if right_pressed else 0
-            elif event.key == pygame.K_d:
-                right_pressed = False
-                if steer_input == -1:
-                    steer_input = 1 if left_pressed else 0
-            elif event.key == pygame.K_w:
-                up_input = False
-            elif event.key == pygame.K_s:
-                down_input = False
-            elif event.key == pygame.K_SPACE:
-                handbrake_input = False
-    return left_pressed, right_pressed, steer_input, up_input, down_input, handbrake_input
+        match event.type:
+            case pygame.QUIT:
+                _quit_game()
+            case pygame.KEYDOWN:
+                match event.key:
+                    case pygame.K_ESCAPE:
+                        _quit_game()
+                    case pygame.K_a:
+                        state.left_pressed = True
+                        state.steer_input = 1
+                    case pygame.K_d:
+                        state.right_pressed = True
+                        state.steer_input = -1
+                    case pygame.K_w:
+                        state.up_input = True
+                    case pygame.K_s:
+                        state.down_input = True
+                    case pygame.K_SPACE:
+                        state.handbrake_input = True
+            case pygame.KEYUP:
+                match event.key:
+                    case pygame.K_a:
+                        state.left_pressed = False
+                        if state.steer_input == 1:
+                            state.steer_input = -1 if state.right_pressed else 0
+                    case pygame.K_d:
+                        state.right_pressed = False
+                        if state.steer_input == -1:
+                            state.steer_input = 1 if state.left_pressed else 0
+                    case pygame.K_w:
+                        state.up_input = False
+                    case pygame.K_s:
+                        state.down_input = False
+                    case pygame.K_SPACE:
+                        state.handbrake_input = False
+    return state
 
 
 def main():
@@ -148,8 +156,8 @@ def main():
     pygame.event.set_allowed([pygame.QUIT, pygame.KEYDOWN, pygame.KEYUP])
 
     screen_flags = pygame.FULLSCREEN if args.fullscreen else 0
-    requested_screen_size = (0, 0) if args.fullscreen else args.resolution
-    screen = pygame.display.set_mode(requested_screen_size, screen_flags)
+    window_size = (0, 0) if args.fullscreen else args.resolution
+    screen = pygame.display.set_mode(window_size, screen_flags)
     screen_size = screen.get_size()
 
     map_zoom, car_scale = build_world_scales(
@@ -161,7 +169,7 @@ def main():
     render_size = build_pixel_surface_size(screen_size, PIXELATION_SCALE)
     render_scale = render_size[1] / screen_size[1]
     needs_present_scale = render_size != screen_size
-    # Draw at reduced resolution for pixelation, while compensating zoom/size to preserve final scale.
+    # Pixelation is post-process only; map/car scale stays consistent.
     draw_map_zoom = map_zoom * render_scale
     draw_car_scale = car_scale * render_scale
     center = (render_size[0] // 2, render_size[1] // 2)
@@ -174,62 +182,34 @@ def main():
     map_cache = build_map_cache(map_surface, draw_map_zoom)
     rotated_cache = build_rotated_cache(images)
 
-    left_pressed = False
-    right_pressed = False
-    steer_input = 0
-    up_input = False
-    down_input = False
-    handbrake_input = False
-    rotation = 0.0
-    turn_rate = 0.0
-    steer_hold_frames = 0
-    previous_steer_input = 0
-    speed = 0.0
-    velocity_x, velocity_y = 0.0, 0.0
-    car_x, car_y = 0.0, 0.0
+    input_state = InputState()
+    physics_state = PhysicsState()
 
     while True:
         clock.tick(FPS)
 
-        left_pressed, right_pressed, steer_input, up_input, down_input, handbrake_input = handle_events(
-            left_pressed,
-            right_pressed,
-            steer_input,
-            up_input,
-            down_input,
-            handbrake_input,
-        )
-
-        if steer_input == 0:
-            steer_hold_frames = 0
-        elif steer_input != previous_steer_input:
-            steer_hold_frames = 1
-        else:
-            steer_hold_frames += 1
-        previous_steer_input = steer_input
-
-        rotation, turn_rate = update_rotation(
-            rotation,
-            turn_rate,
-            steer_input,
-            steer_hold_frames,
+        input_state = handle_events(input_state)
+        physics_state = step_physics(
+            physics_state,
+            steer_input=input_state.steer_input,
+            left_pressed=input_state.left_pressed,
+            right_pressed=input_state.right_pressed,
+            up_input=input_state.up_input,
+            down_input=input_state.down_input,
+            drift_input=input_state.handbrake_input,
             snap_step_degrees=ROTATION_SNAP_DEGREES,
         )
-        speed = update_speed(speed, up_input, down_input, turn_rate)
-        velocity_x, velocity_y = update_velocity(
-            velocity_x,
-            velocity_y,
-            rotation,
-            speed,
-            turn_rate,
-            slide_factor=SLIDE_FACTOR,
-            handbrake_input=handbrake_input,
-        )
-        car_x, car_y = update_position(car_x, car_y, velocity_x, velocity_y)
 
         frame_surface.fill((0, 0, 0))
-        dir_idx = snap_degrees(rotation)
-        draw_map(frame_surface, map_cache, car_x, car_y, center=center, view_size=render_size)
+        dir_idx = snap_degrees(physics_state.rotation)
+        draw_map(
+            frame_surface,
+            map_cache,
+            physics_state.car_x,
+            physics_state.car_y,
+            center=center,
+            view_size=render_size,
+        )
         render_stack(frame_surface, rotated_cache[dir_idx], center, STACK_SPREAD)
 
         present_frame(screen, frame_surface, screen_size, needs_present_scale)
