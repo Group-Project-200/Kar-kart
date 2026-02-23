@@ -6,11 +6,8 @@ import pygame
 
 from file_manager import load_image_stack, load_map
 from physics_engine import (
-    filter_steer_input,
-    update_position,
-    update_rotation,
-    update_speed,
-    update_velocity,
+    PhysicsState,
+    step_physics,
 )
 from render import (
     build_map_cache,
@@ -44,7 +41,6 @@ BASE_MAP_ZOOM = 7.0
 STACK_SPREAD = -1
 DIRS = 36
 ROTATION_SNAP_DEGREES = 360.0 / DIRS
-SLIDE_FACTOR = 0.3
 BASE_CAR_DISPLAY_SCALE = 3.0
 
 
@@ -107,18 +103,6 @@ def parse_args() -> argparse.Namespace:
 def _quit_game() -> None:
     pygame.quit()
     sys.exit()
-
-
-def _update_steer_hold(
-    steer_input: int,
-    previous_steer_input: int,
-    steer_hold_frames: int,
-) -> tuple[int, int]:
-    if steer_input == 0:
-        return 0, steer_input
-    if steer_input != previous_steer_input:
-        return 1, steer_input
-    return steer_hold_frames + 1, steer_input
 
 
 def handle_events(state: InputState) -> InputState:
@@ -199,47 +183,33 @@ def main():
     rotated_cache = build_rotated_cache(images)
 
     input_state = InputState()
-    rotation = 0.0
-    turn_rate = 0.0
-    steer_hold_frames = 0
-    previous_steer_input = 0
-    speed = 0.0
-    velocity_x, velocity_y = 0.0, 0.0
-    car_x, car_y = 0.0, 0.0
+    physics_state = PhysicsState()
 
     while True:
         clock.tick(FPS)
 
         input_state = handle_events(input_state)
-        steer_for_physics = filter_steer_input(input_state.steer_input, speed)
-        steer_hold_frames, previous_steer_input = _update_steer_hold(
-            steer_for_physics,
-            previous_steer_input,
-            steer_hold_frames,
-        )
-
-        rotation, turn_rate = update_rotation(
-            rotation,
-            turn_rate,
-            steer_for_physics,
-            steer_hold_frames,
+        physics_state = step_physics(
+            physics_state,
+            steer_input=input_state.steer_input,
+            left_pressed=input_state.left_pressed,
+            right_pressed=input_state.right_pressed,
+            up_input=input_state.up_input,
+            down_input=input_state.down_input,
+            drift_input=input_state.handbrake_input,
             snap_step_degrees=ROTATION_SNAP_DEGREES,
         )
-        speed = update_speed(speed, input_state.up_input, input_state.down_input, turn_rate)
-        velocity_x, velocity_y = update_velocity(
-            velocity_x,
-            velocity_y,
-            rotation,
-            speed,
-            turn_rate,
-            slide_factor=SLIDE_FACTOR,
-            handbrake_input=input_state.handbrake_input,
-        )
-        car_x, car_y = update_position(car_x, car_y, velocity_x, velocity_y)
 
         frame_surface.fill((0, 0, 0))
-        dir_idx = snap_degrees(rotation)
-        draw_map(frame_surface, map_cache, car_x, car_y, center=center, view_size=render_size)
+        dir_idx = snap_degrees(physics_state.rotation)
+        draw_map(
+            frame_surface,
+            map_cache,
+            physics_state.car_x,
+            physics_state.car_y,
+            center=center,
+            view_size=render_size,
+        )
         render_stack(frame_surface, rotated_cache[dir_idx], center, STACK_SPREAD)
 
         present_frame(screen, frame_surface, screen_size, needs_present_scale)
