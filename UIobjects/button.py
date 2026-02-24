@@ -3,10 +3,10 @@
 import pygame
 
 class Button:
-    def init(self, x, y, width, height, text, event):
+    def __init__(self, x, y, width, height, text, event):
         self.rect = pygame.Rect(x, y, width, height)
         self.text = text
         self.event = event
 
     def draw(self, surface):
-        pygame.draw.rect(surface, (255, 255, 255), self.rect, border_radius=8)
+        pygame.draw.rect(surface, (100, 100, 100), self.rect, border_radius=8)

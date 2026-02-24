@@ -32,10 +32,11 @@ class Screen1Structure:
         
         button = Button(50, 50, 100, 50, "Red", None)
 
+        screens.fill((30, 30, 30))
+
         button.draw(screens)
 
-        screens.fill((30, 30, 30))
-        pass
+        
 
 
 
@@ -95,7 +96,7 @@ def main():
         #draws the screen
         manager.state.draw(screen)
 
-        pygame.display.flip()
+        pygame.display.update()
 
         clock.tick(60)
 
