@@ -1,6 +1,8 @@
 import pygame
 import sys
 
+from UIobjects.button import Button
+
 
 #defining the screen and the clock used in the game loop
 pygame.init()
@@ -27,6 +29,11 @@ class Screen1Structure:
 
     def draw(self, screens): # use this function to draw anything onto the screen
         pygame.display.set_caption("Kar Kart")
+        
+        button = Button(50, 50, 100, 50, "Red", None)
+
+        button.draw(screens)
+
         screens.fill((30, 30, 30))
         pass
 
