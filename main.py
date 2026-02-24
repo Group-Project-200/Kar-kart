@@ -1,57 +1,76 @@
-import sys
 import argparse
-from dataclasses import dataclass
+import sys
+from dataclasses import dataclass, field
 
 import pygame
 
 from file_manager import load_image_stack, load_map
-from physics_engine import (
-    PhysicsState,
-    step_physics,
-)
+from physics_engine import CarHandling, ControlState, PhysicsState, step_physics_with_controls
 from render import (
-    build_map_cache,
-    build_pixel_surface_size,
-    build_rotated_cache,
-    build_world_scales,
-    draw_map,
-    present_frame,
-    render_stack,
-    scale_images,
-    snap_degrees,
+    CameraFollowSettings,
+    CameraState,
+    LayerPixelation,
+    RenderSetup,
+    build_render_pipeline,
+    render_frame,
+    update_camera_from_physics,
 )
 
-# Window / resolution settings
-DEFAULT_RESOLUTION = (1280, 720)
-STANDARD_RESOLUTIONS = (
-    (1280, 720),
-    (1366, 768),
-    (1600, 900),
-    (1920, 1080),
-)
-REFERENCE_HEIGHT = 720
 
-# Rendering scale settings
-# Pixelation is post-process only: it does not change map/car relative size.
-PIXELATION_SCALE = 0.3
+# Central gameplay/render knobs used by startup and the main loop.
+@dataclass(frozen=True, slots=True)
+class GameConfig:
+    fps: int = 60
+    dirs: int = 36
+    stack_spread: int = -1
+    default_resolution: tuple[int, int] = (1280, 720)
+    standard_resolutions: tuple[tuple[int, int], ...] = (
+        (1280, 720),
+        (1366, 768),
+        (1600, 900),
+        (1920, 1080),
+    )
+    render_setup: RenderSetup = field(default_factory=RenderSetup)
+    camera_follow: CameraFollowSettings = field(default_factory=CameraFollowSettings)
+    car_handling: CarHandling = field(default_factory=CarHandling)
 
-# Simulation / world settings
-FPS = 60
-BASE_MAP_ZOOM = 7.0
-STACK_SPREAD = -1
-DIRS = 36
-ROTATION_SNAP_DEGREES = 360.0 / DIRS
-BASE_CAR_DISPLAY_SCALE = 3.0
+    @property
+    def rotation_snap_degrees(self) -> float:
+        return 360.0 / self.dirs
 
 
-@dataclass(slots=True)
-class InputState:
-    left_pressed: bool = False
-    right_pressed: bool = False
-    steer_input: int = 0
-    up_input: bool = False
-    down_input: bool = False
-    handbrake_input: bool = False
+def build_game_config() -> GameConfig:
+    # Centralized defaults so gameplay/render tuning stays in one place.
+    dirs = 36
+    pixelation_scale = 0.35
+    layer_pixelation = LayerPixelation(
+        map_scale=pixelation_scale,
+        car_scale=pixelation_scale,
+        swap_layers=False,
+    )
+    render_setup = RenderSetup(
+        reference_height=720,
+        base_map_zoom=3.0,
+        base_car_scale=3.0,
+        pixelation_scale=pixelation_scale,
+        layer_pixelation=layer_pixelation,
+        dirs=dirs,
+    )
+    camera_follow = CameraFollowSettings(
+        follow_alpha=0.03,
+        drift_tilt_factor=0.35,
+        max_drift_tilt=10.0,
+        snap_delta=180.0,
+    )
+    return GameConfig(
+        dirs=dirs,
+        render_setup=render_setup,
+        camera_follow=camera_follow,
+        car_handling=CarHandling(),
+    )
+
+
+GAME_CONFIG = build_game_config()
 
 
 def parse_resolution(value: str) -> tuple[int, int]:
@@ -67,7 +86,8 @@ def parse_resolution(value: str) -> tuple[int, int]:
     return width, height
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(config: GameConfig) -> argparse.Namespace:
+    # CLI only affects launch mode; gameplay tuning remains in GameConfig.
     parser = argparse.ArgumentParser(
         add_help=False,
         description="Launch options.",
@@ -83,7 +103,7 @@ def parse_args() -> argparse.Namespace:
         "-r",
         "--resolution",
         type=parse_resolution,
-        default=DEFAULT_RESOLUTION,
+        default=config.default_resolution,
         help="Window size as WIDTHxHEIGHT (example: 1920x1080).",
     )
     parser.add_argument(
@@ -105,7 +125,8 @@ def _quit_game() -> None:
     sys.exit()
 
 
-def handle_events(state: InputState) -> InputState:
+def handle_events(state: ControlState) -> ControlState:
+    # Keep key state normalized so physics can consume a compact control snapshot.
     for event in pygame.event.get():
         match event.type:
             case pygame.QUIT:
@@ -125,7 +146,7 @@ def handle_events(state: InputState) -> InputState:
                     case pygame.K_s:
                         state.down_input = True
                     case pygame.K_SPACE:
-                        state.handbrake_input = True
+                        state.drift_input = True
             case pygame.KEYUP:
                 match event.key:
                     case pygame.K_a:
@@ -141,78 +162,73 @@ def handle_events(state: InputState) -> InputState:
                     case pygame.K_s:
                         state.down_input = False
                     case pygame.K_SPACE:
-                        state.handbrake_input = False
+                        state.drift_input = False
     return state
 
 
-def main():
-    args = parse_args()
+def build_screen(args: argparse.Namespace) -> pygame.Surface:
+    screen_flags = pygame.FULLSCREEN if args.fullscreen else 0
+    window_size = (0, 0) if args.fullscreen else args.resolution
+    return pygame.display.set_mode(window_size, screen_flags)
+
+
+def build_pipeline(config: GameConfig, screen_size: tuple[int, int]):
+    return build_render_pipeline(
+        screen_size=screen_size,
+        map_surface=load_map("maps"),
+        image_stack=load_image_stack("car_01"),
+        setup=config.render_setup,
+    )
+
+
+def main() -> None:
+    config = GAME_CONFIG
+    args = parse_args(config)
+    # Utility mode for listing common presets without opening a window.
     if args.list_resolutions:
-        for width, height in STANDARD_RESOLUTIONS:
+        for width, height in config.standard_resolutions:
             print(f"{width}x{height}")
         return
 
     pygame.init()
     pygame.event.set_allowed([pygame.QUIT, pygame.KEYDOWN, pygame.KEYUP])
 
-    screen_flags = pygame.FULLSCREEN if args.fullscreen else 0
-    window_size = (0, 0) if args.fullscreen else args.resolution
-    screen = pygame.display.set_mode(window_size, screen_flags)
-    screen_size = screen.get_size()
-
-    map_zoom, car_scale = build_world_scales(
-        screen_size[1],
-        REFERENCE_HEIGHT,
-        BASE_MAP_ZOOM,
-        BASE_CAR_DISPLAY_SCALE,
-    )
-    render_size = build_pixel_surface_size(screen_size, PIXELATION_SCALE)
-    render_scale = render_size[1] / screen_size[1]
-    needs_present_scale = render_size != screen_size
-    # Pixelation is post-process only; map/car scale stays consistent.
-    draw_map_zoom = map_zoom * render_scale
-    draw_car_scale = car_scale * render_scale
-    center = (render_size[0] // 2, render_size[1] // 2)
-
-    frame_surface = pygame.Surface(render_size).convert()
+    screen = build_screen(args)
     clock = pygame.time.Clock()
+    render_pipeline = build_pipeline(config, screen.get_size())
 
-    images = scale_images(load_image_stack("car_01"), draw_car_scale)
-    map_surface = load_map("maps")
-    map_cache = build_map_cache(map_surface, draw_map_zoom)
-    rotated_cache = build_rotated_cache(images)
-
-    input_state = InputState()
+    controls = ControlState()
     physics_state = PhysicsState()
+    camera_state = CameraState(angle=physics_state.rotation)
 
+    # Fixed-rate frame loop: input -> physics -> camera follow -> render.
     while True:
-        clock.tick(FPS)
+        clock.tick(config.fps)
 
-        input_state = handle_events(input_state)
-        physics_state = step_physics(
+        controls = handle_events(controls)
+        # Physics owns movement; main only wires inputs and chosen car handling.
+        physics_state = step_physics_with_controls(
             physics_state,
-            steer_input=input_state.steer_input,
-            left_pressed=input_state.left_pressed,
-            right_pressed=input_state.right_pressed,
-            up_input=input_state.up_input,
-            down_input=input_state.down_input,
-            drift_input=input_state.handbrake_input,
-            snap_step_degrees=ROTATION_SNAP_DEGREES,
+            controls,
+            handling=config.car_handling,
+            snap_step_degrees=config.rotation_snap_degrees,
         )
-
-        frame_surface.fill((0, 0, 0))
-        dir_idx = snap_degrees(physics_state.rotation)
-        draw_map(
-            frame_surface,
-            map_cache,
-            physics_state.car_x,
-            physics_state.car_y,
-            center=center,
-            view_size=render_size,
+        update_camera_from_physics(
+            camera_state,
+            physics_rotation=physics_state.rotation,
+            physics_drift_direction=physics_state.drift_direction,
+            physics_drift_skew_degrees=physics_state.drift_skew_degrees,
+            settings=config.camera_follow,
         )
-        render_stack(frame_surface, rotated_cache[dir_idx], center, STACK_SPREAD)
-
-        present_frame(screen, frame_surface, screen_size, needs_present_scale)
+        render_frame(
+            screen,
+            render_pipeline,
+            car_x=physics_state.car_x,
+            car_y=physics_state.car_y,
+            car_rotation=physics_state.rotation,
+            camera_angle=camera_state.angle,
+            stack_spread=config.stack_spread,
+        )
         pygame.display.flip()
 
 

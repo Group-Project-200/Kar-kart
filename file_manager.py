@@ -6,6 +6,7 @@ DEFAULT_BASE_PATH = "resources"
 PNG_EXT = ".png"
 
 
+# Filesystem helpers for loading sprite stacks and map textures.
 def _list_png_files(folder_path: str):
     return sorted(
         file_name
@@ -18,6 +19,7 @@ def load_image_stack(car_folder_name: str, base_path: str = DEFAULT_BASE_PATH):
     folder_path = os.path.join(base_path, car_folder_name)
     image_files = _list_png_files(folder_path)
     return [
+        # Car is rendered as a stack of offset sprites; alpha format is needed for proper car shape.
         pygame.image.load(os.path.join(folder_path, file_name)).convert_alpha()
         for file_name in image_files
     ]
@@ -32,4 +34,5 @@ def load_map(map_folder_name: str, base_path: str = DEFAULT_BASE_PATH):
     if not image_files:
         return None
 
-    return pygame.image.load(os.path.join(folder_path, image_files[0])).convert_alpha()
+    # Map is rendered as a full background layer; opaque format is faster to blit.
+    return pygame.image.load(os.path.join(folder_path, image_files[0])).convert()
