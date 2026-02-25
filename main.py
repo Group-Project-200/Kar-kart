@@ -64,15 +64,8 @@ def main():
         #updates the screen
         current.update()
 
-<<<<<<< Updated upstream
-        if game_state == "start":
-            example_screen_function()
-        elif game_state == "test":
-            example.example_screen_function()
-=======
         #draws the screen
         current.draw(screen)
->>>>>>> Stashed changes
 
         pygame.display.update()
 
