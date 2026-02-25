@@ -5,6 +5,8 @@ class Colors:
     # contains all colors
     # use "from UIobjects.constants import Colors" in your files
 
+    # e.g. Colors.RED is mapped to (255, 0, 0)
+
     BLACK = (0, 0, 0)
     WHITE = (255, 255, 255)
 
