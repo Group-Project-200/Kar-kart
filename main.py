@@ -14,19 +14,8 @@ from screens.map_selection_screen import MapScreen
 pygame.init()
 clock = pygame.time.Clock()
 
-<<<<<<< Updated upstream
-
-
-
-def example_screen_function():
-    #this opens a window with the color grey and names it
-    pygame.display.set_caption("Kar Kart")
-    screen.fill((30, 30, 30))
-
-=======
 # put WIDTH and HEIGHT as constants
 screen = pygame.display.set_mode((sd.WIDTH, sd.HEIGHT))    # please if you change the screen add a comment to tell us
->>>>>>> Stashed changes
 
 
 def main():
