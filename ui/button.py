@@ -2,7 +2,7 @@
 
 import pygame
 
-from UIobjects.constants import Colors
+from constants import Colors
 
 class Button:
 
@@ -41,7 +41,7 @@ class Button:
         if event.type == pygame.MOUSEBUTTONDOWN:
             if self.rect.collidepoint(event.pos):
                 if self.state:
-                    self.manager.change_state(self.state(self.manager))
+                    self.manager.change_screen(self.state)
 
 
     def draw(self, surface):
