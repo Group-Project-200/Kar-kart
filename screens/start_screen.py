@@ -18,4 +18,5 @@ class StartScreen:
 
         pygame.display.set_caption("Kar Kart")
 
+        # remove this after you are done
         self.manager.change_screen("car")
