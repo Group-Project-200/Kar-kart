@@ -1,10 +1,11 @@
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import pygame
 
 
 DEFAULT_DIRS = 36
+PREVIEW_DEBUG_BG_COLOR = (96, 96, 96)
 
 
 # Lightweight render-side state containers.
@@ -22,20 +23,10 @@ class CameraState:
 
 
 @dataclass(frozen=True, slots=True)
-class LayerPixelation:
-    map_scale: float = 1.0
-    car_scale: float = 1.0
-    swap_layers: bool = False
-
-
-@dataclass(frozen=True, slots=True)
 class RenderSetup:
-    reference_height: int = 720
-    base_map_zoom: float = 7.0
-    base_car_scale: float = 3.0
+    map_zoom: float = 3.0
+    car_zoom: float = 3.0
     pixelation_scale: float = 0.35
-    layer_pixelation: LayerPixelation = field(default_factory=LayerPixelation)
-    dirs: int = DEFAULT_DIRS
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,6 +45,7 @@ class RenderPipeline:
     center: tuple[int, int]
     needs_present_scale: bool
     map_cache: MapCache | None
+    scaled_car_stack: list[pygame.Surface]
     rotated_cache: list[list[pygame.Surface]]
     camera_buffer: pygame.Surface
     camera_buffer_center: tuple[int, int]
@@ -104,18 +96,6 @@ def scale_images(images, scale: float):
     return scaled_images
 
 
-def build_world_scales(
-    screen_height: int,
-    reference_height: int,
-    base_map_zoom: float,
-    base_car_scale: float,
-) -> tuple[float, float]:
-    height_scale = screen_height / reference_height
-    map_zoom = base_map_zoom * height_scale
-    car_scale = base_car_scale * height_scale
-    return map_zoom, car_scale
-
-
 def build_pixel_surface_size(screen_size: tuple[int, int], pixelation_scale: float) -> tuple[int, int]:
     scale = clamp_scale(pixelation_scale)
     screen_width, screen_height = screen_size
@@ -152,12 +132,8 @@ def _shortest_angle_delta(current: float, target: float) -> float:
     return ((target - current + 180.0) % 360.0) - 180.0
 
 
-def _resolve_layer_pixelation(pixelation: LayerPixelation) -> tuple[float, float]:
-    map_scale = clamp_scale(pixelation.map_scale)
-    car_scale = clamp_scale(pixelation.car_scale)
-    if pixelation.swap_layers:
-        return car_scale, map_scale
-    return map_scale, car_scale
+def _clamp_zoom(zoom: float) -> float:
+    return max(0.01, zoom)
 
 
 def build_camera_buffer(view_size: tuple[int, int]) -> tuple[pygame.Surface, tuple[int, int]]:
@@ -228,29 +204,21 @@ def build_render_pipeline(
     map_surface: pygame.Surface | None,
     image_stack: list[pygame.Surface],
     setup: RenderSetup,
+    dirs: int = DEFAULT_DIRS,
 ) -> RenderPipeline:
     # Build and cache everything needed per-frame at startup/resolution change.
-    map_zoom, car_scale = build_world_scales(
-        screen_size[1],
-        setup.reference_height,
-        setup.base_map_zoom,
-        setup.base_car_scale,
-    )
     render_size = build_pixel_surface_size(screen_size, setup.pixelation_scale)
     render_scale = render_size[1] / screen_size[1]
     needs_present_scale = render_size != screen_size
     center = (render_size[0] // 2, render_size[1] // 2)
 
-    base_pixelation_scale = clamp_scale(setup.pixelation_scale)
-    map_pixelation_scale, car_pixelation_scale = _resolve_layer_pixelation(setup.layer_pixelation)
-    map_scale_ratio = map_pixelation_scale / base_pixelation_scale
-    car_scale_ratio = car_pixelation_scale / base_pixelation_scale
-    draw_map_zoom = map_zoom * render_scale * map_scale_ratio
-    draw_car_scale = car_scale * render_scale * car_scale_ratio
+    draw_map_zoom = _clamp_zoom(setup.map_zoom) * render_scale
+    draw_car_scale = _clamp_zoom(setup.car_zoom) * render_scale
 
     frame_surface = pygame.Surface(render_size).convert()
     map_cache = build_map_cache(map_surface, draw_map_zoom)
-    rotated_cache = build_rotated_cache(scale_images(image_stack, draw_car_scale), dirs=setup.dirs)
+    scaled_car_stack = scale_images(image_stack, draw_car_scale)
+    rotated_cache = build_rotated_cache(scaled_car_stack, dirs=dirs)
     camera_buffer, camera_buffer_center = build_camera_buffer(render_size)
 
     return RenderPipeline(
@@ -260,10 +228,11 @@ def build_render_pipeline(
         center=center,
         needs_present_scale=needs_present_scale,
         map_cache=map_cache,
+        scaled_car_stack=scaled_car_stack,
         rotated_cache=rotated_cache,
         camera_buffer=camera_buffer,
         camera_buffer_center=camera_buffer_center,
-        dirs=setup.dirs,
+        dirs=dirs,
     )
 
 
@@ -320,6 +289,17 @@ def render_stack(display, rotated_slices, pos, spread: int):
         )
 
 
+def render_stack_smooth(display, source_slices, pos, spread: int, rotation_degrees: float):
+    # Debug preview path: rotate each slice every frame for smooth angle updates.
+    x, y = pos
+    for i, img in enumerate(source_slices):
+        rotated = pygame.transform.rotate(img, rotation_degrees)
+        display.blit(
+            rotated,
+            (x - rotated.get_width() // 2, y - rotated.get_height() // 2 + i * spread),
+        )
+
+
 def present_frame(
     screen,
     frame_surface: pygame.Surface,
@@ -363,4 +343,24 @@ def render_frame(
     dir_idx = snap_degrees(car_relative_rotation, dirs=pipeline.dirs)
     render_stack(frame_surface, pipeline.rotated_cache[dir_idx], pipeline.center, stack_spread)
 
+    present_frame(screen, frame_surface, pipeline.screen_size, pipeline.needs_present_scale)
+
+
+def render_preview_debug_frame(
+    screen: pygame.Surface,
+    pipeline: RenderPipeline,
+    *,
+    car_rotation: float,
+    stack_spread: int,
+) -> None:
+    # Preview debugger intentionally skips stepped rotation cache and map rendering.
+    frame_surface = pipeline.frame_surface
+    frame_surface.fill(PREVIEW_DEBUG_BG_COLOR)
+    render_stack_smooth(
+        frame_surface,
+        pipeline.scaled_car_stack,
+        pipeline.center,
+        stack_spread,
+        car_rotation,
+    )
     present_frame(screen, frame_surface, pipeline.screen_size, pipeline.needs_present_scale)

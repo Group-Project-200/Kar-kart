@@ -11,7 +11,16 @@ class BoostTier:
 
 @dataclass(frozen=True, slots=True)
 class CarHandling:
-    # Rotation tuning.
+    """Per-car physics tuning values.
+
+    Naming convention:
+    - `*_frames`: frame counts
+    - `*_degrees`: angle in degrees
+    - `*_rate`: turn rate (degrees/frame)
+    - `*_acceleration` / `*_deceleration`: speed change per frame
+    """
+
+    # Rotation response (yaw): initial bite -> plateau -> late growth.
     plateau_acceleration: float = 0.4
     turn_damping: float = 0.2
     max_turn_rate: float = 3.0
@@ -23,9 +32,9 @@ class CarHandling:
     plateau_turn_rate: float = 2.0
     turn_direction_change_damping: float = 0.35
 
-    # Speed and steering tuning.
+    # Speed and steering response.
     throttle_acceleration: float = 0.05
-    coast_deceleration: float = 0.005
+    coast_deceleration: float = 0.008
     brake_deceleration: float = 0.14
     reverse_acceleration: float = 0.04
     max_speed: float = 2.5
@@ -33,28 +42,29 @@ class CarHandling:
     min_steer_speed: float = 0.03
     turn_speed_penalty: float = 0.01
     min_turn_drag: float = 0.03
-    speed_hold_floor_value: float = 1.0
-    speed_hold_activation_min_value: float = 0.9
-    hold_cancel_turn_rate: float = 3.0
+    # Coasting "speed hold": keeps momentum at medium speed unless turning sharply.
+    speed_hold_floor_value: float = 1.0  # Held minimum speed while hold is active.
+    speed_hold_activation_min_value: float = 0.9  # Minimum speed required to activate hold.
+    hold_cancel_turn_rate: float = 3.0  # Turning faster than this disables hold.
 
-    # Overspeed tuning.
+    # Overspeed braking curve (extra deceleration when above max forward speed).
     overspeed_near_threshold: float = 0.75
     overspeed_mid_threshold: float = 1.25
     overspeed_deceleration_near: float = 0.008
     overspeed_deceleration_mid: float = 0.015
     overspeed_deceleration_far: float = 0.07
 
-    # Velocity blending and stopping thresholds.
+    # Velocity blending (slip/grip) and rest thresholds.
     max_slip: float = 0.95
-    speed_slip_weight: float = 0.35
-    turn_slip_weight: float = 0.2
+    speed_slip_weight: float = 0.35  # Slip added from speed ratio.
+    turn_slip_weight: float = 0.2  # Slip added from turn-rate ratio.
     coast_velocity_decay: float = 0.01
     overspeed_coast_velocity_decay: float = 0.8
     stop_speed_epsilon: float = 1e-6
     stop_velocity_epsilon: float = 1e-3
 
-    # Drift and release behavior.
-    default_slide_factor: float = 0.3
+    # Drift lifecycle and release behavior.
+    default_slide_factor: float = 0.4
     drift_charge_short_frames: int = 40
     drift_charge_long_frames: int = 70
     drift_base_steer_strength: float = 0.65
@@ -67,7 +77,7 @@ class CarHandling:
     drift_release_countersteer_degrees: float = 10.0
     drift_release_countersteer_turn_rate: float = 0.8
 
-    # Two-step boost tiers.
+    # Drift reward boost tiers.
     short_boost: BoostTier = field(
         default_factory=lambda: BoostTier(
             duration_frames=3,
@@ -133,19 +143,25 @@ DEFAULT_CAR_HANDLING = CarHandling()
 # Mutable runtime state advanced every frame.
 @dataclass(slots=True)
 class PhysicsState:
+    # Orientation / steering runtime.
     rotation: float = 0.0
     turn_rate: float = 0.0
     steer_hold_frames: int = 0
     previous_steer_input: int = 0
+
+    # Linear movement runtime.
     speed: float = 0.0
     velocity_x: float = 0.0
     velocity_y: float = 0.0
     car_x: float = 0.0
     car_y: float = 0.0
+
+    # Drift / boost runtime.
     drift_direction: int = 0
     drift_skew_degrees: float = 0.0
     drift_charge_frames: int = 0
     boost_frames: int = 0
+    boost_level: int = 0
     boost_acceleration: float = 0.0
     boost_max_speed: float = 0.0
     drift_active: bool = False
@@ -153,6 +169,7 @@ class PhysicsState:
 
 @dataclass(slots=True)
 class ControlState:
+    # Input snapshot for one frame.
     steer_input: int = 0
     left_pressed: bool = False
     right_pressed: bool = False
@@ -247,7 +264,7 @@ def _try_start_drift(
     drift_input: bool,
     handling: CarHandling,
 ) -> None:
-    if state.drift_active or not drift_input or abs(state.speed) < handling.drift_min_speed:
+    if state.drift_active or not drift_input or state.speed < handling.drift_min_speed:
         return
 
     drift_direction = _resolve_drift_direction(steer_input, left_pressed, right_pressed)
@@ -261,6 +278,7 @@ def _try_start_drift(
 
 def _set_boost(state: PhysicsState, *, tier: BoostTier, handling: CarHandling) -> None:
     state.boost_frames = tier.duration_frames
+    state.boost_level = 2 if tier is handling.long_boost else 1
     state.boost_acceleration = tier.acceleration
     state.boost_max_speed = handling.max_speed + tier.max_speed_delta
 
@@ -310,7 +328,11 @@ def _resolve_steering_and_skew(
     )
     if state.drift_skew_degrees == 0.0:
         state.drift_direction = 0
-    return filter_steer_input(steer_input, state.speed, handling=handling), 1.0
+    steer_for_physics = filter_steer_input(steer_input, state.speed, handling=handling)
+    # Reverse steering is mirrored so A/D feel correct while backing up.
+    if state.speed < -handling.min_steer_speed:
+        steer_for_physics *= -1
+    return steer_for_physics, 1.0
 
 
 def filter_steer_input(
@@ -416,9 +438,14 @@ def update_speed(
         speed = _move_toward(speed, coast_target, handling.coast_deceleration)
 
     turn_drag = abs_turn * handling.turn_speed_penalty
+
     if turn_drag > handling.min_turn_drag:
         drag_target = handling.hold_floor if hold_enabled else 0.0
         speed = _move_toward(speed, drag_target, turn_drag)
+
+    if not throttle and speed > max_forward_speed:
+        overspeed_step = handling.overspeed_deceleration_step(speed, max_forward_speed)
+        speed = _move_toward(speed, max_forward_speed, max(handling.coast_deceleration, overspeed_step))
 
     if throttle and not sharp_turn and speed >= handling.hold_activation_min:
         speed = max(speed, handling.hold_floor)
@@ -511,7 +538,7 @@ def step_physics(
     )
 
     drift_released = state.drift_active and not drift_input
-    drift_canceled = state.drift_active and abs(state.speed) < handling.drift_min_speed
+    drift_canceled = state.drift_active and state.speed < handling.drift_min_speed
     if drift_released or drift_canceled:
         _stop_drift(state, released=drift_released, handling=handling)
 
@@ -553,6 +580,7 @@ def step_physics(
         state.speed = min(state.speed + state.boost_acceleration, state.boost_max_speed)
         state.boost_frames -= 1
         if state.boost_frames == 0:
+            state.boost_level = 0
             state.boost_acceleration = 0.0
             state.boost_max_speed = handling.max_speed
 
