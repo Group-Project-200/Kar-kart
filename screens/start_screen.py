@@ -25,6 +25,15 @@ class StartScreen:
         self.tiles = math.ceil(self.screen_width / self.bg_width) + 1
         self.bg_rect = pygame.Rect(0, 0, self.bg_width, self.screen_height)
 
+        try:
+            self.gear_icon = pygame.image.load("gearicon3.png")
+            self.gear_icon = pygame.transform.scale(self.gear_icon, (64, 64))
+            self.gear_icon = self.gear_icon.convert_alpha()  # Essential for PNG transparency
+        except:
+            self.gear_icon = None
+
+
+
     def handle_event(self, event):
         if event.type == pygame.QUIT:
             self.manager.quit_game = True
@@ -34,7 +43,7 @@ class StartScreen:
 
     def update(self):
         # Update scrolling background
-        self.scroll -= 5
+        self.scroll -= 2.5
         if abs(self.scroll) > self.bg_width:
             self.scroll = 0
             
@@ -72,5 +81,13 @@ class StartScreen:
         # FPS COUNTER
         fps_text = self.font.render(f"FPS: {self.fps}", True, (255, 255, 255))
         surface.blit(fps_text, (10, 10))
+
+        # Gear Icon top right corner
+
+        if self.gear_icon:
+            gear_pos = (self.screen_width - 64 - 10, 10)
+            surface.blit(self.gear_icon, gear_pos)
+
+
 
         pygame.display.set_caption(f"Kar Kart - Start Screen (FPS: {self.fps})")
