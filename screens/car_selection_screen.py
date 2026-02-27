@@ -1,4 +1,5 @@
 # car_customization_screen.py - screen to choose the map
+# remove comments under ### 
 
 import pygame
 
@@ -10,14 +11,18 @@ class CarScreen:
     def __init__(self, manager):
         self.manager = manager     # ALWAYS ADD THE MANAGER
 
+        ### initialize buttons
+        #self.next_btn = Button(sd.CENTER_X, sd.CENTER_Y, 200, 75, "ORANGE", "NEXT", self.manager)
+        #self.back_btn = Button(sd.CENTER_X, sd.CENTER_Y, 100, 50, "BACK", "map", self.manager)
+        #self.settings_btn = Button(sd.CENTER_X, sd.CENTER_Y, 100, 50, "SETTINGS", "map", self.manager)
         
         #load all images together
-        self.background = pygame.transform.scale( pygame.image.load("cust1.png").convert(), (sd.WIDTH, sd.HEIGHT) )
+        self.background = pygame.transform.scale( pygame.image.load("car_selection_images/cust1.png").convert(), (sd.WIDTH, sd.HEIGHT) )
 
         self.car_images = [ 
-            pygame.transform.scale(pygame.image.load("amv.png").convert_alpha(), (360, 183)), 
-            pygame.transform.scale(pygame.image.load("ja.png").convert_alpha(), (360, 261)), 
-            pygame.transform.scale(pygame.image.load("tm.png").convert_alpha(), (360, 129)), 
+            pygame.transform.scale(pygame.image.load("car_selection_images/amv.png").convert_alpha(), (360, 183)), 
+            pygame.transform.scale(pygame.image.load("car_selection_images/ja.png").convert_alpha(), (360, 261)), 
+            pygame.transform.scale(pygame.image.load("car_selection_images/tm.png").convert_alpha(), (360, 129)), 
         ]
 
         self.selected = 0  #default car
@@ -25,6 +30,11 @@ class CarScreen:
 
 
     def handle_event(self, event):  # use this template for the key detection
+
+        ### ask buttons to handle event        
+        #self.next_btn.handle_event(event)
+        #self.back_btn.handle_event(event)
+        #self.settings_btn.handle_event(event)
 
         if event.type == pygame.KEYDOWN: 
             if event.key == pygame.K_RIGHT: 
@@ -59,6 +69,10 @@ class CarScreen:
         y = sd.HEIGHT // 2 - car.get_height() // 2 
         surface.blit(car, (x, y))
 
+        ### draw buttons
+        #self.next_btn.draw(surface)
+        #self.back_btn.draw(surface)
+        #self.settings_btn.draw(surface)
 
 
 # TO DO: 
