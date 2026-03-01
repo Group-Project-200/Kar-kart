@@ -1,15 +1,15 @@
-# car_customization_screen.py - screen to choose the car
+# car_selection_screen.py - screen to choose the car
 
-# in same working directory requires:
-    # render.py
+# uses:
+    # render.py(in game-engine)
     # cust1.png (background img)
-    # resources folder with car_01, car_02... folders which contain car layers img_0.png, img_1.png,...
+    # resources(in game-engine) folder with car_01, car_02... folders which contain car layers img_0.png, img_1.png,...
 
-# changes in render.py:
+# changes to make in render.py:
 # to make the background of car preview transparent:
-    # replaced PREVIEW_DEBUG_BG_COLOR = (96, 96, 96) with PREVIEW_DEBUG_BG_COLOR = (0, 0, 0, 0)
-    # replaced frame_surface.fill(PREVIEW_DEBUG_BG_COLOR) with frame_surface.fill((0, 0, 0, 0)) 
-    # changed frame_surface = pygame.Surface(render_size).convert() with frame_surface = pygame.Surface(render_size, pygame.SRCALPHA).convert_alpha()
+    # replace PREVIEW_DEBUG_BG_COLOR = (96, 96, 96) with PREVIEW_DEBUG_BG_COLOR = (0, 0, 0, 0)
+    # replace frame_surface.fill(PREVIEW_DEBUG_BG_COLOR) with frame_surface.fill((0, 0, 0, 0)) 
+    # change frame_surface = pygame.Surface(render_size).convert() with frame_surface = pygame.Surface(render_size, pygame.SRCALPHA).convert_alpha()
 
 # TO ADD: settings button
 
