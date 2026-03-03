@@ -4,12 +4,12 @@ import pygame
 
 from ui.button import Button
 from constants import Colors
-from constants import ScreenDimensions as sd
+from constants import ScreenPositions as sp
 
 class CarScreen:
     def __init__(self, manager):
         self.manager = manager     # ALWAYS ADD THE MANAGER
-        self.button1 = Button(sd.CENTER_X, sd.CENTER_Y, 100, 50, "Red", "map", self.manager)
+        self.button1 = Button(sp.CENTER_X, sp.CENTER_Y, 100, 50, "MAP", "map", self.manager)
 
     def handle_event(self, event):  # use this template for the key detection
 
