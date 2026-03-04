@@ -114,7 +114,7 @@ class CarScreen:
             preview_surface,
             pipeline,
             car_rotation=self.preview_angle,
-            stack_spread=1
+            stack_spread=-3
         )
 
 
