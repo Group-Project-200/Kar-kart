@@ -14,18 +14,19 @@ class MapScreen:
 
     def __init__(self, manager):
         self.manager = manager
-        self.button1 = Button(sp.CENTER_X, sp.XBOTTOM, 32, "PLAY", "car", self.manager)
-        self.container1 = Container(sp.CENTER_X, sp.CCTOP, sp.WIDTH/4*3, sp.HEIGHT/4*3)
+        # self.button1 = Button(sp.CENTER_X, sp.XBOTTOM, 32, "PLAY", "car", self.manager)
+        self.container1 = Container(sp.CENTER_X, sp.CENTER_Y, sp.WIDTH/4*3, sp.HEIGHT/4*3, 4, 3, "columns")
 
-        img = Track("./pictures/wallpaper.jpg", "Suzuka")
-
-        self.container1.add_object(img)
-
-        for _ in range(0):
-            self.container1.add_object("")
+        # importing tracks from manager
+        
+        for track in manager.get_tracks():
+            self.container1.add_object(track)
 
     def handle_event(self, event):
-        self.button1.handle_event(event) # to change to another screen do take this line
+
+        # to change to another screen do take this line
+        # self.button1.handle_event(event)
+        pass
 
     def update(self):
         pass
@@ -33,7 +34,7 @@ class MapScreen:
     def draw(self, surface):
         pygame.display.set_caption("Kar Kart")
 
-        surface.fill((0, 0, 0))
+        surface.fill(Colors.LIGHT_BLUE)
 
-        self.button1.draw(surface)
+        # self.button1.draw(surface)
         self.container1.draw(surface)

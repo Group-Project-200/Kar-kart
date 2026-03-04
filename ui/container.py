@@ -1,7 +1,11 @@
 
-import pygame
+import pygame, logging
 
 from constants import Colors
+
+logger = logging.getLogger("container")
+logging.basicConfig(level=logging.DEBUG, format= ' %(levelname)s - %(message)s')
+
 
 class Container:
 
@@ -10,10 +14,12 @@ class Container:
     # arguments:
     #  - central x (1) and y (2) coordinates
     #  - width (3) and height (4) of the container
+    #  - rows (5) and columns (6) of the container
+    #  - first (7) part of the container to fill (either "rows" or "columns")
 
     # add up to 16 objects to the container
 
-    def __init__(self, center_x, center_y, width, height):
+    def __init__(self, center_x, center_y, width, height, rows, columns, first="rows"):
 
         self.width = width
         self.height = height
@@ -21,64 +27,96 @@ class Container:
         self.x = center_x - self.width/2
         self.y = center_y - self.height/2
 
+        self.rows = rows
+        self.columns = columns
+
+        self.first = first
+
         self.objects = []
 
     def add_object(self, obj):
 
         # simply add an object (1) to the container
+        # OBJECTS MUST HAVE WIDTH AND HEIGHT ATTRIBUTES
 
         self.objects.append(obj)
 
     def draw(self, surface):
 
         n = len(self.objects)
+        logger.debug(n)
 
-        if n >= 13:
-            rows = 4
-        elif n >= 9:
-            rows = 3
-        elif n >= 3:
-            rows = 2
-        elif n >= 1:
-            rows = 1
-        else:
-            rows = 0
-            return
+        # records which elements of self.objects will create the first row and column, AND
+        # which is the order of creation (either rows or columns)
+        # depending on self.first (if "rows" or "columns")
 
-        if n >= 7:
-            columns = 4
-        elif n >= 5:
-            columns = 3
-        elif n >= 2:
-            columns = 2
-        elif n == 1:
-            columns = 1
-        else:
-            columns = 0
+        if self.first == "rows":
+            first_row = self.objects[:self.rows]
+            first_column = self.objects[::self.rows]
 
-        if self.width/(2*columns) <= self.height/(2*rows)*2:
-            width = self.width/(2*columns)
-            height = width/2
-        else:
-            height = self.height/(2*rows)
-            width = height/2
+            first = self.rows
+            second = self.columns
+        
+        elif self.first == "columns":
+            first_row = self.objects[::self.rows]
+            first_column = self.objects[:self.rows]
+
+            first = self.columns
+            second = self.rows
+
+        try:
+
+            # calculate padding based on:
+            # + the toal dimension of the container
+            # - sum of the dimension of all the objects in first_row or first_column
+            # / columns OR rows + 1 (one more space after the last object)
+
+            padding_x = (self.width - sum(obj.get_width() for obj in first_row)) / (self.columns + 1) 
+            padding_y = (self.height - sum(obj.get_height() for obj in first_column)) / (self.rows + 1)
+
+        except Exception as e:
+
+            # if an object doesn't have WIDTH and HEIGHT, OR
+            # if an object doesn't implement GET_WIDTH() and GET_HEIGHT()
+
+            raise TypeError("The object added doesn't have width and height OR doesn't implement get_width() and get_height()")
+
+        logging.info(f"The size of the container is {self.width, self.height}")
+        logging.info(f"Padding is {padding_x, padding_y}")
+
+        # first x and y coordinates of the first object
+        curr_x, curr_y = self.x + padding_x, self.y + padding_y
 
         i = 0
-        for r in range(rows):
-            if r >= rows-1:
-                columns = n - (rows-1)*columns
-            for c in range(columns):
+
+        for f in range(first):
+
+            # if the last column/row don't have the same number of objects as the others,
+            # the number is adjusted
+            if f >= first-1:
+                second = n - (first-1)*second
+
+            for s in range(second):
                 obj = self.objects[i]
-                # print(f"Row: {r}, Column: {c}")
 
-                obj_x = self.x + self.width/2 - width*(columns-1) + width*(c*2) - width/2
-                obj_y = self.y + self.height/(rows*2)*(1+r*2) - height/2
+                logging.info(f"OBJECT: {i+1}, {curr_x, curr_y}")
 
-                # card = pygame.Rect(obj_x, obj_y, width, height)
-                # pygame.draw.rect(surface, Colors.BLUE, card)
+                # draw an object
+                obj.draw(surface, curr_x, curr_y)
 
-                if type(obj) != str:
-                    obj.draw(surface, obj_x, obj_y, width, height)
+                # adjust coordinates for next object
+                if self.first == "rows":
+                    curr_x += obj.get_width() + padding_x
+                else:
+                    curr_y += obj.get_height() + padding_y
 
                 i += 1
+
+            # adjust coordinates for next row/column
+            if self.first == "columns":
+                curr_x += obj.get_width() + padding_x
+                curr_y = self.y + padding_y
+            else:
+                curr_x = self.x + padding_x
+                curr_y += obj.get_height() + padding_y
 

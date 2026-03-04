@@ -9,6 +9,8 @@ from screens.start_screen import StartScreen
 from screens.car_selection_screen import CarScreen
 from screens.map_selection_screen import MapScreen
 
+from ui.track import Track
+
 
 # defining the screen and the clock used in the game loop
 
@@ -25,23 +27,17 @@ screen = pygame.display.set_mode((sp.WIDTH, sp.HEIGHT))    # please if you chang
 
 def main():
 
-
     # implemented a whole new system where there is:
-
     #  - a ScreenManager object, that records all screens in the program in a dictionary
-
     # that was done because importing a screen in multiple screens raises an ImportError
 
 
     # created a file per screen:
-
     # 1. implemented proper OOP programming practices
-
     # 2. easier to modify each screen individually
 
 
     # READ ScreenManager for the new functions i created (implementing encapsulation)
-
     # they do exactly the same as the original code but it just follows better practices
 
 
@@ -49,10 +45,27 @@ def main():
 
 
     manager.add_screen("start", StartScreen)
-
     manager.add_screen("car", CarScreen)
-
     manager.add_screen("map", MapScreen)
+
+
+    # add all the tracks to scrren manager
+    # so that we upload them just once before the for-loop
+
+    tw, th = 100, 66
+
+    manager.add_track(Track("./pictures/italy_flag.png", "Italy", tw, th))
+    manager.add_track(Track("./pictures/uk_flag.png", "UK", tw, th))
+    manager.add_track(Track("./pictures/belgium_flag.png", "Belgium", tw, th))
+    manager.add_track(Track("./pictures/spain_flag.png", "Belgium", tw, th))
+    manager.add_track(Track("./pictures/australia_flag.png", "Japan", tw, th))
+    manager.add_track(Track("./pictures/japan_flag.png", "Belgium", tw, th))
+    manager.add_track(Track("./pictures/china_flag.png", "Belgium", tw, th))
+    manager.add_track(Track("./pictures/singapore_flag.png", "Belgium", tw, th))
+    manager.add_track(Track("./pictures/usa_flag.png", "Belgium", tw, th))
+    manager.add_track(Track("./pictures/canada_flag.png", "Belgium", tw, th))
+    manager.add_track(Track("./pictures/mexico_flag.png", "Belgium", tw, th))
+    manager.add_track(Track("./pictures/brazil_flag.png", "Belgium", tw, th))
 
 
     manager.change_screen("start")
@@ -62,36 +75,27 @@ def main():
 
         current = manager.get_screen()
 
-
         for event in pygame.event.get():
 
             # updates the event input
-
             # NEW: put handle_event inside the for-loop and changed the name from "handle_events"
 
             current.handle_event(event)
 
-
             if event.type == pygame.QUIT:
                 manager.toggle_running()
-
 
         #updates the screen
         current.update()
 
-
         #draws the screen
-
         current.draw(screen)
 
-
         pygame.display.update()
-
 
         clock.tick(60)
 
     pygame.quit()
-
     sys.exit()
 
 
