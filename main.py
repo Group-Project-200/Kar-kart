@@ -54,18 +54,18 @@ def main():
 
     tw, th = 100, 66
 
-    manager.add_track(Track("./pictures/italy_flag.png", "Italy", tw, th))
-    manager.add_track(Track("./pictures/uk_flag.png", "UK", tw, th))
-    manager.add_track(Track("./pictures/belgium_flag.png", "Belgium", tw, th))
-    manager.add_track(Track("./pictures/spain_flag.png", "Belgium", tw, th))
-    manager.add_track(Track("./pictures/australia_flag.png", "Japan", tw, th))
-    manager.add_track(Track("./pictures/japan_flag.png", "Belgium", tw, th))
-    manager.add_track(Track("./pictures/china_flag.png", "Belgium", tw, th))
-    manager.add_track(Track("./pictures/singapore_flag.png", "Belgium", tw, th))
-    manager.add_track(Track("./pictures/usa_flag.png", "Belgium", tw, th))
-    manager.add_track(Track("./pictures/canada_flag.png", "Belgium", tw, th))
-    manager.add_track(Track("./pictures/mexico_flag.png", "Belgium", tw, th))
-    manager.add_track(Track("./pictures/brazil_flag.png", "Belgium", tw, th))
+    manager.add_track(Track("./resources/pictures/italy_flag.png", "Italy", tw, th))
+    manager.add_track(Track("./resources/pictures/uk_flag.png", "UK", tw, th))
+    manager.add_track(Track("./resources/pictures/belgium_flag.png", "Belgium", tw, th))
+    manager.add_track(Track("./resources/pictures/spain_flag.png", "Belgium", tw, th))
+    manager.add_track(Track("./resources/pictures/australia_flag.png", "Japan", tw, th))
+    manager.add_track(Track("./resources/pictures/japan_flag.png", "Belgium", tw, th))
+    manager.add_track(Track("./resources/pictures/china_flag.png", "Belgium", tw, th))
+    manager.add_track(Track("./resources/pictures/singapore_flag.png", "Belgium", tw, th))
+    manager.add_track(Track("./resources/pictures/usa_flag.png", "Belgium", tw, th))
+    manager.add_track(Track("./resources/pictures/canada_flag.png", "Belgium", tw, th))
+    manager.add_track(Track("./resources/pictures/mexico_flag.png", "Belgium", tw, th))
+    manager.add_track(Track("./resources/pictures/brazil_flag.png", "Belgium", tw, th))
 
 
     manager.change_screen("start")

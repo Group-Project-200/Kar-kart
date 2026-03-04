@@ -4,7 +4,7 @@ import pygame, logging
 from constants import Colors
 
 logger = logging.getLogger("container")
-logging.basicConfig(level=logging.DEBUG, format= ' %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.WARNING, format= ' %(levelname)s - %(message)s')
 
 
 class Container:
