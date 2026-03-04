@@ -5,6 +5,7 @@ class ScreenManager:
         self.running= True
         self.current = None
         self.screens = {}
+        self.tracks = []
 
     def change_screen(self, label):
 
@@ -17,6 +18,18 @@ class ScreenManager:
         # add a new screen to the program
 
         self.screens[label] = screen
+
+    def add_track(self, track):
+
+        # add a new track to the program
+
+        self.tracks.append(track)
+
+    def get_tracks(self):
+
+        # get the list of tracks
+
+        return self.tracks
 
     def get_screen(self):
 
