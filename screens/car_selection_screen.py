@@ -32,7 +32,7 @@ class CarScreen:
         # initialize buttons  
         #* states will be changed to "map" and "start" when they're implemented
         self.next_btn = CarButton(560, 535, 150, 50, "NEXT", "map", self.manager)
-        self.back_btn = CarButton(240, 535, 150, 50, "BACK", "car", self.manager)
+        self.back_btn = CarButton(240, 535, 150, 50, "BACK", "start", self.manager)
         
         
         # load all images together
