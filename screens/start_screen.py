@@ -1,6 +1,5 @@
 # start_screen.py - first screen of the program
-import pygame
-import math
+import pygame, math
 
 class StartScreen:
     def __init__(self, manager):
