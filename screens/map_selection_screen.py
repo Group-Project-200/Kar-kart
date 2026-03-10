@@ -18,8 +18,10 @@ class MapScreen:
         self.container1 = Container(sp.CENTER_X, sp.CENTER_Y, sp.WIDTH/4*3, sp.HEIGHT/4*3, 4, 3, "columns")
 
         # importing tracks from manager
-        
-        for track in manager.get_tracks():
+
+        app_data = self.manager.get_app_data()
+
+        for track in app_data.get_tracks():
             self.container1.add_object(track)
 
     def handle_event(self, event):
