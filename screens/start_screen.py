@@ -17,7 +17,7 @@ class StartScreen:
         
         # Try to load background image, fallback to solid color if missing
         try:
-            self.bg = pygame.image.load("bp2.png").convert()
+            self.bg = pygame.image.load("./resources/pictures/bp2.png").convert()
             self.bg_width = self.bg.get_width()
         except:
             self.bg = None

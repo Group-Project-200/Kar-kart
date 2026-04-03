@@ -1,11 +1,29 @@
 # screen_manager.py - managing screens throughout the program
 
+from screens.start_screen import StartScreen
+from screens.car_selection_screen import CarScreen
+from screens.map_selection_screen import MapScreen
+
 class ScreenManager:
-    def __init__(self):
+    def __init__(self, app_data):
+
         self.running= True
         self.current = None
+        self.app_data = app_data
+
         self.screens = {}
-        self.tracks = []
+
+        # add all the screens in the game
+
+        self.add_screen("start", StartScreen)
+        self.add_screen("car", CarScreen)
+        self.add_screen("map", MapScreen)
+
+    def get_screen(self):
+
+        # get current screen
+
+        return self.current
 
     def change_screen(self, label):
 
@@ -19,24 +37,6 @@ class ScreenManager:
 
         self.screens[label] = screen
 
-    def add_track(self, track):
-
-        # add a new track to the program
-
-        self.tracks.append(track)
-
-    def get_tracks(self):
-
-        # get the list of tracks
-
-        return self.tracks
-
-    def get_screen(self):
-
-        # get current screen
-
-        return self.current
-
     def is_running(self):
 
         # check if program is still running
@@ -48,3 +48,9 @@ class ScreenManager:
         # toggle program from True to False and viceversa
 
         self.running = not self.running
+
+    def get_app_data(self):
+
+        # get app data
+
+        return self.app_data

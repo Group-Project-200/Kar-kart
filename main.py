@@ -1,15 +1,9 @@
 import pygame, sys
 
-
 from screen_manager import ScreenManager
-from screens.start_screen import StartScreen
 from constants import ScreenPositions as sp
 
-from screens.start_screen import StartScreen
-from screens.car_selection_screen import CarScreen
-from screens.map_selection_screen import MapScreen
-
-from ui.track import Track
+from app_data import AppData
 
 
 # defining the screen and the clock used in the game loop
@@ -41,31 +35,10 @@ def main():
     # they do exactly the same as the original code but it just follows better practices
 
 
-    manager = ScreenManager()
-
-
-    manager.add_screen("start", StartScreen)
-    manager.add_screen("car", CarScreen)
-    manager.add_screen("map", MapScreen)
-
+    manager = ScreenManager(AppData())
 
     # add all the tracks to scrren manager
     # so that we upload them just once before the for-loop
-
-    tw, th = 100, 66
-
-    manager.add_track(Track("./pictures/italy_flag.png", "Italy", tw, th))
-    manager.add_track(Track("./pictures/uk_flag.png", "UK", tw, th))
-    manager.add_track(Track("./pictures/belgium_flag.png", "Belgium", tw, th))
-    manager.add_track(Track("./pictures/spain_flag.png", "Belgium", tw, th))
-    manager.add_track(Track("./pictures/australia_flag.png", "Japan", tw, th))
-    manager.add_track(Track("./pictures/japan_flag.png", "Belgium", tw, th))
-    manager.add_track(Track("./pictures/china_flag.png", "Belgium", tw, th))
-    manager.add_track(Track("./pictures/singapore_flag.png", "Belgium", tw, th))
-    manager.add_track(Track("./pictures/usa_flag.png", "Belgium", tw, th))
-    manager.add_track(Track("./pictures/canada_flag.png", "Belgium", tw, th))
-    manager.add_track(Track("./pictures/mexico_flag.png", "Belgium", tw, th))
-    manager.add_track(Track("./pictures/brazil_flag.png", "Belgium", tw, th))
 
 
     manager.change_screen("start")
