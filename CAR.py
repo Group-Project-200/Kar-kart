@@ -203,8 +203,8 @@ class ControlState:
 
 
 class Car:
-    def __init__(self, handling: CarHandling):
-        self.handling = handling
+    def __init__(self):
+        self.handling = CarHandling()
         self.physics = PhysicsState()
         self.controls = ControlState()
 
