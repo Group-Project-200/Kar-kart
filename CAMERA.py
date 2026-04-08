@@ -28,7 +28,7 @@ class Camera:
         max_tilt = abs(self.settings.max_drift_tilt)
         drift_tilt = drift_sign * self.car.physics.drift_skew_degrees * self.settings.drift_tilt_factor
         drift_tilt = _clamp(drift_tilt, -max_tilt, max_tilt)
-        target_angle = self.car.physics.car_rotation + drift_tilt
+        target_angle = self.car.physics.rotation + drift_tilt
 
         delta = _shortest_angle_delta(self.angle, target_angle)
         if abs(delta) >= max(0.0, self.settings.snap_delta):

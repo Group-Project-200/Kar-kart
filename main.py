@@ -63,8 +63,18 @@ def select_default_car_index(car_folders: tuple[str, ...]) -> int:
     return 0
 
 
+def load_runtime_resources() -> RuntimeResources:
+    map_surface = load_map(DEFAULT_MAP_NAME)
+    car_folders = discover_car_folders()
+    if not car_folders:
+        raise RuntimeError("No car sprite folders found in resources (expected names like car_01).")
 
-
+    car_stacks = {folder_name: load_image_stack(folder_name) for folder_name in car_folders}
+    return RuntimeResources(
+        map_surface=map_surface,
+        car_folders=car_folders,
+        car_stacks=car_stacks,
+    )
 
 
 
@@ -114,18 +124,28 @@ def handle_events(controls) :
                         controls.drift_input = False
 
 def main() -> None:
+    pygame.init()
     screen = pygame.display.set_mode((1280, 720))
     clock = pygame.time.Clock()
-    config = GameConfig
+    config = GameConfig()
+    resources = load_runtime_resources()
 
     current_car = Car()
+    current_camera = Camera(current_car)
+    current_map = Map(resources.map_surface ,current_camera)
+    car_stacker = Stacker(resources.car_stacks[DEFAULT_CAR_NAME], config.dirs)
+    current_renderer = Renderer(current_map, car_stacker, screen)
 
 
-    
     while True:
         clock.tick(config.fps)
         handle_events(current_car.controls)
 
-
-
         current_car.physics = current_car.step_physics_with_controls(snap_step_degrees = config.rotation_snap_degrees)
+        current_camera.update_camera_angle()
+        current_renderer.render_frame(config.gameplay_stack_spread)
+
+        pygame.display.flip()
+
+if __name__ == "__main__":
+    main()
