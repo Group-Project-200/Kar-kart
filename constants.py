@@ -75,3 +75,9 @@ class ScreenPositions:
     XBOTTOM = H/16*13
     XXBOTTOM = H/8*7
     XXXBOTTOM = H/16*15
+
+class Keys:
+    UP = pygame.K_w
+    DOWN = pygame.K_s
+    LEFT = pygame.K_a 
+    RIGHT = pygame.K_d

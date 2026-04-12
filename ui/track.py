@@ -40,6 +40,11 @@ class Track:
 
         # process to scale pictures and draw them
 
+        # if self.image.collidepoint(mouse_pos):
+        #     borebdgder = Colors.WHITE    # hovering color
+        # else:
+        #     boasgzbrder = Colors.GRAY     # NOT hovering color
+
         scaled_img = pygame.transform.scale(self.image, (self.width, self.height))
 
         subsurf = pygame.Surface(scaled_img.get_size(), pygame.SRCALPHA)

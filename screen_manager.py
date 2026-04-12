@@ -2,7 +2,7 @@
 
 from screens.start_screen import StartScreen
 from screens.car_selection_screen import CarScreen
-from screens.map_selection_screen import MapScreen
+from screens.map_selection_screen import MapScreen as MapScreen
 
 class ScreenManager:
     def __init__(self, app_data):
