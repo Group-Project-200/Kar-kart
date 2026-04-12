@@ -15,7 +15,7 @@ class Stacker:
         self.dirs = directions   # the directions
         self.scale = None
         self.rotated_cache = None
-
+        self.mask_cache = None
     def scale_update(self, scale):
         self.scale = scale
         self.update()
@@ -37,6 +37,10 @@ class Stacker:
         self.rotated_cache = [
             [_convert_for_display(pygame.transform.rotate(img, d * step_deg)) for img in self.scaled_img]
             for d in range(self.dirs)
+        ]
+        self.mask_cache = [
+            pygame.mask.from_surface(frame_list[0])  # bottom image at each rotation
+            for frame_list in self.rotated_cache
         ]
 
     def update(self):

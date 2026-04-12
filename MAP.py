@@ -11,6 +11,13 @@ class MapCache:
     center_y: int
 
 
+class MapData:
+    checkpoints : list | None
+    start_pos : tuple[int] | None
+    layers : list | None
+
+
+
 def _convert_opaque_for_display(surface: pygame.Surface) -> pygame.Surface:
     if pygame.display.get_surface() is None:
         return surface
@@ -18,16 +25,20 @@ def _convert_opaque_for_display(surface: pygame.Surface) -> pygame.Surface:
 
 
 class Map:
-    def __init__(self, map_surface: pygame.Surface | None,  camera: Camera):
+    def __init__(self,map_data : MapData,  camera: Camera, ):
         self.cache = None
-        self.map_surface = map_surface
+        self.data = map_data
+        self.map_surface = self.data.layers[0]
         self.camera_buffer = None
         self.camera_buffer_center = None
         self.zoomed_map= None
         self.zoomed_size = None
+        self.zoomed_layers= None
+        self.masks = None
         self.car = camera.car.physics
         self.camera = camera
-
+        self.car_map_x = None
+        self.car_map_y = None
 
     def zoom_fixing(self, zoom : float, view_size: tuple[int, int]):
         map_width, map_height = self.map_surface.get_size()
@@ -37,6 +48,8 @@ class Map:
         )
         self. zoomed_map = _convert_opaque_for_display(pygame.transform.scale(self.map_surface, self.zoomed_size))
 
+        self.zoomed_layers = [pygame.transform.scale(layer, self.zoomed_size) for layer in self.data.layers[1::]]
+        self.masks = [pygame.mask.from_surface(layer) for layer in self.zoomed_layers]
         view_width, view_height = view_size
         # Use a diagonal-sized square so rotated corners never clip.
         side = max(1, int(math.ceil(math.hypot(view_width, view_height))) + 2)
@@ -52,13 +65,19 @@ class Map:
     # map class
     def draw_map(self, display, center, render_size):
   
-        car_map_x = self.cache.center_x + int(self.car.car_x * self.cache.zoom)
-        car_map_y = self.cache.center_y + int(self.car.car_y * self.cache.zoom)
+        self.car_map_x = self.cache.center_x + int(self.car.car_x * self.cache.zoom)
+        self.car_map_y = self.cache.center_y + int(self.car.car_y * self.cache.zoom)
 
-        view_x = car_map_x - center[0]
-        view_y = car_map_y - center[1]
+        view_x = self.car_map_x - center[0]
+        view_y = self.car_map_y - center[1]
         view_width, view_height = render_size
         display.blit(self.cache.surface, (0, 0), area=(view_x, view_y, view_width, view_height))
+        for mask in self.masks:
+            mask_surface = mask.to_surface(
+                setcolor=(255, 33, 222, 128),
+                unsetcolor=(0, 0, 0, 0)
+            )
+            display.blit(mask_surface, (0, 0), area=(view_x, view_y, view_width, view_height))
 
 
 

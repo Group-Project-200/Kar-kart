@@ -1,5 +1,7 @@
 from Helper_functions import _clamp, _move_toward, _blend_toward, _forward_vector, _snap_angle
 from dataclasses import dataclass, field
+from COLLISION_DETECTOR import CollisionDetector
+
 
 def _update_steer_hold(
     steer_input: int,
@@ -176,8 +178,8 @@ class PhysicsState:
     speed: float = 0.0
     velocity_x: float = 0.0
     velocity_y: float = 0.0
-    car_x: float = 0.0
-    car_y: float = 0.0
+    car_x: float = -100.0
+    car_y: float = -50.0
 
     # Drift / boost runtime.
     drift_direction: int = 0
@@ -207,6 +209,10 @@ class Car:
         self.handling = CarHandling()
         self.physics = PhysicsState()
         self.controls = ControlState()
+        self.collision_results = False
+
+
+
 
     def _drift_tuning(self, left_pressed: bool, right_pressed: bool, drift_direction: int, ) -> tuple[float, float]:
         if drift_direction > 0:
@@ -528,12 +534,15 @@ class Car:
             drift_direction=active_drift_direction,
             drift_skew_degrees=self.physics.drift_skew_degrees,
         )
-        self.physics.car_x, self.physics.car_y = update_position(
-            self.physics.car_x,
-            self.physics.car_y,
-            self.physics.velocity_x,
-            self.physics.velocity_y,
-        )
+
+        print(self.physics.car_x, self.physics.car_y)
+        if not self.collision_results:
+            self.physics.car_x, self.physics.car_y = update_position(
+                self.physics.car_x,
+                self.physics.car_y,
+                self.physics.velocity_x,
+                self.physics.velocity_y,
+            )
         return self.physics
 
     def step_physics_with_controls(

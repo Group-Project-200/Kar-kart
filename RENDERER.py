@@ -1,7 +1,9 @@
 from MAP import Map
 from STACKER import Stacker
+from COLLISION_DETECTOR import CollisionDetector
 from Helper_functions import _clamp_zoom,clamp_scale,snap_degrees
 import pygame
+
 
 class Renderer:
     def __init__(self, current_map : Map, stacker: Stacker, screen):
@@ -18,10 +20,8 @@ class Renderer:
         self.needs_present_scale = self.render_size != self.screen.get_size()
         self.map.zoom_fixing(draw_map_zoom,self.render_size)
         self.stacker.scale_update(draw_car_scale)
+        self.collision_detector =CollisionDetector(self.map.masks, self.stacker.mask_cache)
 
-
-
-    #should be in init
     def build_pixel_surface_size(self, pixelation_scale: float)-> tuple[int, int]:
         scale = clamp_scale(pixelation_scale)
         screen_width, screen_height = self.screen.get_size()
@@ -46,7 +46,12 @@ class Renderer:
         self.map.draw_map_camera(display=frame_surface, center = self.center, render_size = self.render_size)
         car_relative_rotation = self.map.camera.car.physics.rotation - self.map.camera.angle
 
+
         #has to stay in game loop
         dir_idx = snap_degrees(car_relative_rotation, dirs=self.stacker.dirs)
+        offset = (self.map.car_map_x, self.map.car_map_y)
+        self.map.camera.car.collision_results= self.collision_detector.check(dir_idx, offset)
+
+
         self.stacker.render_stack(self.frame_surface, dir_idx, self.center, stack_spread)
         self.present_frame()

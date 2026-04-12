@@ -1,11 +1,9 @@
-import argparse
 import os
 import sys
-import time
 from dataclasses import dataclass, field
 import pygame
 
-from MAP import Map
+from MAP import Map, MapData
 from RENDERER import Renderer
 from CAR import Car
 from STACKER import Stacker
@@ -30,12 +28,15 @@ class GameConfig:
 
 
 #this section is for runtime resources:
-DEFAULT_MAP_NAME = "map_02"
+DEFAULT_MAP_NAME = "map1"
 DEFAULT_CAR_NAME = "car_01"
+current_map_data= MapData()
+
+
 
 @dataclass(frozen=True, slots=True)
 class RuntimeResources:
-    map_surface: pygame.Surface | None
+    map_surface: list
     car_folders: tuple[str, ...]
     car_stacks: dict[str, list[pygame.Surface]]
 
@@ -64,14 +65,16 @@ def select_default_car_index(car_folders: tuple[str, ...]) -> int:
 
 
 def load_runtime_resources() -> RuntimeResources:
-    map_surface = load_map(DEFAULT_MAP_NAME)
+    current_map_data.layers = [pygame.image.load(os.path.join(r"C:\Users\mohna\Desktop\Uni\25-26\updated_gameloop\resources\maps\map1", f)).convert_alpha()
+          for f in os.listdir(r"C:\Users\mohna\Desktop\Uni\25-26\updated_gameloop\resources\maps\map1")
+          if f.endswith(".png")]
     car_folders = discover_car_folders()
     if not car_folders:
         raise RuntimeError("No car sprite folders found in resources (expected names like car_01).")
 
     car_stacks = {folder_name: load_image_stack(folder_name) for folder_name in car_folders}
     return RuntimeResources(
-        map_surface=map_surface,
+        map_surface= current_map_data.layers,
         car_folders=car_folders,
         car_stacks=car_stacks,
     )
@@ -132,14 +135,14 @@ def main() -> None:
 
     current_car = Car()
     current_camera = Camera(current_car)
-    current_map = Map(resources.map_surface ,current_camera)
+    current_map = Map(current_map_data ,current_camera)
     car_stacker = Stacker(resources.car_stacks[DEFAULT_CAR_NAME], config.dirs)
     current_renderer = Renderer(current_map, car_stacker, screen)
-
 
     while True:
         clock.tick(config.fps)
         handle_events(current_car.controls)
+
 
         current_car.physics = current_car.step_physics_with_controls(snap_step_degrees = config.rotation_snap_degrees)
         current_camera.update_camera_angle()
