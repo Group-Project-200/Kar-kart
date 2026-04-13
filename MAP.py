@@ -23,6 +23,11 @@ def _convert_opaque_for_display(surface: pygame.Surface) -> pygame.Surface:
         return surface
     return surface.convert()
 
+def simplify_surface(surface, factor=1.5):
+    w, h = surface.get_size()
+    small = pygame.transform.scale(surface, (max(1, w // factor), max(1, h // factor)))
+    return pygame.transform.scale(small, (w, h))
+
 
 class Map:
     def __init__(self,map_data : MapData,  camera: Camera, ):
@@ -49,7 +54,7 @@ class Map:
         self. zoomed_map = _convert_opaque_for_display(pygame.transform.scale(self.map_surface, self.zoomed_size))
 
         self.zoomed_layers = [pygame.transform.scale(layer, self.zoomed_size) for layer in self.data.layers[1::]]
-        self.masks = [pygame.mask.from_surface(layer) for layer in self.zoomed_layers]
+        self.masks = [pygame.mask.from_surface(simplify_surface(layer)) for layer in self.zoomed_layers]
         view_width, view_height = view_size
         # Use a diagonal-sized square so rotated corners never clip.
         side = max(1, int(math.ceil(math.hypot(view_width, view_height))) + 2)
@@ -61,6 +66,11 @@ class Map:
             zoom= zoom,
             center_x=self.zoomed_size[0] // 2,
             center_y=self.zoomed_size[1] // 2, )
+
+    def get_coordinates(self):
+        self.car_map_x = self.cache.center_x + int(self.car.car_x * self.cache.zoom)
+        self.car_map_y = self.cache.center_y + int(self.car.car_y * self.cache.zoom)
+
 
     # map class
     def draw_map(self, display, center, render_size):

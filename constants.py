@@ -31,8 +31,8 @@ class ScreenPositions:
     # contains screen dimensions
     # contains screen positions split into 16x16
 
-    WIDTH = 800
-    HEIGHT = 600
+    WIDTH = 1280
+    HEIGHT = 720
 
     W = WIDTH
     H = HEIGHT

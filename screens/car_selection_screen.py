@@ -26,7 +26,7 @@ import os
 
 
 class CarScreen:
-    def __init__(self, manager):
+    def __init__(self, manager ):
         self.manager = manager     # ALWAYS ADD THE MANAGER
 
         # initialize buttons  
@@ -44,10 +44,10 @@ class CarScreen:
 
         # load all cars from resources
         self.car_slices = [
-            load_car_slices("resources/render/car_01"),
-            load_car_slices("resources/render/car_02"),
-            load_car_slices("resources/render/car_03"),
-            load_car_slices("resources/render/car_04"),
+            load_car_slices("resources/car_01"),
+            load_car_slices("resources/car_02"),
+            load_car_slices("resources/car_03"),
+            load_car_slices("resources/car_04"),
         ]
 
         self.pipelines = []

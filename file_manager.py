@@ -24,16 +24,3 @@ def load_image_stack(car_folder_name: str, base_path: str = DEFAULT_BASE_PATH):
         for file_name in image_files
     ]
 
-
-def load_map(map_folder_name: str, base_path: str = DEFAULT_BASE_PATH):
-    maps_dir = os.path.join(base_path, "maps")
-    folder_path = os.path.join(maps_dir, map_folder_name)
-    print(f"Looking for map at: {folder_path}")
-    if not os.path.isdir(folder_path):
-        return None
-
-    image_files = _list_png_files(folder_path)
-    if not image_files:
-        return None
-
-    return [pygame.image.load(f).convert_alpha() for f in image_files]

@@ -206,6 +206,8 @@ class ControlState:
 
 class Car:
     def __init__(self):
+        self.last_safe_y = None
+        self.last_safe_x = None
         self.handling = CarHandling()
         self.physics = PhysicsState()
         self.controls = ControlState()
@@ -471,7 +473,16 @@ class Car:
             snap_step_degrees: float | None = None,
             slide_factor: float | None = None,
     )-> PhysicsState:
-        # Frame order: drift self -> steering -> rotation -> speed -> velocity -> position.
+
+        if self.collision_results:
+            self.physics.car_x = self.last_safe_x
+            self.physics.car_y = self.last_safe_y
+            self.physics.velocity_x *= -0.6
+            self.physics.velocity_y *= -0.6
+            self.physics.speed *= -0.6
+            return self.physics
+
+            # Frame order: drift self -> steering -> rotation -> speed -> velocity -> position.
         self._try_start_drift(
             steer_input=steer_input,
             left_pressed=left_pressed,
@@ -535,14 +546,18 @@ class Car:
             drift_skew_degrees=self.physics.drift_skew_degrees,
         )
 
-        print(self.physics.car_x, self.physics.car_y)
-        if not self.collision_results:
-            self.physics.car_x, self.physics.car_y = update_position(
-                self.physics.car_x,
-                self.physics.car_y,
-                self.physics.velocity_x,
-                self.physics.velocity_y,
-            )
+
+        self.last_safe_x = self.physics.car_x
+        self.last_safe_y = self.physics.car_y
+        print("safe:", self.last_safe_x, self.last_safe_y)
+        self.physics.car_x, self.physics.car_y = update_position(
+            self.physics.car_x,
+            self.physics.car_y,
+            self.physics.velocity_x,
+            self.physics.velocity_y,
+        )
+
+
         return self.physics
 
     def step_physics_with_controls(

@@ -23,7 +23,8 @@ class Stacker:
 
     def scale_images(self):
         if self.scale == 1.0:
-            return [_convert_for_display(img) for img in self. images]
+            self.scaled_img = [_convert_for_display(img) for img in self.images]
+            return
 
         for img in self.images:
             width = max(1, int(img.get_width() * self.scale))

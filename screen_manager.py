@@ -1,8 +1,6 @@
 # screen_manager.py - managing screens throughout the program
 
-from screens.start_screen import StartScreen
-from screens.car_selection_screen import CarScreen
-from screens.map_selection_screen import MapScreen
+
 
 class ScreenManager:
     def __init__(self, app_data):
@@ -15,10 +13,6 @@ class ScreenManager:
 
         # add all the screens in the game
 
-        self.add_screen("start", StartScreen)
-        self.add_screen("car", CarScreen)
-        self.add_screen("map", MapScreen)
-
     def get_screen(self):
 
         # get current screen
@@ -29,7 +23,7 @@ class ScreenManager:
 
         # change current screen
 
-        self.current = self.screens[label](self)
+        self.current = self.screens[label]
 
     def add_screen(self, label, screen):
 

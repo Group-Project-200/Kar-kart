@@ -7,6 +7,7 @@ from ui.container import Container
 from constants import Colors
 from constants import ScreenPositions as sp
 from ui.track import Track
+from ui.button import CarButton
 
 class MapScreen:
 
@@ -18,14 +19,16 @@ class MapScreen:
         self.container1 = Container(sp.CENTER_X, sp.CENTER_Y, sp.WIDTH/4*3, sp.HEIGHT/4*3, 4, 3, "columns")
 
         # importing tracks from manager
-
+        self.next_btn = CarButton(560, 535, 150, 50, "NEXT", "game", self.manager)
         app_data = self.manager.get_app_data()
 
         for track in app_data.get_tracks():
             self.container1.add_object(track)
 
     def handle_event(self, event):
-
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                self.manager.change_screen("game")
         # to change to another screen do take this line
         # self.button1.handle_event(event)
         pass

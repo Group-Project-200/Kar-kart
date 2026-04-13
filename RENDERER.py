@@ -49,9 +49,18 @@ class Renderer:
 
         #has to stay in game loop
         dir_idx = snap_degrees(car_relative_rotation, dirs=self.stacker.dirs)
-        offset = (self.map.car_map_x, self.map.car_map_y)
-        self.map.camera.car.collision_results= self.collision_detector.check(dir_idx, offset)
-
 
         self.stacker.render_stack(self.frame_surface, dir_idx, self.center, stack_spread)
+        car_mask_surface = self.stacker.mask_cache[dir_idx].to_surface(
+            setcolor=(255,255, 0, 255), unsetcolor=(0, 0, 0, 0)
+        )
+        self.frame_surface.blit(car_mask_surface, (self.center[0] - car_mask_surface.get_width() // 2, self.center[1] - car_mask_surface.get_height() // 2))
         self.present_frame()
+
+    def collision_check(self):
+        car_relative_rotation = self.map.camera.car.physics.rotation - self.map.camera.angle
+        self.map.get_coordinates()
+        # has to stay in game loop
+        dir_idx = snap_degrees(car_relative_rotation, dirs=self.stacker.dirs)
+        offset = (self.map.car_map_x, self.map.car_map_y)
+        self.map.camera.car.collision_results = self.collision_detector.check(dir_idx, offset)
