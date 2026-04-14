@@ -72,9 +72,9 @@ class GamePlay:
 
     def load_runtime_resources(self) -> RuntimeResources:
         current_map_data.layers = [pygame.image.load(
-            os.path.join(r"C:\Users\mohna\Desktop\Uni\25-26\updated_gameloop\resources\maps\map1", f)).convert_alpha()
+            os.path.join(r".\resources\maps\map1", f)).convert_alpha()
                                    for f in
-                                   os.listdir(r"C:\Users\mohna\Desktop\Uni\25-26\updated_gameloop\resources\maps\map1")
+                                   os.listdir(r".\resources\maps\map1")
                                    if f.endswith(".png")]
         car_folders = self.discover_car_folders()
         if not car_folders:
