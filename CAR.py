@@ -474,6 +474,10 @@ class Car:
             slide_factor: float | None = None,
     )-> PhysicsState:
 
+        self.last_safe_x = self.physics.car_x
+        self.last_safe_y = self.physics.car_y
+
+        print(self.collision_results, self.last_safe_x, self.last_safe_y )
         if self.collision_results:
             self.physics.car_x = self.last_safe_x
             self.physics.car_y = self.last_safe_y
@@ -547,8 +551,7 @@ class Car:
         )
 
 
-        self.last_safe_x = self.physics.car_x
-        self.last_safe_y = self.physics.car_y
+
         print("safe:", self.last_safe_x, self.last_safe_y)
         self.physics.car_x, self.physics.car_y = update_position(
             self.physics.car_x,

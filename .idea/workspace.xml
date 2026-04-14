@@ -5,82 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d36f7f98-27ab-4aa2-8307-e72961a4b30d" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/updated_gameloop.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/CAR.py" beforeDir="false" afterPath="$PROJECT_DIR$/CAR.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/COLLISION_DETECTOR.py" beforeDir="false" afterPath="$PROJECT_DIR$/COLLISION_DETECTOR.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/MAP.py" beforeDir="false" afterPath="$PROJECT_DIR$/MAP.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RENDERER.py" beforeDir="false" afterPath="$PROJECT_DIR$/RENDERER.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/STACKER.py" beforeDir="false" afterPath="$PROJECT_DIR$/STACKER.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/file_manager.py" beforeDir="false" afterPath="$PROJECT_DIR$/file_manager.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/app_data.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/constants.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/main.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/render.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/maps/map_01.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/maps/map_02.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/maps/map_03.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/pictures/australia_flag.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/pictures/bahrain_flag.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/pictures/belgium_flag.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/pictures/bp2.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/pictures/brazil_flag.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/pictures/canada_flag.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/pictures/china_flag.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/pictures/cust1.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/pictures/gearicon3.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/pictures/italy_flag.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/pictures/japan_flag.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/pictures/mexico_flag.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/pictures/qatar_flag.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/pictures/saudi_flag.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/pictures/singapore_flag.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/pictures/spain_flag.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/pictures/uae_flag.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/pictures/uk_flag.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/pictures/usa_flag.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/render/car_01/img_0.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/render/car_01/img_1.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/render/car_01/img_2.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/render/car_01/img_3.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/render/car_01/img_4.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/render/car_01/img_5.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/render/car_01/img_6.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/render/car_02/img_0.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/render/car_02/img_1.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/render/car_02/img_2.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/render/car_02/img_3.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/render/car_02/img_4.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/render/car_02/img_5.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/render/car_02/img_6.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/render/car_03/img_0.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/render/car_03/img_1.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/render/car_03/img_2.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/render/car_03/img_3.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/render/car_03/img_4.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/render/car_03/img_5.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/render/car_03/img_6.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/render/car_04/img_0.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/render/car_04/img_1.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/render/car_04/img_2.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/render/car_04/img_3.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/resources/render/car_04/img_4.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/screen_manager.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/screens/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/screens/car_selection_screen.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/screens/map_selection_screen.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/screens/start_screen.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/ui/button.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/ui/card.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/ui/container.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/ui/track.py" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
