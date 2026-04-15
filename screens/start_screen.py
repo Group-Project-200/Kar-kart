@@ -7,8 +7,8 @@ class StartScreen:
         self.manager = manager
         self.FPS = 60
         self.scroll = 0
-        self.screen_width = 800
-        self.screen_height = 600
+        self.screen_width = 1280
+        self.screen_height = 720
         
         self.font = pygame.font.Font(None, 36)
         self.fps = 60.0
@@ -39,7 +39,7 @@ class StartScreen:
             self.manager.quit_game = True
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
-                self.manager.change_screen("car")
+                self.manager.change_screen("race_selector")
 
     def update(self):
         # Update scrolling background

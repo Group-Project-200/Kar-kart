@@ -1,105 +1,77 @@
-# race_selector.py - race selection screen
+# race_selection_screen.py - race selection screen
 import pygame
-import math
 
 
 class RaceSelector:
     def __init__(self, manager):
         self.manager = manager
-        self.FPS = 60
-        self.scroll = 0
         self.screen_width = 1280
         self.screen_height = 720
 
-        self.font = pygame.font.Font(None, 36)
-        self.fps = 60.0
-        self.frame_count = 0
-        self.last_time = pygame.time.get_ticks()
+        self.races = ["Time Trial", "Race Mode", "Championship"]
+        self.selected_index = 1
 
-        self.races = ["Time Trial", "Championship", "Quick Race"]
-        self.selected_index = 0
-
+        # Background
         try:
-            self.bg = pygame.image.load("bp2.png").convert()
-            self.bg_width = self.bg.get_width()
+            self.bg = pygame.image.load("Race_Seleciton_bg.png").convert()
+            self.bg = pygame.transform.scale(self.bg, (self.screen_width, self.screen_height))
         except:
             self.bg = None
-            self.bg_width = self.screen_width
-        self.tiles = math.ceil(self.screen_width / self.bg_width) + 1
-        self.bg_rect = pygame.Rect(0, 0, self.bg_width, self.screen_height)
+
+        # Card dimensions
+        self.card_width = 280
+        self.card_height = 220
+        self.card_y = self.screen_height - self.card_height - 100
+        total_cards_width = self.card_width * 3 + 40 * 2
+        self.card_start_x = (self.screen_width - total_cards_width) // 2
+
+        # Load mode images
+        image_files = ["Trial_Mode.png", "race_mode.png", "Championship_mode.png"]
+        self.mode_images = []
+        for file in image_files:
+            try:
+                img = pygame.image.load(file).convert_alpha()
+                img = pygame.transform.scale(img, (self.card_width, self.card_height))
+                self.mode_images.append(img)
+            except:
+                self.mode_images.append(None)
 
 
     def handle_event(self, event):
-        if event.type == pygame.QUIT:
-            self.manager.quit_game = True
-        elif event.type == pygame.KEYDOWN:
+        if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LEFT:
                 self.selected_index = (self.selected_index - 1) % len(self.races)
             elif event.key == pygame.K_RIGHT:
                 self.selected_index = (self.selected_index + 1) % len(self.races)
             elif event.key == pygame.K_RETURN:
-                self.manager.change_screen("game")
+                self.manager.change_screen("car")
             elif event.key == pygame.K_ESCAPE:
                 self.manager.change_screen("start")
 
 
     def update(self):
-        self.scroll -= 2.5
-        if abs(self.scroll) > self.bg_width:
-            self.scroll = 0
-
-        self.frame_count += 1
-        current_time = pygame.time.get_ticks()
-        if current_time - self.last_time >= 1000:
-            self.fps = round(self.frame_count * 1000 / (current_time - self.last_time), 1)
-            self.frame_count = 0
-            self.last_time = current_time
+        pass
 
 
     def draw(self, surface):
-        # Scrolling background
-        for i in range(self.tiles):
-            x_pos = i * self.bg_width + self.scroll
-            self.bg_rect.x = x_pos
-            if self.bg:
-                surface.blit(self.bg, (x_pos, 0))
+        if self.bg:
+            surface.blit(self.bg, (0, 0))
+        else:
+            surface.fill((50, 100, 200))
+
+        for i in range(len(self.races)):
+            x = self.card_start_x + i * (self.card_width + 40)
+            card_rect = pygame.Rect(x, self.card_y, self.card_width, self.card_height)
+
+            if self.mode_images[i]:
+                surface.blit(self.mode_images[i], (x, self.card_y))
             else:
-                pygame.draw.rect(surface, (50, 100, 200), self.bg_rect)
+                pygame.draw.rect(surface, (220, 200, 160), card_rect, border_radius=8)
 
-        # Dark overlay
-        overlay = pygame.Surface((self.screen_width, self.screen_height), pygame.SRCALPHA)
-        overlay.fill((0, 0, 0, 120))
-        surface.blit(overlay, (0, 0))
+            # Visible selection border — white outer glow + black inner
+            if i == self.selected_index:
+                glow_rect = card_rect.inflate(8, 8)
+                pygame.draw.rect(surface, (255, 255, 255), glow_rect, 4, border_radius=10)
+                pygame.draw.rect(surface, (0, 0, 0), card_rect, 4, border_radius=8)
 
-        # Title
-        title_font = pygame.font.Font(None, 74)
-        title = title_font.render("SELECT RACE MODE", True, (255, 255, 255))
-        title_rect = title.get_rect(center=(self.screen_width // 2, 180))
-        surface.blit(title, title_rect)
-
-        # Left arrow
-        arrow_font = pygame.font.Font(None, 74)
-        left_arrow = arrow_font.render("<", True, (255, 255, 255))
-        surface.blit(left_arrow, (360, self.screen_height // 2 - 30))
-
-        # Selected race mode
-        option_font = pygame.font.Font(None, 64)
-        label = option_font.render(self.races[self.selected_index], True, (255, 220, 0))
-        label_rect = label.get_rect(center=(self.screen_width // 2, self.screen_height // 2))
-        surface.blit(label, label_rect)
-
-        # Right arrow
-        right_arrow = arrow_font.render(">", True, (255, 255, 255))
-        surface.blit(right_arrow, (self.screen_width - 400, self.screen_height // 2 - 30))
-
-        # Instructions
-        small_font = pygame.font.Font(None, 36)
-        instr = small_font.render("LEFT / RIGHT to browse   ENTER to confirm   ESC to go back", True, (180, 180, 180))
-        instr_rect = instr.get_rect(center=(self.screen_width // 2, self.screen_height - 60))
-        surface.blit(instr, instr_rect)
-
-        # FPS counter
-        fps_text = self.font.render(f"FPS: {self.fps}", True, (255, 255, 255))
-        surface.blit(fps_text, (10, 10))
-
-        pygame.display.set_caption(f"Kar Kart - Race Selector (FPS: {self.fps})")
+        pygame.display.set_caption("Kar Kart - Race Selector")

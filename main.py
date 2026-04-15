@@ -7,6 +7,7 @@ from constants import ScreenDimensions as sd
 from screens.start_screen import StartScreen
 from screens.car_selection_screen import CarScreen
 from screens.map_selection_screen import MapScreen
+from screens.race_selection_screen import RaceSelector
 
 # this import imports the file that contains the second example screen
 
@@ -34,6 +35,7 @@ def main():
     manager = ScreenManager()
 
     manager.add_screen("start", StartScreen)
+    manager.add_screen("race_selector", RaceSelector)   # ADD THIS
     manager.add_screen("car", CarScreen)
     manager.add_screen("map", MapScreen)
 
