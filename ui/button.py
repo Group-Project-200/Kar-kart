@@ -65,31 +65,31 @@ class Button:
 
         # show the text at the center of the button
         surface.blit(button_text, button_center)
-        
 
-class CarButton:
 
-    # Button object is used to change screen and open pop-up's
+class PaddingButton:
+    def __init__(self, x, y, text_font, text, state, manager):
 
-    # initializing a Button object requires:
-    #  - x (1) and y (2) coordinates
-    #    (THEY ARE THE COORDINATES AT THE CENTRE, REALLY IMPORTANT!!!!)
-    #  - width (3) and height (4) of the button
-    #  - text (5) to print inside the button
-    #  - state (6) that will be set after pushing the button
-    #  - screen manager (7) to pass through states
+        # works in a similar way as the button above, but following modifications were made:
+        #  - takes text_font (3) instead of width and height
+        #  - calculates automatic padding based on font
 
-    def __init__(self, x, y, width, height, text, state, manager):
-
-        self.x = x - width/2
-        self.y = y - height/2
-
-        self.rect = pygame.Rect(self.x, self.y, width, height)
-
-        self.width = width
-        self.height = height
-
+        self.text_font = text_font
         self.text = text
+
+        self.button_font = pygame.font.SysFont("arial", self.text_font, bold=True)
+        self.button_text = self.button_font.render(self.text, True, Colors.BLACK)
+
+        self.width = self.button_text.get_width() + self.text_font * 3
+        self.height = self.button_text.get_height() + self.text_font * 1.5
+
+        self.x = x - self.width/2
+        self.y = y - self.height/2
+
+        self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
+
+        self.button_center = self.button_text.get_rect(center=self.rect.center)
+
         self.state = state
 
         self.manager = manager
@@ -115,9 +115,76 @@ class CarButton:
 
         # hovering is managed underneath
         if self.rect.collidepoint(mouse_pos):
-            color = (254, 159, 46)    # hovering color
+            color = Colors.WHITE    # hovering color
         else:
-            color = Colors.WHITE     # NOT hovering color
+            color = Colors.LIGHT_GRAY     # NOT hovering color
+
+        pygame.draw.rect(surface, color, self.rect, border_radius=8)
+
+        # button_center finds the center of the button but taking in consideration the 
+
+        # show the text at the center of the button
+        surface.blit(self.button_text, self.button_center)
+        
+
+
+
+class ColorButton:
+
+    # Button Class is modified with 2 new parameters to ease the color selections of button
+
+    # initializing a Button object requires:
+    #  - x (1) and y (2) coordinates
+    #    (THEY ARE THE COORDINATES AT THE CENTRE, REALLY IMPORTANT!!!!)
+    #  - width (3) and height (4) of the button
+    #  - text (5) to print inside the button
+    #  - state (6) that will be set after pushing the button
+    #  - screen manager (7) to pass through states
+    #  - colnor (8) visible color of button
+    #  - colhov (9) hovering color of button
+
+    def __init__(self, x, y, width, height, text, state, manager, colnor, colhov):
+
+        self.x = x - width/2
+        self.y = y - height/2
+
+        self.rect = pygame.Rect(self.x, self.y, width, height)
+
+        self.width = width
+        self.height = height
+
+        self.text = text
+        self.state = state
+
+        self.manager = manager
+
+        self.colnor = colnor
+        self.colhov = colhov
+
+
+    def handle_event(self, event):
+
+        # handles each event
+        # the following events are recorded:
+        #  1. if the mouse is pressed on the button area, the new state is set
+
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if self.rect.collidepoint(event.pos):
+                if self.state:
+                    self.manager.change_screen(self.state)
+
+
+    def draw(self, surface):
+
+        # draws the button and the text on the surface
+
+        mouse_pos = pygame.mouse.get_pos()
+
+        # hovering is managed underneath
+        if self.rect.collidepoint(mouse_pos):
+            color = self.colhov    # hovering color
+        else:
+            color = self.colnor     # NOT hovering color
 
         pygame.draw.rect(surface, color, self.rect, border_radius=8)
 
@@ -128,4 +195,3 @@ class CarButton:
 
         # show the text at the center of the button
         surface.blit(button_text, button_center)
-        
