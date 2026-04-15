@@ -25,11 +25,12 @@ class MapScreen:
             self.container1.add_object(track)
 
     def handle_event(self, event):
-
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                self.manager.change_screen("game")
         # to change to another screen do take this line
         # self.button1.handle_event(event)
-        
-        self.container1.handle_event(event)
+        pass
 
     def update(self):
         pass
