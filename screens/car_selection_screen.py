@@ -26,7 +26,7 @@ import os
 
 
 class CarScreen:
-    def __init__(self, manager):
+    def __init__(self, manager ):
         self.manager = manager     # ALWAYS ADD THE MANAGER
 
         # initialize buttons  
@@ -36,7 +36,7 @@ class CarScreen:
         
         
         # load all images together
-        self.background = pygame.transform.scale( pygame.image.load("cust1.png").convert(), (sp.WIDTH, sp.HEIGHT) )
+        self.background = pygame.transform.scale( pygame.image.load("resources/pictures/cust1.png").convert(), (sp.WIDTH, sp.HEIGHT) )
 
         def load_car_slices(folder):
             files = sorted(os.listdir(folder))

@@ -16,7 +16,7 @@ class Colors:
     GREEN = (0, 255, 0)
     BLUE = (0, 0, 255)
 
-    LIGHT_BLUE = (173, 216, 230)
+    LIGHT_BLUE = (146, 165, 177)
     YELLOW = (255, 255, 0)
     PURPLE = (128, 0, 128)
     PINK = (255, 192, 203)
@@ -24,6 +24,8 @@ class Colors:
     GRAY = (128, 128, 128)
 
     LIGHT_GRAY = (192, 192, 192)
+    DARK_RED = (128, 0 , 0)
+    DARK_BLUE = (46, 81, 116)
 
 
 class ScreenPositions:
@@ -31,8 +33,8 @@ class ScreenPositions:
     # contains screen dimensions
     # contains screen positions split into 16x16
 
-    WIDTH = 800
-    HEIGHT = 600
+    WIDTH = 1280
+    HEIGHT = 720
 
     W = WIDTH
     H = HEIGHT
@@ -75,3 +77,9 @@ class ScreenPositions:
     XBOTTOM = H/16*13
     XXBOTTOM = H/8*7
     XXXBOTTOM = H/16*15
+
+class Keys:
+    UP = pygame.K_w
+    DOWN = pygame.K_s
+    LEFT = pygame.K_a 
+    RIGHT = pygame.K_d

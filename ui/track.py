@@ -13,13 +13,38 @@ class Track:
     #  - name (2) of the the track
     #  - width (3) and height (4) of the picture
 
-    def __init__(self, pic, name, width, height):
+    def __init__(self, pic, name, corr_map=None):
 
-        self.image = image = pygame.image.load(pic).convert_alpha()
+        self.image = pygame.image.load(pic).convert_alpha()
         self.name = name
 
-        self.width = width
-        self.height = height
+        self.map = corr_map
+
+        self.width = 0
+        self.height = 0
+
+        self.x = None
+        self.y = None
+
+    def handle_event(self):
+        pass
+
+    def draw(self, surface):
+
+        # process to scale pictures and draw them
+
+        x, y = self.x, self.y
+
+        scaled_img = pygame.transform.scale(self.image, (self.width, self.height))
+
+        subsurf = pygame.Surface(scaled_img.get_size(), pygame.SRCALPHA)
+        pygame.draw.rect(subsurf, Colors.WHITE, subsurf.get_rect())
+
+        scaled_img.blit(subsurf, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
+        surface.blit(scaled_img, (x, y))
+
+        bord_rect = pygame.Rect(x, y, self.width, self.height)
+        pygame.draw.rect(surface, Colors.BLACK, bord_rect, 2)
 
     def get_width(self):
 
@@ -33,17 +58,25 @@ class Track:
 
         return self.height
 
-    def handle_event(self):
-        pass
+    def get_image(self):
+        
+        # get track picture
 
-    def draw(self, surface, x, y):
+        return self.image
 
-        # process to scale pictures and draw them
+    def get_name(self):
 
-        scaled_img = pygame.transform.scale(self.image, (self.width, self.height))
+        return self.name
 
-        subsurf = pygame.Surface(scaled_img.get_size(), pygame.SRCALPHA)
-        pygame.draw.rect(subsurf, Colors.WHITE, subsurf.get_rect(), border_radius=8)
+    def set_position(self, x, y):
 
-        scaled_img.blit(subsurf, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
-        surface.blit(scaled_img, (x, y))
+        self.x, self.y = x, y
+
+    def set_dimensions(self, width, height):
+
+        # set dimensions, overwriting default (0, 0)
+
+        self.width, self.height = width, height
+
+    def get_map(self):
+        return self.map
