@@ -124,9 +124,9 @@ class Container:
 
 class SelectContainer:
 
-    # TODO: TO SELECT AN OBJECT
+    # TO SELECT AN OBJECT
 
-    def __init__(self, center_x, center_y, width, height, rows, columns, first="rows"):
+    def __init__(self, center_x, center_y, width, height, rows, columns):
 
         self.width = width
         self.height = height
@@ -136,8 +136,6 @@ class SelectContainer:
 
         self.rows = rows
         self.columns = columns
-
-        self.first = first
 
         self.objects = []
 
@@ -153,6 +151,7 @@ class SelectContainer:
     def handle_event(self, event):
 
         if event.type == pygame.KEYDOWN:
+            prev = self.selected
             if event.key == K.LEFT and self.selected % self.columns != 0:
                 self.selected -= 1
             elif event.key == K.RIGHT and self.selected % self.columns != self.columns-1:
@@ -161,31 +160,31 @@ class SelectContainer:
                 self.selected -= self.columns
             elif event.key == K.DOWN and self.selected // self.columns != self.rows-1:
                 self.selected += self.columns
+            else:
+                return
+            self.objects[prev].unselect()
+
 
     def draw(self, surface):
 
-        print(self.selected)
+        # TODO: REMOVE
+        # example_rect = pygame.Rect(self.x, self.y, self.width, self.height)
+        # pygame.draw.rect(surface, Colors.WHITE, example_rect, 2)
 
         n = len(self.objects)
         logger.debug(n)
+
+        self.objects[self.selected].select()
 
         # records which elements of self.objects will create the first row and column, AND
         # which is the order of creation (either rows or columns)
         # depending on self.first (if "rows" or "columns")
 
-        if self.first == "rows":
-            first_row = self.objects[:self.rows]
-            first_column = self.objects[::self.rows]
+        first_row = self.objects[:self.columns]
+        first_column = self.objects[::self.columns]
 
-            first = self.rows
-            second = self.columns
-        
-        elif self.first == "columns":
-            first_row = self.objects[::self.rows]
-            first_column = self.objects[:self.rows]
-
-            first = self.columns
-            second = self.rows
+        first = self.rows
+        second = self.columns
 
         try:
 
@@ -194,8 +193,8 @@ class SelectContainer:
             # - sum of the dimension of all the objects in first_row or first_column
             # / columns OR rows + 1 (one more space after the last object)
 
-            padding_x = (self.width - sum(obj.get_width() for obj in first_row)) / (self.columns + 1) 
-            padding_y = (self.height - sum(obj.get_height() for obj in first_column)) / (self.rows + 1)
+            padding_x = (self.width - sum(obj.get_width() for obj in first_row)) / (self.columns - 1) 
+            padding_y = (self.height - sum(obj.get_height() for obj in first_column)) / (self.rows - 1)
 
         except Exception as e:
 
@@ -208,7 +207,8 @@ class SelectContainer:
         logging.info(f"Padding is {padding_x, padding_y}")
 
         # first x and y coordinates of the first object
-        curr_x, curr_y = self.x + padding_x, self.y + padding_y
+        # curr_x, curr_y = self.x + padding_x, self.y + padding_y
+        curr_x, curr_y = self.x, self.y
 
         i = 0
 
@@ -225,20 +225,31 @@ class SelectContainer:
                 logging.info(f"OBJECT: {i+1}, {curr_x, curr_y}")
 
                 # draw an object
-                obj.draw(surface, curr_x, curr_y)
+                obj.set_position(curr_x, curr_y)
+                obj.draw(surface)
 
                 # adjust coordinates for next object
-                if self.first == "rows":
-                    curr_x += obj.get_width() + padding_x
-                else:
-                    curr_y += obj.get_height() + padding_y
+                curr_x += obj.get_width() + padding_x
 
                 i += 1
 
             # adjust coordinates for next row/column
-            if self.first == "columns":
-                curr_x += obj.get_width() + padding_x
-                curr_y = self.y + padding_y
-            else:
-                curr_x = self.x + padding_x
-                curr_y += obj.get_height() + padding_y
+            # curr_x = self.x + padding_x
+            curr_y += obj.get_height() + padding_y
+            curr_x = self.x
+
+    def get_width(self):
+        return self.width
+
+class MapContainer(SelectContainer):
+
+    # extending SelectContainer for map selection screen
+
+    def __init__(self, center_x, center_y, width, height, rows, columns):
+        super().__init__(center_x, center_y, width, height, rows, columns)
+
+    def handle_event(self, event):
+        if event.type == pygame.KEYDOWN:
+            super().handle_event(event)
+            if event.key == pygame.K_RETURN:
+                return self.objects[self.selected].get_map()
