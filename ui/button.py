@@ -125,11 +125,13 @@ class PaddingButton:
 
         # show the text at the center of the button
         surface.blit(self.button_text, self.button_center)
+        
 
 
-class CarButton:
 
-    # Button object is used to change screen and open pop-up's
+class ColorButton:
+
+    # Button Class is modified with 2 new parameters to ease the color selections of button
 
     # initializing a Button object requires:
     #  - x (1) and y (2) coordinates
@@ -138,8 +140,10 @@ class CarButton:
     #  - text (5) to print inside the button
     #  - state (6) that will be set after pushing the button
     #  - screen manager (7) to pass through states
+    #  - colnor (8) visible color of button
+    #  - colhov (9) hovering color of button
 
-    def __init__(self, x, y, width, height, text, state, manager):
+    def __init__(self, x, y, width, height, text, state, manager, colnor, colhov):
 
         self.x = x - width/2
         self.y = y - height/2
@@ -153,6 +157,9 @@ class CarButton:
         self.state = state
 
         self.manager = manager
+
+        self.colnor = colnor
+        self.colhov = colhov
 
 
     def handle_event(self, event):
@@ -175,9 +182,9 @@ class CarButton:
 
         # hovering is managed underneath
         if self.rect.collidepoint(mouse_pos):
-            color = (254, 159, 46)    # hovering color
+            color = self.colhov    # hovering color
         else:
-            color = Colors.WHITE     # NOT hovering color
+            color = self.colnor     # NOT hovering color
 
         pygame.draw.rect(surface, color, self.rect, border_radius=8)
 
@@ -188,4 +195,3 @@ class CarButton:
 
         # show the text at the center of the button
         surface.blit(button_text, button_center)
-        
