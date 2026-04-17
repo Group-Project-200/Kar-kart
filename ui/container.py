@@ -147,6 +147,7 @@ class SelectContainer:
         # OBJECTS MUST HAVE WIDTH AND HEIGHT ATTRIBUTES
 
         self.objects.append(obj)
+        self.objects[self.selected].select()
 
     def handle_event(self, event):
 
@@ -163,6 +164,7 @@ class SelectContainer:
             else:
                 return
             self.objects[prev].unselect()
+            self.objects[self.selected].select()
 
 
     def draw(self, surface):
@@ -173,8 +175,6 @@ class SelectContainer:
 
         n = len(self.objects)
         logger.debug(n)
-
-        self.objects[self.selected].select()
 
         # records which elements of self.objects will create the first row and column, AND
         # which is the order of creation (either rows or columns)
@@ -247,9 +247,58 @@ class MapContainer(SelectContainer):
 
     def __init__(self, center_x, center_y, width, height, rows, columns):
         super().__init__(center_x, center_y, width, height, rows, columns)
+        self.back_button = None
+        self.back_selected = False
 
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
-            super().handle_event(event)
+
             if event.key == pygame.K_RETURN:
-                return self.objects[self.selected].get_map()
+
+                if not self.back_selected:
+
+                    # if press return and BACK not selected, we're getting a map
+
+                    return self.objects[self.selected].get_map()
+
+                elif self.back_selected:
+
+                    # if press return and BACK selected, we're pressing to go back to previous screen
+
+                    self.selected = 0
+                    self.back_selected = False
+                    self.back_button.unselect()
+                    self.objects[self.selected].select()
+
+                    # goes back to car screen
+                    self.back_button.handle_event(event)
+
+
+            elif event.key == K.DOWN and self.selected // self.columns == self.rows-1 and not self.back_selected:
+
+                # if we're in the last row, we click DOWN and go to the BACK button
+
+                self.back_selected = True
+                self.back_button.select()
+                self.objects[self.selected].unselect()
+
+            elif event.key == K.UP and self.back_selected:
+
+                # if we're in the back button, we click UP and go to the object in the bottom left corner
+
+                self.back_selected = False
+                self.back_button.unselect()
+                self.selected = self.columns*self.rows - self.columns
+                self.objects[self.selected].select()
+
+            elif not self.back_selected:
+
+                # if any other button pressed and BACK not selected, we go to the other events
+
+                super().handle_event(event)
+                
+    def add_back_button(self, button):
+
+        # add a button to go back to the previous screen
+
+        self.back_button = button

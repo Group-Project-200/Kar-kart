@@ -19,6 +19,7 @@ import pygame
 
 from ui.button import ColorButton
 from constants import ScreenPositions as sp
+from constants import Keys as K
 
 from render import build_render_pipeline, render_preview_debug_frame, RenderSetup
 import os
@@ -96,9 +97,9 @@ class CarScreen:
         self.back_btn.handle_event(event)
 
         if event.type == pygame.KEYDOWN: 
-            if event.key == pygame.K_RIGHT: 
+            if event.key == K.RIGHT: 
                 self.selected = min(len(self.car_slices) - 1, self.selected + 1) 
-            elif event.key == pygame.K_LEFT: 
+            elif event.key == K.LEFT: 
                 self.selected = max(0, self.selected - 1)
             elif event.key == pygame.K_RETURN:
                 self.manager.change_screen("map")
