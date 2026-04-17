@@ -3,6 +3,7 @@ import pygame, sys
 from screen_manager import ScreenManager
 from constants import ScreenPositions as sp
 from screens.start_screen import StartScreen
+from screens.race_selection_screen import RaceSelector
 from screens.car_selection_screen import CarScreen
 from screens.map_selection_screen import MapScreen
 from screens.gameplay_screen import GamePlay
@@ -43,6 +44,7 @@ def main():
     # add all the tracks to scrren manager
     # so that we upload them just once before the for-loop
     manager.add_screen("start", StartScreen(manager))
+    manager.add_screen("race_selector", RaceSelector(manager))   # ADD THIS
     manager.add_screen("car", CarScreen(manager))
     manager.add_screen("map", MapScreen(manager))
     manager.add_screen("game", GamePlay(manager, screen))
