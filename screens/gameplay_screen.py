@@ -13,7 +13,9 @@ from COLLISION_DETECTOR import CollisionDetector
 from file_manager import load_image_stack
 from Helper_functions import snap_degrees
 
-with open("map_data.json") as f:
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+with open(os.path.join(BASE_DIR, "map_data.json")) as f:
     data = json.load(f)
 
 
@@ -39,7 +41,7 @@ class RuntimeResources:
 DEFAULT_MAP_NAME = "map1"
 DEFAULT_CAR_NAME = "car_01"
 current_map_data= MapData()
-
+current_map_data.checkpoints = data["checkpoints"]
 
 def car_pos_scaling(x,y,map_dimensions):
     start_x = x - map_dimensions[0] / 2
@@ -145,6 +147,7 @@ class GamePlay:
         self.collision_check()
         self.current_car.physics = self.current_car.step_physics_with_controls(snap_step_degrees=self.config.rotation_snap_degrees)
         self.current_camera.update_camera_angle()
+        self.current_map.update_checkpoints()
 
 
     def draw(self, nothing):

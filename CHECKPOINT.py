@@ -7,4 +7,4 @@ class Checkpoint:
 
     def check(self, car_x, car_y):
         if self.rect.collidepoint(car_x, car_y):
-            self.passed = True
+            print("true")

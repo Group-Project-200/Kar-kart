@@ -6,10 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="d36f7f98-27ab-4aa2-8307-e72961a4b30d" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CAR.py" beforeDir="false" afterPath="$PROJECT_DIR$/CAR.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/CHECKPOINT.py" beforeDir="false" afterPath="$PROJECT_DIR$/CHECKPOINT.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Game engine.py" beforeDir="false" afterPath="$PROJECT_DIR$/GameEngine.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RENDERER.py" beforeDir="false" afterPath="$PROJECT_DIR$/RENDERER.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MAP.py" beforeDir="false" afterPath="$PROJECT_DIR$/MAP.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/screens/gameplay_screen.py" beforeDir="false" afterPath="$PROJECT_DIR$/screens/gameplay_screen.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />

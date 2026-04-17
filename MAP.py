@@ -1,6 +1,7 @@
 import math
 from dataclasses import dataclass
 from CAMERA import Camera
+from CHECKPOINT import Checkpoint
 import pygame
 
 @dataclass(frozen=True, slots=True)
@@ -31,6 +32,7 @@ def simplify_surface(surface, factor=1.5):
 
 class Map:
     def __init__(self,map_data : MapData,  camera: Camera, ):
+        self.checkpoints = None
         self.dimensions = None
         self.cache = None
         self.data = map_data
@@ -68,6 +70,10 @@ class Map:
             zoom= zoom,
             center_x=self.zoomed_size[0] // 2,
             center_y=self.zoomed_size[1] // 2, )
+        self.checkpoints = [
+            Checkpoint(cp["x"] - self.dimensions[0] / 2, cp["y"] - self.dimensions[1] / 2, cp["w"], cp["h"])
+            for cp in self.data.checkpoints
+        ]
 
     def get_coordinates(self):
         self.car_map_x = self.cache.center_x + int(self.car.car_x * self.cache.zoom)
@@ -104,3 +110,6 @@ class Map:
         rotated_rect = rotated_map.get_rect(center= center)
         display.blit(rotated_map, rotated_rect)
 
+    def update_checkpoints(self):
+        for cp in self.checkpoints:
+            cp.check(self.car.car_x, self.car.car_y)
