@@ -26,8 +26,8 @@ class ScreenDimensions:
 
     # contains constants in screen dimensions
 
-    WIDTH = 800
-    HEIGHT = 600
+    WIDTH = 1280
+    HEIGHT = 720
 
     CENTER_X = WIDTH/2
     CENTER_Y = HEIGHT/2
