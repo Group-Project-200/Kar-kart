@@ -31,6 +31,7 @@ def simplify_surface(surface, factor=1.5):
 
 class Map:
     def __init__(self,map_data : MapData,  camera: Camera, ):
+        self.dimensions = None
         self.cache = None
         self.data = map_data
         self.map_surface = self.data.layers[0]
@@ -47,6 +48,7 @@ class Map:
 
     def zoom_fixing(self, zoom : float, view_size: tuple[int, int]):
         map_width, map_height = self.map_surface.get_size()
+        self.dimensions = (map_width, map_height)
         self.zoomed_size = (
             max(1, int(map_width * zoom)),
             max(1, int(map_height * zoom)),

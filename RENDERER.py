@@ -1,6 +1,5 @@
 from MAP import Map
 from STACKER import Stacker
-from COLLISION_DETECTOR import CollisionDetector
 from Helper_functions import _clamp_zoom,clamp_scale,snap_degrees
 import pygame
 
@@ -20,7 +19,6 @@ class Renderer:
         self.needs_present_scale = self.render_size != self.screen.get_size()
         self.map.zoom_fixing(draw_map_zoom,self.render_size)
         self.stacker.scale_update(draw_car_scale)
-        self.collision_detector =CollisionDetector(self.map.masks, self.stacker.mask_cache)
 
     def build_pixel_surface_size(self, pixelation_scale: float)-> tuple[int, int]:
         scale = clamp_scale(pixelation_scale)

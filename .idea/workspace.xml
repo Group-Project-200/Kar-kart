@@ -7,6 +7,10 @@
     <list default="true" id="d36f7f98-27ab-4aa2-8307-e72961a4b30d" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/CAR.py" beforeDir="false" afterPath="$PROJECT_DIR$/CAR.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CHECKPOINT.py" beforeDir="false" afterPath="$PROJECT_DIR$/CHECKPOINT.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Game engine.py" beforeDir="false" afterPath="$PROJECT_DIR$/GameEngine.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/RENDERER.py" beforeDir="false" afterPath="$PROJECT_DIR$/RENDERER.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/screens/gameplay_screen.py" beforeDir="false" afterPath="$PROJECT_DIR$/screens/gameplay_screen.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -36,7 +40,10 @@
   </component>
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
+    &quot;Python.CAR.executor&quot;: &quot;Run&quot;,
+    &quot;Python.GameEngine.executor&quot;: &quot;Run&quot;,
     &quot;Python.MAP.executor&quot;: &quot;Run&quot;,
+    &quot;Python.gameplay_screen.executor&quot;: &quot;Run&quot;,
     &quot;Python.main.executor&quot;: &quot;Run&quot;,
     &quot;Python.testing.executor&quot;: &quot;Run&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,

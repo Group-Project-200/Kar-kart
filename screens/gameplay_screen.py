@@ -1,4 +1,5 @@
 import os
+import json
 
 from dataclasses import dataclass
 import pygame
@@ -8,9 +9,12 @@ from RENDERER import Renderer
 from CAR import Car
 from STACKER import Stacker
 from CAMERA import Camera
-
+from COLLISION_DETECTOR import CollisionDetector
 from file_manager import load_image_stack
+from Helper_functions import snap_degrees
 
+with open("map_data.json") as f:
+    data = json.load(f)
 
 
 
@@ -37,6 +41,12 @@ DEFAULT_CAR_NAME = "car_01"
 current_map_data= MapData()
 
 
+def car_pos_scaling(x,y,map_dimensions):
+    start_x = x - map_dimensions[0] / 2
+    start_y = y - map_dimensions[1] / 2
+    return start_x,start_y
+
+
 class GamePlay:
     def __init__(self, manager, screen):
         self.manager = manager
@@ -48,7 +58,8 @@ class GamePlay:
         self.current_map = Map(current_map_data, self.current_camera)
         self.car_stacker = Stacker(self.resources.car_stacks[DEFAULT_CAR_NAME], self.config.dirs)
         self.current_renderer = Renderer(self.current_map, self.car_stacker, screen)
-
+        self.collision_detector =CollisionDetector(self.current_map.masks, self.car_stacker.mask_cache)
+        self.current_car.physics.car_x, self.current_car.physics.car_y = car_pos_scaling(data["start"][0], data["start"][1], self.current_map.dimensions)
 
     def discover_car_folders(self, base_path: str = "resources") -> tuple[str, ...]:
         if not os.path.isdir(base_path):
@@ -72,7 +83,7 @@ class GamePlay:
 
     def load_runtime_resources(self) -> RuntimeResources:
         current_map_data.layers = [pygame.image.load(
-            os.path.join(r"C:\Users\mohna\Desktop\Uni\25-26\updated_gameloop\resources\maps\map1", f)).convert_alpha()
+            os.path.join(r"C:\Users\mohna\Desktop\Uni\25-26\updated_gameloop\resources\maps\map_2", f)).convert_alpha()
                                    for f in
                                    os.listdir(r"C:\Users\mohna\Desktop\Uni\25-26\updated_gameloop\resources\maps\map1")
                                    if f.endswith(".png")]
@@ -121,8 +132,17 @@ class GamePlay:
                     case pygame.K_SPACE:
                         controls.drift_input = False
 
+    def collision_check(self):
+        car_relative_rotation = self.current_car.physics.rotation - self.current_camera.angle
+        self.current_map.get_coordinates()
+        dir_idx = snap_degrees(car_relative_rotation, dirs=self.car_stacker.dirs)
+        offset = (self.current_map.car_map_x, self.current_map.car_map_y)
+        self.current_car.collision_results = self.collision_detector.check(dir_idx, offset)
+
+
+
     def update(self):
-        self.current_renderer.collision_check()
+        self.collision_check()
         self.current_car.physics = self.current_car.step_physics_with_controls(snap_step_degrees=self.config.rotation_snap_degrees)
         self.current_camera.update_camera_angle()
 
