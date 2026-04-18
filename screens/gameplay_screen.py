@@ -1,5 +1,6 @@
 import os
 import json
+import time
 
 from dataclasses import dataclass
 import pygame
@@ -40,8 +41,7 @@ class RuntimeResources:
 
 DEFAULT_MAP_NAME = "map1"
 DEFAULT_CAR_NAME = "car_01"
-current_map_data= MapData()
-current_map_data.checkpoints = data["checkpoints"]
+
 
 def car_pos_scaling(x,y,map_dimensions):
     start_x = x - map_dimensions[0] / 2
@@ -53,17 +53,20 @@ class GamePlay:
     def __init__(self, manager, screen):
         self.manager = manager
         self.config = GameConfig()
+        self.current_map_data = MapData()
         self.resources = self.load_runtime_resources()
+        self.current_map_data.checkpoints = data["checkpoints"]
 
         self.current_car = Car()
         self.current_camera = Camera(self.current_car)
-        self.current_map = Map(current_map_data, self.current_camera)
+        self.current_map = Map(self.current_map_data, self.current_camera)
         self.car_stacker = Stacker(self.resources.car_stacks[DEFAULT_CAR_NAME], self.config.dirs)
         self.current_renderer = Renderer(self.current_map, self.car_stacker, screen)
         self.collision_detector =CollisionDetector(self.current_map.masks, self.car_stacker.mask_cache)
         self.current_car.physics.car_x, self.current_car.physics.car_y = car_pos_scaling(data["start"][0], data["start"][1], self.current_map.dimensions)
 
-    def discover_car_folders(self, base_path: str = "resources") -> tuple[str, ...]:
+    def discover_car_folders(self, base_path: str = "resources/render") -> tuple[str, ...]:
+
         if not os.path.isdir(base_path):
             return ()
 
@@ -84,18 +87,22 @@ class GamePlay:
         return 0
 
     def load_runtime_resources(self) -> RuntimeResources:
-        current_map_data.layers = [pygame.image.load(
+        self.current_map_data.layers = [pygame.image.load(
             os.path.join(r"C:\Users\mohna\Desktop\Uni\25-26\updated_gameloop\resources\maps\map_2", f)).convert_alpha()
                                    for f in
-                                   os.listdir(r"C:\Users\mohna\Desktop\Uni\25-26\updated_gameloop\resources\maps\map1")
-                                   if f.endswith(".png")]
+                                   os.listdir(r"C:\Users\mohna\Desktop\Uni\25-26\updated_gameloop\resources\maps\map_2")
+                                   if f.endswith(".png") and not f.endswith("cover.png")]
+
+
+
+
         car_folders = self.discover_car_folders()
         if not car_folders:
             raise RuntimeError("No car sprite folders found in resources (expected names like car_01).")
 
         car_stacks = {folder_name: load_image_stack(folder_name) for folder_name in car_folders}
         return RuntimeResources(
-            map_surface=current_map_data.layers,
+            map_surface=self.current_map_data.layers,
             car_folders=car_folders,
             car_stacks=car_stacks,
         )

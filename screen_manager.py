@@ -1,6 +1,5 @@
 # screen_manager.py - managing screens throughout the program
-
-
+#mohamed- removed the last function that returns self.data because its just calling self.manager.app_data
 
 class ScreenManager:
     def __init__(self, app_data):
@@ -43,8 +42,3 @@ class ScreenManager:
 
         self.running = not self.running
 
-    def get_app_data(self):
-
-        # get app data
-
-        return self.app_data

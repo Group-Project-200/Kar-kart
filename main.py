@@ -3,6 +3,7 @@ import pygame, sys
 from screen_manager import ScreenManager
 from constants import ScreenPositions as sp
 from screens.start_screen import StartScreen
+from screens.race_selection_screen import RaceSelector
 from screens.car_selection_screen import CarScreen
 from screens.map_selection_screen import MapScreen
 from screens.gameplay_screen import GamePlay
@@ -21,13 +22,11 @@ clock = pygame.time.Clock()
 screen = pygame.display.set_mode((sp.WIDTH, sp.HEIGHT))    # please if you change the screen add a comment to tell us
 
 
-
 def main():
 
     # implemented a whole new system where there is:
     #  - a ScreenManager object, that records all screens in the program in a dictionary
     # that was done because importing a screen in multiple screens raises an ImportError
-
 
     # created a file per screen:
     # 1. implemented proper OOP programming practices
@@ -37,12 +36,13 @@ def main():
     # READ ScreenManager for the new functions i created (implementing encapsulation)
     # they do exactly the same as the original code but it just follows better practices
 
+    app_data =AppData()
+    manager = ScreenManager(app_data)
 
-    manager = ScreenManager(AppData())
-
-    # add all the tracks to scrren manager
+    # add all the tracks to screen manager
     # so that we upload them just once before the for-loop
     manager.add_screen("start", StartScreen(manager))
+    manager.add_screen("race_selector", RaceSelector(manager))   # ADD THIS
     manager.add_screen("car", CarScreen(manager))
     manager.add_screen("map", MapScreen(manager))
     manager.add_screen("game", GamePlay(manager, screen))

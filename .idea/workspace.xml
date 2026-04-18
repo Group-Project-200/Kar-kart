@@ -6,9 +6,52 @@
   <component name="ChangeListManager">
     <list default="true" id="d36f7f98-27ab-4aa2-8307-e72961a4b30d" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CHECKPOINT.py" beforeDir="false" afterPath="$PROJECT_DIR$/CHECKPOINT.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/MAP.py" beforeDir="false" afterPath="$PROJECT_DIR$/MAP.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/RENDERER.py" beforeDir="false" afterPath="$PROJECT_DIR$/RENDERER.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app_data.py" beforeDir="false" afterPath="$PROJECT_DIR$/app_data.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/constants.py" beforeDir="false" afterPath="$PROJECT_DIR$/constants.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/file_manager.py" beforeDir="false" afterPath="$PROJECT_DIR$/file_manager.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/car_01/img_0.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/car_01/img_1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/car_01/img_2.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/car_01/img_3.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/car_01/img_4.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/car_01/img_5.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/car_01/img_6.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/car_02/img_0.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/car_02/img_1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/car_02/img_2.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/car_02/img_3.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/car_02/img_4.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/car_02/img_5.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/car_02/img_6.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/car_03/img_0.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/car_03/img_1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/car_03/img_2.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/car_03/img_3.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/car_03/img_4.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/car_03/img_5.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/car_03/img_6.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/car_04/img_0.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/car_04/img_1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/car_04/img_2.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/car_04/img_3.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/car_04/img_4.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/maps/map1/0.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/maps/map1/1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/maps/map_01.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/maps/map_02.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/maps/map_03.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/screen_manager.py" beforeDir="false" afterPath="$PROJECT_DIR$/screen_manager.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/screens/car_selection_screen.py" beforeDir="false" afterPath="$PROJECT_DIR$/screens/car_selection_screen.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/screens/gameplay_screen.py" beforeDir="false" afterPath="$PROJECT_DIR$/screens/gameplay_screen.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/screens/map_selection_screen.py" beforeDir="false" afterPath="$PROJECT_DIR$/screens/map_selection_screen.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/screens/start_screen.py" beforeDir="false" afterPath="$PROJECT_DIR$/screens/start_screen.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ui/button.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/button.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ui/card.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/card.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ui/container.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/container.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ui/track.py" beforeDir="false" afterPath="$PROJECT_DIR$/ui/track.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -41,6 +84,7 @@
     &quot;Python.CAR.executor&quot;: &quot;Run&quot;,
     &quot;Python.GameEngine.executor&quot;: &quot;Run&quot;,
     &quot;Python.MAP.executor&quot;: &quot;Run&quot;,
+    &quot;Python.app_data.executor&quot;: &quot;Run&quot;,
     &quot;Python.gameplay_screen.executor&quot;: &quot;Run&quot;,
     &quot;Python.main.executor&quot;: &quot;Run&quot;,
     &quot;Python.testing.executor&quot;: &quot;Run&quot;,
@@ -48,7 +92,7 @@
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/mohna/Desktop/Uni/25-26/updated_gameloop&quot;
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/mohna/Downloads/Kar-kart-master&quot;
   }
 }</component>
   <component name="SharedIndexes">
@@ -68,5 +112,16 @@
       <updated>1775573777343</updated>
     </task>
     <servers />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/ui/track.py</url>
+          <line>2</line>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

@@ -48,6 +48,7 @@ class Map:
         self.car_map_x = None
         self.car_map_y = None
 
+
     def zoom_fixing(self, zoom : float, view_size: tuple[int, int]):
         map_width, map_height = self.map_surface.get_size()
         self.dimensions = (map_width, map_height)
@@ -80,9 +81,9 @@ class Map:
         self.car_map_y = self.cache.center_y + int(self.car.car_y * self.cache.zoom)
 
 
-    # map class
+
     def draw_map(self, display, center, render_size):
-  
+
         self.car_map_x = self.cache.center_x + int(self.car.car_x * self.cache.zoom)
         self.car_map_y = self.cache.center_y + int(self.car.car_y * self.cache.zoom)
 
@@ -90,12 +91,6 @@ class Map:
         view_y = self.car_map_y - center[1]
         view_width, view_height = render_size
         display.blit(self.cache.surface, (0, 0), area=(view_x, view_y, view_width, view_height))
-        for mask in self.masks:
-            mask_surface = mask.to_surface(
-                setcolor=(255, 33, 222, 128),
-                unsetcolor=(0, 0, 0, 0)
-            )
-            display.blit(mask_surface, (0, 0), area=(view_x, view_y, view_width, view_height))
 
 
 
