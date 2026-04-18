@@ -33,11 +33,6 @@ class GameConfig:
     )
     rotation_snap_degrees = 360.0 / dirs
 
-@dataclass(frozen=True, slots=True)
-class RuntimeResources:
-    car_folders: tuple[str, ...]
-    car_stacks: dict[str, list[pygame.Surface]]
-
 
 def car_pos_scaling(x,y,map_dimensions):
     start_x = x - map_dimensions[0] / 2
@@ -51,6 +46,7 @@ class GamePlay:
         self.config = GameConfig()
         self.current_map_data = MapData()
         self.current_map_data.checkpoints = data[self.manager.app_data.current_map.name]["checkpoints"]
+        self.current_map_data.start_checkpoint = data[self.manager.app_data.current_map.name]["start_checkpoint"]
         self.current_map_data.layers = self.manager.app_data.return_map_layers()
         self.countdown = StartSequence(self.manager.screen)
 
@@ -127,5 +123,6 @@ class GamePlay:
             pygame.display.flip()
         self.countdown.complete = True
 
+        print(self.current_map.lap_times)
 
         pygame.display.flip()

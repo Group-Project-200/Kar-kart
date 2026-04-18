@@ -72,6 +72,10 @@ while running:
             mode = "start placement"
             placing = False
 
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_e:
+            mode = "start_checkpoint"
+            placing = False
+
         if event.type == pygame.MOUSEMOTION and dragging:
             dx = event.pos[0] - last_mouse_x
             dy = event.pos[1] - last_mouse_y
@@ -94,6 +98,9 @@ while running:
                 elif mode == "start placement":
                     data[Map_Name]["start_box"] = (x, y, w, h)
                     data[Map_Name]["start"] = start_pos(x, y, w, h)
+                elif mode == "start_checkpoint":
+                    data[Map_Name]["start_checkpoint"] = (x, y, w, h)
+
             placing = False
 
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -112,6 +119,12 @@ while running:
         x, y, w, h = data[Map_Name]["start_box"]
         pygame.draw.rect(screen, (0, 0, 255), (x - camera_x, y - camera_y, w, h))
 
+    if "start_checkpoint" in data[Map_Name]:
+        x, y, w, h = data[Map_Name]["start_checkpoint"]
+        pygame.draw.rect(screen, (0, 255, 0), (x - camera_x, y - camera_y, w, h))
+
+
+
     if placing:
         mx, my = pygame.mouse.get_pos()
         end = (mx + camera_x, my + camera_y)
@@ -119,7 +132,7 @@ while running:
         pygame.draw.rect(screen, (255, 255, 0),
                          (x - camera_x, y - camera_y, w, h), 2)
 
-    label = font.render(f"MODE: {mode if mode else '(press C or S)'}", True, (255, 255, 255))
+    label = font.render(f"MODE: {mode if mode else '(press C or S or E)'}", True, (255, 255, 255))
     screen.blit(label, (10, 10))
 
     pygame.display.flip()

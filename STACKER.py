@@ -20,6 +20,7 @@ class Stacker:
 
 
     def scale_images(self):
+        self.scaled_img = []
         if self.scale == 1.0:
             self.scaled_img = [_convert_for_display(img) for img in self.images]
             return

@@ -6,5 +6,4 @@ class Checkpoint:
         self.passed = False
 
     def check(self, car_x, car_y):
-        if self.rect.collidepoint(car_x, car_y):
-            print("true")
+        return self.rect.collidepoint(car_x, car_y)
