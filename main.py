@@ -37,7 +37,7 @@ def main():
     # they do exactly the same as the original code but it just follows better practices
 
     app_data = AppData()
-    manager = ScreenManager(app_data)
+    manager = ScreenManager(app_data, screen)
 
     # add all the tracks to screen manager
     # so that we upload them just once before the for-loop
@@ -45,7 +45,7 @@ def main():
     manager.add_screen("race_selector", RaceSelector(manager))   # ADD THIS
     manager.add_screen("car", CarScreen(manager))
     manager.add_screen("map", MapScreen(manager))
-    manager.add_screen("game", GamePlay(manager, screen))
+    manager.add_screen("game", GamePlay(manager))
 
     manager.change_screen("start")
 

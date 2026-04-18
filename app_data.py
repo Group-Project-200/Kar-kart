@@ -15,9 +15,38 @@ def find_project_root(marker="main.py"):
 BASE_DIR = find_project_root()
 
 
+def load_all_car_stacks() -> dict[str, list[pygame.Surface]]:
+    base_path = os.path.join(BASE_DIR, "resources", "render")
+
+    if not os.path.isdir(base_path):
+        raise RuntimeError(f"Car folder not found: {base_path}")
+
+    car_stacks = {}
+    for name in sorted(os.listdir(base_path)):
+        if not name.startswith("car_"):
+            continue
+        folder = os.path.join(base_path, name)
+        if not os.path.isdir(folder):
+            continue
+
+        pngs = sorted(f for f in os.listdir(folder) if f.lower().endswith(".png"))
+        if not pngs:
+            continue
+
+        car_stacks[name] = [
+            pygame.image.load(os.path.join(folder, f)).convert_alpha()
+            for f in pngs
+        ]
+
+    if not car_stacks:
+        raise RuntimeError(f"No car sprites found in {base_path}")
+
+    return car_stacks
+
 
 class AppData:
     def __init__(self):
+
         #this part gets the names of all the maps in the maps folder
         maps_dir = os.path.join(BASE_DIR, "resources", "maps")
         folders = sorted([
@@ -26,6 +55,7 @@ class AppData:
         ])
 
         self.tracks = []
+        self.cars = load_all_car_stacks()
 
         #this part creates tracks with their cover image, names, and file path
         for name in folders:
@@ -47,9 +77,13 @@ class AppData:
 
 
         # current map and car stored here
-        # TODO: DEFAULT MUST BE None
+        # TODO: @melek pass the current car's name where its like the one pre set
+        # Antonio check your screen file
         self.current_map: Track | None = self.tracks[3]
-        self.current_car = None
+        self.current_car_name: str | None = "car_01"
+        self.current_car = self.cars[self.current_car_name]
+
+
 
     def add_track(self, track):
 
@@ -57,23 +91,7 @@ class AppData:
 
         self.tracks.append(track)
 
-    def get_tracks(self):
 
-        # get the list of tracks
-
-        return self.tracks
-
-    def set_current_map(self, mapObj):
-
-        # set current map
-        
-        self.current_map = mapObj
-
-    def get_current_map(self):
-
-        # get current map
-
-        return self.current_map
     def return_map_layers(self):
         if self.current_map:
             path= self.current_map.path

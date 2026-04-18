@@ -5,12 +5,12 @@ from app_data import AppData
 
 
 class ScreenManager:
-    def __init__(self, app_data : AppData):
+    def __init__(self, app_data : AppData, screen):
 
         self.running= True
         self.current = None
         self.app_data = app_data
-
+        self.screen = screen
         self.screens = {}
 
         # add all the screens in the game

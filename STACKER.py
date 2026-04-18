@@ -1,7 +1,5 @@
 import pygame
 
-
-
 def _convert_for_display(surface: pygame.Surface) -> pygame.Surface:
     if pygame.display.get_surface() is None:
         return surface

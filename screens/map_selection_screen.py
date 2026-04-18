@@ -22,7 +22,7 @@ class MapScreen:
 
         app_data = self.manager.app_data
 
-        for track in app_data.get_tracks():
+        for track in app_data.tracks:
 
             # set dimensions of the track in advance
             track.set_dimensions(100, 80)
@@ -37,11 +37,12 @@ class MapScreen:
 
             # get map to show when objects are pressed
             curr_map = self.container1.handle_event(event)
-
+            #FIXME this is always none, after this gets defined correctly then make the current_map in app_data none
 
             if curr_map:
-                #i changed the line commented to the other line because its a code smell and the function itself isnt nesessary you just need to
+                # NOTE: i changed the line commented to the other line because its a code smell and the function itself isnt nesessary you just need to
                 #do self.manager.app_data and it gives you the thing you want
+
                 #self.manager.get_app_data().set_current_map(curr_map)
                 self.manager.app_data.current_map = curr_map
 
