@@ -36,7 +36,7 @@ def main():
     # READ ScreenManager for the new functions i created (implementing encapsulation)
     # they do exactly the same as the original code but it just follows better practices
 
-    app_data =AppData()
+    app_data = AppData()
     manager = ScreenManager(app_data)
 
     # add all the tracks to screen manager
@@ -50,9 +50,9 @@ def main():
     manager.change_screen("start")
 
 
-    while manager.is_running():
+    while manager.running:
 
-        current = manager.get_screen()
+        current = manager.current
 
         for event in pygame.event.get():
 

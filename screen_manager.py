@@ -1,8 +1,11 @@
 # screen_manager.py - managing screens throughout the program
-#mohamed- removed the last function that returns self.data because its just calling self.manager.app_data
+#mohamed- removed 3 function that returns self.data or self.current or self. running because its just calling self.manager.app_data
+from app_data import AppData
+
+
 
 class ScreenManager:
-    def __init__(self, app_data):
+    def __init__(self, app_data : AppData):
 
         self.running= True
         self.current = None
@@ -11,12 +14,6 @@ class ScreenManager:
         self.screens = {}
 
         # add all the screens in the game
-
-    def get_screen(self):
-
-        # get current screen
-
-        return self.current
 
     def change_screen(self, label):
 
@@ -30,11 +27,6 @@ class ScreenManager:
 
         self.screens[label] = screen
 
-    def is_running(self):
-
-        # check if program is still running
-
-        return self.running
 
     def toggle_running(self):
 

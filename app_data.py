@@ -1,5 +1,6 @@
 # app_data.py
 import os
+import pygame
 from ui.track import Track
 from pathlib import Path
 
@@ -34,20 +35,20 @@ class AppData:
 
 
 
-        self.add_track(Track("./resources/pictures/australia_flag.png", "Australia"))
-        self.add_track(Track("./resources/pictures/japan_flag.png", "Japan"))
-        self.add_track(Track("./resources/pictures/china_flag.png", "China"))
-        self.add_track(Track("./resources/pictures/singapore_flag.png", "Singapore"))
-        self.add_track(Track("./resources/pictures/usa_flag.png", "USA"))
-        self.add_track(Track("./resources/pictures/canada_flag.png", "Canada"))
-        self.add_track(Track("./resources/pictures/mexico_flag.png", "Mexico"))
-        self.add_track(Track("./resources/pictures/brazil_flag.png", "Brazil"))
+        self.add_track(Track("./resources/pictures/australia_flag.png", "Australia",None))
+        self.add_track(Track("./resources/pictures/japan_flag.png", "Japan",None))
+        self.add_track(Track("./resources/pictures/china_flag.png", "China",None))
+        self.add_track(Track("./resources/pictures/singapore_flag.png", "Singapore",None))
+        self.add_track(Track("./resources/pictures/usa_flag.png", "USA",None))
+        self.add_track(Track("./resources/pictures/canada_flag.png", "Canada",None))
+        self.add_track(Track("./resources/pictures/mexico_flag.png", "Mexico",None))
+        self.add_track(Track("./resources/pictures/brazil_flag.png", "Brazil",None))
 
 
 
         # current map and car stored here
         # TODO: DEFAULT MUST BE None
-        self.current_map = None
+        self.current_map: Track | None = self.tracks[3]
         self.current_car = None
 
     def add_track(self, track):
@@ -73,3 +74,13 @@ class AppData:
         # get current map
 
         return self.current_map
+    def return_map_layers(self):
+        if self.current_map:
+            path= self.current_map.path
+            layers =[pygame.image.load(
+                os.path.join(path,
+                             f)).convert_alpha()
+             for f in
+             os.listdir(path)
+             if f.endswith(".png") and not f.endswith("cover.png")]
+            return layers

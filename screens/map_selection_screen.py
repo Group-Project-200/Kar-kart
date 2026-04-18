@@ -38,10 +38,13 @@ class MapScreen:
             # get map to show when objects are pressed
             curr_map = self.container1.handle_event(event)
 
+
             if curr_map:
                 #i changed the line commented to the other line because its a code smell and the function itself isnt nesessary you just need to
                 #do self.manager.app_data and it gives you the thing you want
                 #self.manager.get_app_data().set_current_map(curr_map)
+                self.manager.app_data.current_map = curr_map
+
                 self.manager.change_screen("game")
         # to change to another screen do take this line
         # self.button1.handle_event(event)
