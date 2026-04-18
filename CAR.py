@@ -1,6 +1,5 @@
 from Helper_functions import _clamp, _move_toward, _blend_toward, _forward_vector, _snap_angle
 from dataclasses import dataclass, field
-from COLLISION_DETECTOR import CollisionDetector
 
 
 def _update_steer_hold(
@@ -178,8 +177,8 @@ class PhysicsState:
     speed: float = 0.0
     velocity_x: float = 0.0
     velocity_y: float = 0.0
-    car_x: float = -100.0
-    car_y: float = -50.0
+    car_x: float = 0.0
+    car_y: float = 0.0
 
     # Drift / boost runtime.
     drift_direction: int = 0
@@ -206,6 +205,8 @@ class ControlState:
 
 class Car:
     def __init__(self):
+        self.last_safe_y2 = None
+        self.last_safe_x2 = None
         self.last_safe_y = None
         self.last_safe_x = None
         self.handling = CarHandling()
@@ -474,16 +475,12 @@ class Car:
             slide_factor: float | None = None,
     )-> PhysicsState:
 
-        self.last_safe_x = self.physics.car_x
-        self.last_safe_y = self.physics.car_y
-
-        print(self.collision_results, self.last_safe_x, self.last_safe_y )
         if self.collision_results:
-            self.physics.car_x = self.last_safe_x
-            self.physics.car_y = self.last_safe_y
-            self.physics.velocity_x *= -0.6
-            self.physics.velocity_y *= -0.6
-            self.physics.speed *= -0.6
+            self.physics.car_x = self.last_safe_x2
+            self.physics.car_y = self.last_safe_y2
+            self.physics.velocity_x *= -0.5
+            self.physics.velocity_y *= -0.5
+            self.physics.speed *= -0.5
             return self.physics
 
             # Frame order: drift self -> steering -> rotation -> speed -> velocity -> position.
@@ -550,9 +547,12 @@ class Car:
             drift_skew_degrees=self.physics.drift_skew_degrees,
         )
 
+        self.last_safe_x2 = self.last_safe_x
+        self.last_safe_y2 = self.last_safe_y
+        self.last_safe_x = self.physics.car_x
+        self.last_safe_y = self.physics.car_y
 
 
-        print("safe:", self.last_safe_x, self.last_safe_y)
         self.physics.car_x, self.physics.car_y = update_position(
             self.physics.car_x,
             self.physics.car_y,

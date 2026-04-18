@@ -2,12 +2,12 @@
 
 
 class ScreenManager:
-    def __init__(self, app_data):
+    def __init__(self, app_data, screen_display):
 
         self.running= True
         self.current = None
         self.app_data = app_data
-
+        self.screen_display = screen_display
         self.screens = {}
 
         # add all the screens in the game

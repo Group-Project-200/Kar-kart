@@ -1,6 +1,7 @@
 import math
 from dataclasses import dataclass
 from CAMERA import Camera
+from CHECKPOINT import Checkpoint
 import pygame
 
 @dataclass(frozen=True, slots=True)
@@ -31,6 +32,8 @@ def simplify_surface(surface, factor=1.5):
 
 class Map:
     def __init__(self,map_data : MapData,  camera: Camera, ):
+        self.checkpoints = None
+        self.dimensions = None
         self.cache = None
         self.data = map_data
         self.map_surface = self.data.layers[0]
@@ -45,8 +48,10 @@ class Map:
         self.car_map_x = None
         self.car_map_y = None
 
+
     def zoom_fixing(self, zoom : float, view_size: tuple[int, int]):
         map_width, map_height = self.map_surface.get_size()
+        self.dimensions = (map_width, map_height)
         self.zoomed_size = (
             max(1, int(map_width * zoom)),
             max(1, int(map_height * zoom)),
@@ -66,15 +71,19 @@ class Map:
             zoom= zoom,
             center_x=self.zoomed_size[0] // 2,
             center_y=self.zoomed_size[1] // 2, )
+        self.checkpoints = [
+            Checkpoint(cp["x"] - self.dimensions[0] / 2, cp["y"] - self.dimensions[1] / 2, cp["w"], cp["h"])
+            for cp in self.data.checkpoints
+        ]
 
     def get_coordinates(self):
         self.car_map_x = self.cache.center_x + int(self.car.car_x * self.cache.zoom)
         self.car_map_y = self.cache.center_y + int(self.car.car_y * self.cache.zoom)
 
 
-    # map class
+
     def draw_map(self, display, center, render_size):
-  
+
         self.car_map_x = self.cache.center_x + int(self.car.car_x * self.cache.zoom)
         self.car_map_y = self.cache.center_y + int(self.car.car_y * self.cache.zoom)
 
@@ -82,12 +91,6 @@ class Map:
         view_y = self.car_map_y - center[1]
         view_width, view_height = render_size
         display.blit(self.cache.surface, (0, 0), area=(view_x, view_y, view_width, view_height))
-        for mask in self.masks:
-            mask_surface = mask.to_surface(
-                setcolor=(255, 33, 222, 128),
-                unsetcolor=(0, 0, 0, 0)
-            )
-            display.blit(mask_surface, (0, 0), area=(view_x, view_y, view_width, view_height))
 
 
 
@@ -102,3 +105,6 @@ class Map:
         rotated_rect = rotated_map.get_rect(center= center)
         display.blit(rotated_map, rotated_rect)
 
+    def update_checkpoints(self):
+        for cp in self.checkpoints:
+            cp.check(self.car.car_x, self.car.car_y)

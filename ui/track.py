@@ -10,14 +10,14 @@ class Track:
 
     # arguments:
     #  - picture (1) of the track
-    #  - name (2) of the the track
+    #  - name (2) of  the track
     #  - width (3) and height (4) of the picture
 
-    def __init__(self, pic, name, corr_map=None):
+    def __init__(self, pic, name, path: str | None, corr_map=None):
 
         self.image = pygame.image.load(pic).convert_alpha()
         self.name = name
-
+        self.path = path
         self.map = corr_map
 
         self.width = 0

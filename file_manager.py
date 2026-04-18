@@ -2,7 +2,7 @@ import os
 import pygame
 
 
-DEFAULT_BASE_PATH = "resources"
+DEFAULT_BASE_PATH = "resources/render"
 PNG_EXT = ".png"
 
 
