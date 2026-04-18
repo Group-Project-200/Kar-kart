@@ -116,11 +116,12 @@ class GamePlay:
         self.current_renderer.render_frame(self.config.gameplay_stack_spread)
         #code for start_time countdown
         while self.countdown.seconds > 0:
-            time.sleep(1.5)
-            self.countdown.seconds -= 1
             self.current_renderer.render_frame(self.config.gameplay_stack_spread)
             self.countdown.write()
             pygame.display.flip()
+            time.sleep(1)
+            self.countdown.seconds -= 1
+
         self.countdown.complete = True
 
         print(self.current_map.lap_times)

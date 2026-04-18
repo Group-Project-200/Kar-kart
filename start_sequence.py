@@ -4,7 +4,7 @@ import pygame
 
 class StartSequence:
     def __init__(self, screen):
-        self.seconds = 6
+        self.seconds = 5
         self.screen= screen
         self.screen_dimensions = screen.get_size()
         self.font= pygame.font.Font(None, 400)
