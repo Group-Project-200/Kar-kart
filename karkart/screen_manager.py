@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pygame
 
@@ -15,7 +15,7 @@ class ScreenManager:
 
     def __init__(self, app_data: "AppData", screen_display: pygame.Surface) -> None:
         self.running: bool = True
-        self.current = None
+        self.current: Any = None
         self.app_data = app_data
         self.screen_display = screen_display
         self.screens: dict[str, object] = {}

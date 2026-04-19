@@ -48,6 +48,8 @@ def main() -> None:
             current.handle_event(event)
             if event.type == pygame.QUIT:
                 manager.toggle_running()
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                manager.toggle_running()
 
         current.update()
         current.draw(screen)

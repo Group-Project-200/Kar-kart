@@ -60,6 +60,16 @@ def _update_position(
     return car_x + velocity_x, car_y + velocity_y
 
 
+def _update_hop(physics: "PhysicsState", handling: "CarHandling") -> None:
+    """Apply one frame of hop physics (gravity + landing clamp)."""
+    if physics.car_z <= 0.0 and physics.velocity_z <= 0.0:
+        return
+    physics.velocity_z += handling.hop_gravity
+    physics.car_z = max(0.0, physics.car_z + physics.velocity_z)
+    if physics.car_z == 0.0:
+        physics.velocity_z = 0.0
+
+
 # --------------------------------------------------------------------------- #
 # Immutable tuning bundles                                                    #
 # --------------------------------------------------------------------------- #
@@ -80,13 +90,13 @@ class CarHandling:
     # Rotation response (yaw): initial bite -> plateau -> late growth.
     plateau_acceleration: float = 0.4
     turn_damping: float = 0.2
-    max_turn_rate: float = 3.0
+    max_turn_rate: float = 2.3
     turn_stop_epsilon: float = 0.05
     initial_turn_acceleration: float = 0.2
     late_turn_acceleration: float = 0.15
     initial_phase_frames: int = 4
     plateau_phase_frames: int = 7
-    plateau_turn_rate: float = 2.0
+    plateau_turn_rate: float = 1.6
     turn_direction_change_damping: float = 0.35
 
     # Speed and steering response.
@@ -103,7 +113,12 @@ class CarHandling:
     # Coasting "speed hold": keeps momentum at medium speed unless turning sharply.
     speed_hold_floor_value: float = 1.5       # Held minimum speed while hold is active.
     speed_hold_activation_min_value: float = 1.3  # Min speed required to activate hold.
-    hold_cancel_turn_rate: float = 3.0         # Turning faster than this disables hold.
+    hold_cancel_turn_rate: float = 2.3         # Turning faster than this disables hold.
+
+    # Drift hop (visual jump on drift initiation).
+    hop_velocity: float = 0.35      # Initial upward velocity when hop starts.
+    hop_gravity: float = -0.045     # Per-frame downward pull.
+    hop_pixel_scale: float = 12.0   # Screen pixels of lift per car_z unit at render res.
 
     # Overspeed braking curve (extra deceleration when above max forward speed).
     overspeed_near_threshold: float = 0.75
@@ -211,6 +226,10 @@ class PhysicsState:
     car_x: float = 0.0
     car_y: float = 0.0
 
+    # Hop (visual jump on drift start).
+    car_z: float = 0.0       # Height above ground (render units).
+    velocity_z: float = 0.0  # Vertical velocity (positive = up).
+
     # Drift / boost runtime.
     drift_direction: int = 0
     drift_skew_degrees: float = 0.0
@@ -291,6 +310,7 @@ class Car:
         self.physics.drift_direction = drift_direction
         self.physics.drift_active = True
         self.physics.drift_charge_frames = 0
+        self.physics.velocity_z = self.handling.hop_velocity
 
     def _set_boost(self, *, tier: BoostTier) -> None:
         self.physics.boost_frames = tier.duration_frames
@@ -615,6 +635,8 @@ class Car:
             self.physics.car_x, self.physics.car_y,
             self.physics.velocity_x, self.physics.velocity_y,
         )
+
+        _update_hop(self.physics, self.handling)
 
         return self.physics
 

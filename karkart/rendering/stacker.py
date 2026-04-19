@@ -15,6 +15,8 @@ def _convert_for_display(surface: pygame.Surface) -> pygame.Surface:
 class Stacker:
     """Caches rotated copies of a car sprite stack for cheap per-frame blits."""
 
+    _COLLISION_SCALE: float = 0.70  # Collision hitbox as a fraction of the visual size.
+
     def __init__(self, image_stack: list[pygame.Surface], directions: int) -> None:
         self.images = image_stack              # Original unscaled images.
         self.scaled_img: list[pygame.Surface] = []
@@ -47,17 +49,32 @@ class Stacker:
             [_convert_for_display(pygame.transform.rotate(img, d * step_deg)) for img in self.scaled_img]
             for d in range(self.dirs)
         ]
-        # One mask per heading, taken from the bottom slice (the car's footprint).
-        self.mask_cache = [
-            pygame.mask.from_surface(frame_list[0]) for frame_list in self.rotated_cache
-        ]
+        # Build collision masks from a smaller version of the bottom frame so the
+        # hitbox is tighter than the visual footprint.
+        self.mask_cache = []
+        base = self.scaled_img[0]
+        coll_w = max(1, int(base.get_width() * self._COLLISION_SCALE))
+        coll_h = max(1, int(base.get_height() * self._COLLISION_SCALE))
+        small_base = pygame.transform.scale(base, (coll_w, coll_h))
+        for d in range(self.dirs):
+            rotated_small = pygame.transform.rotate(small_base, d * step_deg)
+            self.mask_cache.append(pygame.mask.from_surface(rotated_small))
 
     def render_stack(
-        self, display: pygame.Surface, dir_idx: int, pos: tuple[int, int], spread: float,
+        self,
+        display: pygame.Surface,
+        dir_idx: int,
+        pos: tuple[int, int],
+        spread: float,
+        hop_offset_y: int = 0,
     ) -> None:
-        """Blit the rotated stack centred at *pos* with a *spread*-pixel vertical offset."""
+        """Blit the rotated stack centred at *pos* with a *spread*-pixel vertical offset.
+
+        *hop_offset_y* shifts the stack upward on screen to simulate a hop.
+        """
         assert self.rotated_cache is not None, "Call scale_update() first"
         x, y = pos
+        y -= hop_offset_y
         for i, img in enumerate(self.rotated_cache[dir_idx]):
             display.blit(
                 img, (x - img.get_width() // 2, y - img.get_height() // 2 + i * spread),

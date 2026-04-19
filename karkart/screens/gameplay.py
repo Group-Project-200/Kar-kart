@@ -15,6 +15,7 @@ from karkart.physics.car import Car
 from karkart.physics.collision import CollisionDetector
 from karkart.rendering.map import Map, MapData
 from karkart.rendering.renderer import Renderer
+from karkart.rendering.sparks import SparkManager
 from karkart.rendering.stacker import Stacker
 from karkart.screens.start_sequence import StartSequence
 
@@ -62,8 +63,9 @@ class GamePlay:
         self.current_camera = Camera(self.current_car)
         self.current_map = Map(self.current_map_data, self.current_camera)
         self.car_stacker = Stacker(self.manager.app_data.current_car, self.config.dirs)
+        self.sparks = SparkManager()
         self.current_renderer = Renderer(
-            self.current_map, self.car_stacker, self.manager.screen_display,
+            self.current_map, self.car_stacker, self.manager.screen_display, self.sparks,
         )
         self.collision_detector = CollisionDetector(
             self.current_map.masks, self.car_stacker.mask_cache,
@@ -122,6 +124,20 @@ class GamePlay:
         self.current_car.physics = self.current_car.step_physics_with_controls(
             snap_step_degrees=self.config.rotation_snap_degrees,
         )
+        physics = self.current_car.physics
+        # Only emit sparks once the hop has landed — MK drift trails start after
+        # the hop finishes, not during the airborne frames.
+        if physics.drift_active and physics.car_z <= 0.0:
+            # Anchor tire marks on the last safe position so a collision-rollback
+            # can't leave sparks stranded where the car never actually was.
+            anchor_x = self.current_car.last_safe_x if self.current_car.last_safe_x is not None else physics.car_x
+            anchor_y = self.current_car.last_safe_y if self.current_car.last_safe_y is not None else physics.car_y
+            self.sparks.emit(
+                anchor_x, anchor_y,
+                physics.rotation,
+                physics.drift_charge_frames,
+            )
+        self.sparks.update()
         self.current_camera.update_camera_angle()
         self.current_map.update_checkpoints()
 
