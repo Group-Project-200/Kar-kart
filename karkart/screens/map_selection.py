@@ -1,0 +1,76 @@
+"""Map (track) picker screen."""
+
+from __future__ import annotations
+
+import pygame
+
+from karkart.constants import Colors, ScreenPositions as sp
+from karkart.paths import PICTURES_DIR, PIXEL_FONT
+from karkart.ui.button import PaddingButton as Button
+from karkart.ui.card import MapCard
+from karkart.ui.container import MapContainer
+
+
+class MapScreen:
+    """3x4 grid of map cards with a Back button below."""
+
+    def __init__(self, manager) -> None:
+        self.manager = manager
+
+        self.container = MapContainer(
+            sp.CENTER_X, sp.CCCBOTTOM,
+            sp.WIDTH / 2, sp.HEIGHT / 16 * 9,
+            rows=3, columns=4,
+        )
+        self.back_button = Button("Back", "car", self.manager)
+
+        for track in self.manager.get_app_data().get_tracks():
+            track.set_dimensions(100, 80)
+            self.container.add_object(MapCard(track, manager))
+
+        self.container.calculate_padding()
+        self.container.add_back_button(self.back_button)
+
+        self.background = pygame.transform.scale(
+            pygame.image.load(str(PICTURES_DIR / "map_selection2.png")).convert(),
+            (sp.WIDTH, sp.HEIGHT),
+        )
+        self.background.set_alpha(192)
+
+    def handle_event(self, event) -> None:
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+            self.manager.change_screen("game")
+
+        selected_track = self.container.handle_event(event)
+        if selected_track is not None:
+            self.manager.get_app_data().set_current_map(selected_track)
+            self.manager.change_screen("game")
+
+    def update(self) -> None:
+        pass
+
+    def draw(self, surface: pygame.Surface) -> None:
+        pygame.display.set_caption("Kar Kart")
+
+        surface.fill(Colors.BLACK)
+        surface.blit(self.background, (0, 0))
+
+        # Instruction banner above the grid.
+        font_size = 15
+        instr_font = pygame.font.Font(str(PIXEL_FONT), font_size)
+        instr_text = instr_font.render("Select the track you want to race on", True, Colors.WHITE)
+        instr_center = instr_text.get_rect(center=(sp.CENTER_X, sp.XTOP))
+
+        instr_width = self.container.get_width()
+        instr_height = instr_text.get_height() + font_size * 1.5
+        instr_x = instr_center.x - (instr_width - instr_text.get_width()) / 2
+        instr_y = instr_center.y - (instr_height - instr_text.get_height()) / 2
+        instr_rect = pygame.Rect(instr_x, instr_y, instr_width, instr_height)
+
+        pygame.draw.rect(surface, Colors.DARK_BLUE, instr_rect, border_radius=8)
+        pygame.draw.rect(surface, Colors.LIGHT_BLUE, instr_rect, 4, border_radius=8)
+        pygame.draw.rect(surface, Colors.BLACK, instr_rect, 2, border_radius=8)
+        surface.blit(instr_text, instr_center)
+
+        self.container.draw(surface)
+        self.back_button.draw(surface)
