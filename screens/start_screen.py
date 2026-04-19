@@ -1,13 +1,13 @@
 # start_screen.py - first screen of the program
-import pygame, math
-
-from constants import ScreenPositions as sp
+import pygame
+import math
 
 class StartScreen:
     def __init__(self, manager):
         self.manager = manager
         self.FPS = 60
-        self.scroll = 0
+        self.screen_width = 800
+        self.screen_height = 600
         
         self.font = pygame.font.Font(None, 36)
         self.fps = 60.0
@@ -20,12 +20,10 @@ class StartScreen:
             self.bg_width = self.bg.get_width()
         except:
             self.bg = None
-            self.bg_width = sp.WIDTH
-        self.tiles = math.ceil(sp.WIDTH / self.bg_width) + 1
-        self.bg_rect = pygame.Rect(0, 0, self.bg_width, sp.HEIGHT)
+            self.bg_width = self.screen_width
 
         try:
-            self.gear_icon = pygame.image.load("./resources/pictures/gearicon3.png")
+            self.gear_icon = pygame.image.load("gearicon3.png")
             self.gear_icon = pygame.transform.scale(self.gear_icon, (64, 64))
             self.gear_icon = self.gear_icon.convert_alpha()  # Essential for PNG transparency
         except:
@@ -41,10 +39,6 @@ class StartScreen:
                 self.manager.change_screen("race_selector")
 
     def update(self):
-        # Update scrolling background
-        self.scroll -= 2.5
-        if abs(self.scroll) > self.bg_width:
-            self.scroll = 0
             
         # Manual FPS counter (no clock import needed)
         self.frame_count += 1
@@ -55,38 +49,17 @@ class StartScreen:
             self.last_time = current_time
 
     def draw(self, surface):
-        # Scroll background
-        for i in range(0, self.tiles):
-            x_pos = i * self.bg_width + self.scroll
-            self.bg_rect.x = x_pos
-            
-            if self.bg:
-                surface.blit(self.bg, (x_pos, 0))
-            else:
-                pygame.draw.rect(surface, (50, 100, 200), self.bg_rect)
 
-        # Title text
-        title_font = pygame.font.Font(None, 74)
-        title = title_font.render("KAR KART", True, (255, 255, 255))
-        title_rect = title.get_rect(center=(sp.WIDTH//2, sp.HEIGHT//2))
-        surface.blit(title, title_rect)
+            
+        if self.bg:
+            surface.blit(self.bg, (0, 0))
+        else:
+            surface.fill((50, 100, 200))
         
-        # Instructions
-        small_font = pygame.font.Font(None, 36)
-        instr = small_font.render("Press SPACE to continue", True, (255, 255, 255))
-        instr_rect = instr.get_rect(center=(sp.WIDTH//2, sp.HEIGHT//2 + 100))
-        surface.blit(instr, instr_rect)
-        
-        # FPS COUNTER
-        fps_text = self.font.render(f"FPS: {self.fps}", True, (255, 255, 255))
-        surface.blit(fps_text, (10, 10))
 
         # Gear Icon top right corner
-
         if self.gear_icon:
-            gear_pos = (sp.WIDTH - 64 - 10, 10)
+            gear_pos = (self.screen_width - 64 - 10, 10)
             surface.blit(self.gear_icon, gear_pos)
-
-
 
         pygame.display.set_caption(f"Kar Kart - Start Screen (FPS: {self.fps})")
