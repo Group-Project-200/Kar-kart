@@ -18,7 +18,6 @@ class CarScreen:
         self.manager = manager     
 
         # initialize buttons  
-        #* states will be changed to "map" and "start" when they're implemented
         self.back_btn = ColorButton(110, sp.H//1.35, 100, 50, "←", "race_selector", self.manager, (254, 214, 30), (204, 219, 213))
         
         # load all images together
