@@ -11,6 +11,7 @@ from CAR import Car
 from STACKER import Stacker
 from CAMERA import Camera
 from COLLISION_DETECTOR import CollisionDetector
+from start_sequence import StartSequence
 from Helper_functions import snap_degrees
 
 
@@ -32,11 +33,6 @@ class GameConfig:
     )
     rotation_snap_degrees = 360.0 / dirs
 
-@dataclass(frozen=True, slots=True)
-class RuntimeResources:
-    car_folders: tuple[str, ...]
-    car_stacks: dict[str, list[pygame.Surface]]
-
 
 def car_pos_scaling(x,y,map_dimensions):
     start_x = x - map_dimensions[0] / 2
@@ -49,9 +45,10 @@ class GamePlay:
         self.manager = manager
         self.config = GameConfig()
         self.current_map_data = MapData()
-        self.current_map_data.checkpoints = data["checkpoints"]
+        self.current_map_data.checkpoints = data[self.manager.app_data.current_map.name]["checkpoints"]
+        self.current_map_data.start_checkpoint = data[self.manager.app_data.current_map.name]["start_checkpoint"]
         self.current_map_data.layers = self.manager.app_data.return_map_layers()
-
+        self.countdown = StartSequence(self.manager.screen_display)
 
         self.current_car = Car()
         self.current_camera = Camera(self.current_car)
@@ -59,7 +56,7 @@ class GamePlay:
         self.car_stacker = Stacker(self.manager.app_data.current_car, self.config.dirs)
         self.current_renderer = Renderer(self.current_map, self.car_stacker, self.manager.screen_display)
         self.collision_detector =CollisionDetector(self.current_map.masks, self.car_stacker.mask_cache)
-        self.current_car.physics.car_x, self.current_car.physics.car_y = car_pos_scaling(data["start"][0], data["start"][1], self.current_map.dimensions)
+        self.current_car.physics.car_x, self.current_car.physics.car_y = car_pos_scaling(data[self.manager.app_data.current_map.name]["start"][0], data[self.manager.app_data.current_map.name]["start"][1], self.current_map.dimensions)
 
 
 
@@ -107,12 +104,26 @@ class GamePlay:
 
 
     def update(self):
+        if not self.countdown.complete:
+            return
         self.collision_check()
         self.current_car.physics = self.current_car.step_physics_with_controls(snap_step_degrees=self.config.rotation_snap_degrees)
         self.current_camera.update_camera_angle()
         self.current_map.update_checkpoints()
 
 
-    def draw(self, nothing):
+    def draw(self, _):
         self.current_renderer.render_frame(self.config.gameplay_stack_spread)
+        #code for start_time countdown
+        while self.countdown.seconds > 0:
+            self.current_renderer.render_frame(self.config.gameplay_stack_spread)
+            self.countdown.write()
+            pygame.display.flip()
+            time.sleep(1)
+            self.countdown.seconds -= 1
+
+        self.countdown.complete = True
+
+        print(self.current_map.lap_times)
+
         pygame.display.flip()

@@ -15,7 +15,7 @@ class MapScreen:
 
     def __init__(self, manager):
         self.manager = manager
-        self.container1 = MapContainer(sp.CENTER_X, sp.CCCBOTTOM, sp.WIDTH/2, sp.HEIGHT/16*9, 1, 4)
+        self.container1 = MapContainer(sp.CENTER_X, sp.CCCBOTTOM, sp.WIDTH/2, sp.HEIGHT/16*9, 3, 4)
 
         self.button = Button("Back", "car", self.manager)
 
@@ -29,7 +29,7 @@ class MapScreen:
             track.set_dimensions(100, 80)
             self.container1.add_object(MapCard(track, manager))
 
-        self.container1.calculate_padding(y_center=True)
+        self.container1.calculate_padding()
 
         self.container1.add_back_button(self.button)
 

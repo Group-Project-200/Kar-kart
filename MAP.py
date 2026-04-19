@@ -1,4 +1,5 @@
 import math
+import time
 from dataclasses import dataclass
 from CAMERA import Camera
 from CHECKPOINT import Checkpoint
@@ -16,6 +17,7 @@ class MapData:
     checkpoints : list | None
     start_pos : tuple[int] | None
     layers : list | None
+    start_checkpoint : list[int] | None
 
 
 
@@ -32,7 +34,13 @@ def simplify_surface(surface, factor=1.5):
 
 class Map:
     def __init__(self,map_data : MapData,  camera: Camera, ):
-        self.checkpoints = None
+        self.list_counter = 0
+        self.current_lap = 0
+        self.laps = 0
+        self.start_checkpoint = None
+        # In __init__:
+        self.checkpoints: list[Checkpoint] = []
+        self.lap_times = []
         self.dimensions = None
         self.cache = None
         self.data = map_data
@@ -47,6 +55,8 @@ class Map:
         self.camera = camera
         self.car_map_x = None
         self.car_map_y = None
+        self.checkpoints_list = []
+
 
 
     def zoom_fixing(self, zoom : float, view_size: tuple[int, int]):
@@ -75,6 +85,11 @@ class Map:
             Checkpoint(cp["x"] - self.dimensions[0] / 2, cp["y"] - self.dimensions[1] / 2, cp["w"], cp["h"])
             for cp in self.data.checkpoints
         ]
+
+        self.start_checkpoint = Checkpoint(self.data.start_checkpoint[0] - self.dimensions[0] / 2, self.data.start_checkpoint[1] - self.dimensions[1] / 2, self.data.start_checkpoint[2], self.data.start_checkpoint[3])
+        self.checkpoints_list = [self.start_checkpoint]
+        self.checkpoints_list.extend(self.checkpoints)
+
 
     def get_coordinates(self):
         self.car_map_x = self.cache.center_x + int(self.car.car_x * self.cache.zoom)
@@ -106,5 +121,19 @@ class Map:
         display.blit(rotated_map, rotated_rect)
 
     def update_checkpoints(self):
-        for cp in self.checkpoints:
-            cp.check(self.car.car_x, self.car.car_y)
+
+        current_checkpoint= self.checkpoints_list[self.list_counter]
+
+        if current_checkpoint.check(self.car.car_x,self.car.car_y):
+            if current_checkpoint == self.start_checkpoint:
+                self.current_lap += 1
+            self.lap_times.append((time.perf_counter(), self.current_lap))
+            self.list_counter += 1
+            if self.list_counter >= len(self.checkpoints_list):
+                self.list_counter = 0
+
+
+
+
+
+

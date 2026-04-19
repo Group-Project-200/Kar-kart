@@ -1,6 +1,9 @@
 # constants.py - contains all the constants used throughout the videogame
 
+import os
 import pygame
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 class Colors:
 
