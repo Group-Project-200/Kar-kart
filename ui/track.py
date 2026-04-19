@@ -13,12 +13,11 @@ class Track:
     #  - name (2) of  the track
     #  - width (3) and height (4) of the picture
 
-    def __init__(self, pic, name, path: str | None, corr_map=None):
+    def __init__(self, pic, name, corr_map=None):
 
         self.image = pygame.image.load(pic).convert_alpha()
         self.name = name
-        self.path = path
-        self.map = corr_map
+        self.corr_map = corr_map
 
         self.width = 0
         self.height = 0
@@ -79,4 +78,4 @@ class Track:
         self.width, self.height = width, height
 
     def get_map(self):
-        return self.map
+        return self.corr_map

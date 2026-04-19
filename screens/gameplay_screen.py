@@ -57,7 +57,7 @@ class GamePlay:
         self.current_camera = Camera(self.current_car)
         self.current_map = Map(self.current_map_data, self.current_camera)
         self.car_stacker = Stacker(self.manager.app_data.current_car, self.config.dirs)
-        self.current_renderer = Renderer(self.current_map, self.car_stacker, self.manager.screen)
+        self.current_renderer = Renderer(self.current_map, self.car_stacker, self.manager.screen_display)
         self.collision_detector =CollisionDetector(self.current_map.masks, self.car_stacker.mask_cache)
         self.current_car.physics.car_x, self.current_car.physics.car_y = car_pos_scaling(data["start"][0], data["start"][1], self.current_map.dimensions)
 

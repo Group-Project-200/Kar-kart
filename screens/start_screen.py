@@ -1,6 +1,5 @@
 # start_screen.py - first screen of the program
-import pygame
-import math
+import pygame, math, os
 
 class StartScreen:
     def __init__(self, manager):
@@ -16,7 +15,8 @@ class StartScreen:
         
         # Try to load background image, fallback to solid color if missing
         try:
-            self.bg = pygame.image.load("./resources/pictures/bp2.png").convert()
+            file_path = os.path.join(".", "resources", "pictures", "bp2.png")
+            self.bg = pygame.image.load(file_path).convert()
             self.bg_width = self.bg.get_width()
         except:
             self.bg = None

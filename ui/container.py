@@ -149,6 +149,8 @@ class SelectContainer:
         self.objects.append(obj)
         self.objects[self.selected].select()
 
+        self.calculate_padding()
+
     def handle_event(self, event):
 
         if event.type == pygame.KEYDOWN:
@@ -169,57 +171,35 @@ class SelectContainer:
 
     def draw(self, surface):
 
+        # NOTE: ALWAYS CALL calculate_padding() AFTER ADDING ALL OBJECTS
+
         # TODO: REMOVE
         # example_rect = pygame.Rect(self.x, self.y, self.width, self.height)
         # pygame.draw.rect(surface, Colors.WHITE, example_rect, 2)
 
         n = len(self.objects)
-        logger.debug(n)
 
-        # records which elements of self.objects will create the first row and column, AND
-        # which is the order of creation (either rows or columns)
-        # depending on self.first (if "rows" or "columns")
+        padding_x, padding_y = self.padding_x, self.padding_y
+
 
         first_row = self.objects[:self.columns]
         first_column = self.objects[::self.columns]
 
-        first = self.rows
-        second = self.columns
+        rows, columns = self.rows, self.columns
 
-        try:
-
-            # calculate padding based on:
-            # + the toal dimension of the container
-            # - sum of the dimension of all the objects in first_row or first_column
-            # / columns OR rows + 1 (one more space after the last object)
-
-            padding_x = (self.width - sum(obj.get_width() for obj in first_row)) / (self.columns - 1) 
-            padding_y = (self.height - sum(obj.get_height() for obj in first_column)) / (self.rows - 1)
-
-        except Exception as e:
-
-            # if an object doesn't have WIDTH and HEIGHT, OR
-            # if an object doesn't implement GET_WIDTH() and GET_HEIGHT()
-
-            raise TypeError("The object added doesn't have width and height OR doesn't implement get_width() and get_height()")
-
-        logging.info(f"The size of the container is {self.width, self.height}")
-        logging.info(f"Padding is {padding_x, padding_y}")
-
-        # first x and y coordinates of the first object
-        # curr_x, curr_y = self.x + padding_x, self.y + padding_y
+    
         curr_x, curr_y = self.x, self.y
 
         i = 0
 
-        for f in range(first):
+        for r in range(rows):
 
             # if the last column/row don't have the same number of objects as the others,
             # the number is adjusted
-            if f >= first-1:
-                second = n - (first-1)*second
+            if r >= rows-1:
+                columns = n - (rows-1)*columns
 
-            for s in range(second):
+            for c in range(columns):
                 obj = self.objects[i]
 
                 logging.info(f"OBJECT: {i+1}, {curr_x, curr_y}")
@@ -240,6 +220,37 @@ class SelectContainer:
 
     def get_width(self):
         return self.width
+
+    def calculate_padding(self, x_center=False, y_center=False):
+        n = len(self.objects)
+        logger.debug(n)
+
+        # records which elements of self.objects will create the first row and column, AND
+        # which is the order of creation (either rows or columns)
+        # depending on self.first (if "rows" or "columns")
+
+        first_row = self.objects[:self.columns]
+        first_column = self.objects[::self.columns]
+
+        if x_center:
+            self.padding_x = (self.width - sum(obj.get_width() for obj in first_row)) / (self.columns + 1)
+            self.x += self.padding_x
+
+        else:
+            if self.columns > 1:
+                self.padding_x = (self.width - sum(obj.get_width() for obj in first_row)) / (self.columns - 1)
+            else:
+                self.padding_x = 0
+
+        if y_center:
+            self.padding_y = (self.height - sum(obj.get_height() for obj in first_column)) / (self.rows + 1)
+            self.y += self.padding_y
+
+        else:
+            if self.rows > 1:
+                self.padding_y = (self.height - sum(obj.get_height() for obj in first_column)) / (self.rows - 1)
+            else:
+                self.padding_y = 0
 
 class MapContainer(SelectContainer):
 

@@ -50,9 +50,9 @@ def main():
     manager.change_screen("start")
 
 
-    while manager.running:
+    while manager.is_running():
 
-        current = manager.current
+        current = manager.get_screen()
 
         for event in pygame.event.get():
 

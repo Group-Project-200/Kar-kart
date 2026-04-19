@@ -6,6 +6,7 @@ from ui.button import PaddingButton as Button
 from ui.container import MapContainer
 from constants import Colors
 from constants import ScreenPositions as sp
+from ui.track import Track
 from ui.card import MapCard
 
 class MapScreen:
@@ -14,19 +15,21 @@ class MapScreen:
 
     def __init__(self, manager):
         self.manager = manager
-        self.container1 = MapContainer(sp.CENTER_X, sp.CCCBOTTOM, sp.WIDTH/2, sp.HEIGHT/16*9, 3, 4)
+        self.container1 = MapContainer(sp.CENTER_X, sp.CCCBOTTOM, sp.WIDTH/2, sp.HEIGHT/16*9, 1, 4)
 
         self.button = Button("Back", "car", self.manager)
 
         # importing tracks from manager
 
-        app_data = self.manager.app_data
+        app_data = self.manager.get_app_data()
 
-        for track in app_data.tracks:
+        for track in app_data.get_tracks():
 
             # set dimensions of the track in advance
             track.set_dimensions(100, 80)
             self.container1.add_object(MapCard(track, manager))
+
+        self.container1.calculate_padding(y_center=True)
 
         self.container1.add_back_button(self.button)
 
@@ -37,15 +40,9 @@ class MapScreen:
 
             # get map to show when objects are pressed
             curr_map = self.container1.handle_event(event)
-            #FIXME this is always none, after this gets defined correctly then make the current_map in app_data none
 
             if curr_map:
-                # NOTE: i changed the line commented to the other line because its a code smell and the function itself isnt nesessary you just need to
-                #do self.manager.app_data and it gives you the thing you want
-
-                #self.manager.get_app_data().set_current_map(curr_map)
-                self.manager.app_data.current_map = curr_map
-
+                self.manager.get_app_data().set_current_map(curr_map)
                 self.manager.change_screen("game")
         # to change to another screen do take this line
         # self.button1.handle_event(event)
