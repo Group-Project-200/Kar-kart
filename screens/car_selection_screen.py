@@ -1,43 +1,28 @@
-# car_selection_screen.py - screen to choose the car
+# car_selection_screen.py 
 
-# this file uses:
-    # render.py(in game-engine)
-    # cust1.png (background img)
-    # resources(in game-engine) folder with car_01, car_02... folders which contain car layers img_0.png, img_1.png,...
-
-# last changes made:
-    # next button is removed, used 'enter' key instead
-    # UI style is changed
-    # Added title: "Select Your Car"
-
-# TO-DO:
-    # Names of each car below
-    # Stats box for each car: Speed-
-
+    # previous screen: "race_selector"  -> s and return keys
+    # next screen: "map"                -> space key 
 
 import pygame
 
+from constants import Keys
 from ui.button import ColorButton
 from constants import ScreenPositions as sp
-from constants import Keys as K
 
 from render import build_render_pipeline, render_preview_debug_frame, RenderSetup
 import os
 
 
 class CarScreen:
-    def __init__(self, manager ):
-        self.manager = manager     # ALWAYS ADD THE MANAGER
+    def __init__(self, manager):
+        self.manager = manager     
 
         # initialize buttons  
         #* states will be changed to "map" and "start" when they're implemented
-        #removed 'NEXT' button: self.next_btn = CarButton(560, 535, 150, 50, "NEXT →", "map", self.manager)
-        self.back_btn = ColorButton(110, sp.H//1.35, 100, 50, "←", "start", self.manager, (254, 214, 30), (204, 219, 213))
-
-        
+        self.back_btn = ColorButton(110, sp.H//1.35, 100, 50, "←", "race_selector", self.manager, (254, 214, 30), (204, 219, 213))
         
         # load all images together
-        self.background = pygame.transform.scale( pygame.image.load("resources/pictures/1cust1.png").convert(), (sp.WIDTH, sp.HEIGHT) )
+        self.background = pygame.transform.scale( pygame.image.load("resources/pictures/cust1.png").convert(), (sp.WIDTH, sp.HEIGHT) )
         
         self.statbox_paths = [
             "resources/pictures/statsboxes/car01_stats.png", 
@@ -82,36 +67,39 @@ class CarScreen:
         
         self.preview_angle = 0
 
-
-        self.selected = 0  #default car
-
-        # implement stats box change
-        #car_stats = ["car01_stats", "car02_stats", "car03_stats", "car04_stats",]
-        #blit car_stats[self.selected] 
+        self.selected = 0  # default car
 
 
     def handle_event(self, event):  # used for key detection
 
         # ask buttons to handle event        
-        #removed next button: self.next_btn.handle_event(event)
         self.back_btn.handle_event(event)
 
         if event.type == pygame.KEYDOWN: 
-            if event.key == K.RIGHT: 
+            if event.key == Keys.RIGHT: 
                 self.selected = min(len(self.car_slices) - 1, self.selected + 1) 
-            elif event.key == K.LEFT: 
+            elif event.key == Keys.LEFT: 
                 self.selected = max(0, self.selected - 1)
-            elif event.key == pygame.K_RETURN:
+            elif event.key == pygame.K_SPACE:
+
+                # save selected car in app_data
+                car_name = f"car_{self.selected+1:02d}"
+
+                self.manager.app_data.current_car_name = car_name
+                self.manager.app_data.current_car = self.manager.app_data.cars[car_name]
+
+                # check if car selection is saved to app_data:
+                # print("SELECTED CAR:", car_name)
+
+                # go to map selection screen
                 self.manager.change_screen("map")
 
 
-    def update(self): # add any other object here like the car class as well as its physics
-        # example:
-        # car.y += 5
-        pass # no physics yet
+    def update(self): 
 
-    def draw(self, surface): # use this function to draw anything onto the screen
-        # fill surface + call draw for all the objects inside
+        pass 
+
+    def draw(self, surface): # this function draws on the screen
 
         pygame.display.set_caption("Car Selection")
 
@@ -124,11 +112,6 @@ class CarScreen:
 
         # slowly rotate the preview
         self.preview_angle = (self.preview_angle + 1) % 360
-
-        # center the preview of car 
-        ## preview_surface = surface.subsurface(
-        ##(sp.W//2, sp.H//2, sp.W//2, sp.H//2)
-        ##)
 
         # create a transparent surface matching the pipeline's screen_size (600x450)
         preview_surface = pygame.Surface((600, 450), pygame.SRCALPHA)
@@ -144,8 +127,6 @@ class CarScreen:
         preview_rect = preview_surface.get_rect(center=(sp.WIDTH // 2, sp.HEIGHT // 2))
         surface.blit(preview_surface, preview_rect)
 
-
         # draw buttons
-        #removed next button: self.next_btn.draw(surface)
         self.back_btn.draw(surface)
        

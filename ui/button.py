@@ -160,6 +160,9 @@ class ColorButton:
         self.colnor = colnor
         self.colhov = colhov
 
+        self.keyboard_hovered = False  # tracks keyboard hover state
+
+
 
     def handle_event(self, event):
 
@@ -172,6 +175,12 @@ class ColorButton:
                 if self.state:
                     self.manager.change_screen(self.state)
 
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_s:                  # S key is used for hovering
+                self.keyboard_hovered = not self.keyboard_hovered
+            if event.key == pygame.K_RETURN:             # Enter clicks if hovered
+                if self.keyboard_hovered and self.state:
+                    self.manager.change_screen(self.state)
 
     def draw(self, surface):
 
@@ -180,7 +189,7 @@ class ColorButton:
         mouse_pos = pygame.mouse.get_pos()
 
         # hovering is managed underneath
-        if self.rect.collidepoint(mouse_pos):
+        if self.rect.collidepoint(mouse_pos) or self.keyboard_hovered:
             color = self.colhov    # hovering color
         else:
             color = self.colnor     # NOT hovering color

@@ -102,3 +102,4 @@ class AppData:
              os.listdir(path)
              if f.endswith(".png") and not f.endswith("cover.png")]
             return layers
+        
