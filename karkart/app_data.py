@@ -66,6 +66,12 @@ class AppData:
         self.current_map: Track | None = default or (self.tracks[0] if self.tracks else None)
         self.current_car_name: str = "car_01"
         self.current_car: list[pygame.Surface] = self.cars[self.current_car_name]
+        self.current_mode = "time_trial"
+
+
+        self.modes = {"time_trial": { "Ai": False, "Items": False },
+                      "race_mode":  {"Ai": True, "Items": True}
+                      }
 
     def add_track(self, track: Track) -> None:
         self.tracks.append(track)

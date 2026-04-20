@@ -70,7 +70,7 @@ class Map:
         self.checkpoints_list: list[Checkpoint] = []
         self.finish_line: Checkpoint | None = None
         self.list_counter: int = 0
-        self.current_lap: int = 0
+        self.current_lap: int = 1
         self.laps: int = 0
         self.lap_times: list[tuple[float, int]] = []
 
@@ -171,6 +171,7 @@ class Map:
         if self.list_counter >= len(self.checkpoints_list):
             # Completed a full lap: passed every CP then the finish line.
             self.current_lap += 1
+            for item in self.world_objects: item.active = True
             self.lap_times.append((time.perf_counter(), self.current_lap))
             self.list_counter = 0
         else:

@@ -63,7 +63,10 @@ class GamePlay:
 
     def __init__(self, manager) -> None:
         self.manager = manager
+        self.mode = self.manager.app_data.modes[self.manager.app_data.current_mode]
         self.config = GameConfig()
+
+
 
         # Alternating-frame scheduler: cheap per-frame work runs every tick;
         # expensive checks split across even/odd frames (see update()).
@@ -112,32 +115,39 @@ class GamePlay:
             start_x, start_y, self.current_map.dimensions,
         )
 
+        self.ai_active, self.items_box.active = self.mode["Ai"], self.mode["Items"]
+
+
+
+
         # ------------------------------------------------------------------ #
         # AI opponent                                                        #
         # ------------------------------------------------------------------ #
-        self.ai_car = Car()
-        ai_stack = self._pick_ai_car_stack()
-        self.ai_stacker = Stacker(ai_stack, self.config.dirs)
-        self.ai_stacker.scale_update(self.car_stacker.scale)
-        self.ai_collision = CollisionDetector(
-            self.current_map.masks, self.ai_stacker.mask_cache,
-        )
-        # Spawn the AI beside the player (offset within the start grid).
-        self.ai_car.physics.car_x, self.ai_car.physics.car_y = _car_pos_scaling(
-            start_x + 30, start_y, self.current_map.dimensions,
-        )
 
-        self.pathfinder = AStarPathfinder(
-            mask=self.current_map.masks[0],
-            map_dims=self.current_map.dimensions,
-            cell_size=8,
-            padding=4,
-        )
-        self.ai_controller = AIController(
-            car=self.ai_car,
-            pathfinder=self.pathfinder,
-            checkpoints=self.current_map.checkpoints_list,
-        )
+        if self.ai_active:
+            self.ai_car = Car()
+            ai_stack = self._pick_ai_car_stack()
+            self.ai_stacker = Stacker(ai_stack, self.config.dirs)
+            self.ai_stacker.scale_update(self.car_stacker.scale)
+            self.ai_collision = CollisionDetector(
+                self.current_map.masks, self.ai_stacker.mask_cache,
+            )
+            # Spawn the AI beside the player (offset within the start grid).
+            self.ai_car.physics.car_x, self.ai_car.physics.car_y = _car_pos_scaling(
+                start_x + 30, start_y, self.current_map.dimensions,
+            )
+
+            self.pathfinder = AStarPathfinder(
+                mask=self.current_map.masks[0],
+                map_dims=self.current_map.dimensions,
+                cell_size=8,
+                padding=4,
+            )
+            self.ai_controller = AIController(
+                car=self.ai_car,
+                pathfinder=self.pathfinder,
+                checkpoints=self.current_map.checkpoints_list,
+            )
 
     def _pick_ai_car_stack(self) -> list[pygame.Surface]:
         """Pick a sprite stack that's different from the player's car if possible."""
@@ -234,6 +244,21 @@ class GamePlay:
             self._ai_total_cp += 1
             self._prev_ai_goal_idx = cur
 
+    def ai_update(self):
+        if not self.ai_active:
+            return
+
+        if self._frame_parity == 0:
+            self._ai_collision_check()
+            self._check_car_to_car_collision()
+        else:
+            self.ai_controller.update()
+            self._update_checkpoints_ai()
+
+        self.ai_car.physics = self.ai_car.step_physics_with_controls(
+            snap_step_degrees=self.config.rotation_snap_degrees,
+        )
+
     def update(self) -> None:
         if not self.countdown.complete:
             return
@@ -246,12 +271,10 @@ class GamePlay:
         # frame, so the one-frame latency is invisible at 60 FPS.
         if self._frame_parity == 0:
             self._collision_check()
-            self._ai_collision_check()
-            self._check_car_to_car_collision()
+
         else:
             self._update_checkpoints_player()
-            self.ai_controller.update()
-            self._update_checkpoints_ai()
+
 
         # Physics integrates every frame for both cars so motion stays smooth.
         self.current_car.physics = self.current_car.step_physics_with_controls(
@@ -271,9 +294,10 @@ class GamePlay:
         self.sparks.update()
         self.current_camera.update_camera_angle()
 
-        self.ai_car.physics = self.ai_car.step_physics_with_controls(
-            snap_step_degrees=self.config.rotation_snap_degrees,
-        )
+        self.ai_update()
+
+
+        self.complete_race()
     # ------------------------------------------------------------------ #
     # HUD + debug overlay                                                #
     # ------------------------------------------------------------------ #
@@ -351,9 +375,15 @@ class GamePlay:
             corners_screen = [self._world_to_screen_real(x, y) for x, y in corners_world]
             pygame.draw.polygon(screen, colour, corners_screen, width=2)
 
+    def complete_race(self):
+        if self.current_map.current_lap > 3:
+            print("DONE")
+
     def draw(self, _surface: pygame.Surface) -> None:
         screen = self.manager.screen_display
-        extra_cars = [(self.ai_car, self.ai_stacker)]
+
+        extra_cars = [(self.ai_car, self.ai_stacker)] if self.ai_active else []
+
         self.current_renderer.render_frame(
             self.config.gameplay_stack_spread, extra_cars=extra_cars,
         )
