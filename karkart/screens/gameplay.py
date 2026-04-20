@@ -80,7 +80,7 @@ class GamePlay:
             self.current_map, self.car_stacker, self.manager.screen_display, self.sparks,
         )
         self.collision_detector = CollisionDetector(
-            self.current_map.masks, self.car_stacker.mask_cache,
+            self.current_map.masks, self.car_stacker.mask_cache, self.items_box
         )
 
         start_x, start_y = map_record["start"]
@@ -128,7 +128,8 @@ class GamePlay:
         self.current_map.get_coordinates()
         dir_idx = snap_degrees(car_relative_rotation, dirs=self.car_stacker.dirs)
         offset = (self.current_map.car_map_x, self.current_map.car_map_y)
-        self.current_car.collision_results = self.collision_detector.check(dir_idx, offset)
+        self.current_car.collision_results = self.collision_detector.border_check(dir_idx, offset)
+        print("collision",self.collision_detector.item_check(dir_idx, offset))
     def update_resources(self):
         self.car_stacker.set_images(self.manager.app_data.current_car)
 

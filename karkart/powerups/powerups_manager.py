@@ -2,8 +2,17 @@ import pygame
 
 class PowerupRendering:
     def __init__(self, dimensions):
+        self.mask = None
         self.x,self.y,self.w, self.h = dimensions
         self.active = True
+
+    def build_mask(self, zoom: float) -> None:
+        zw = max(1, int(self.w * zoom))
+        zh = max(1, int(self.h * zoom))
+        surf = pygame.Surface((zw, zh), pygame.SRCALPHA)
+        surf.fill((255, 255, 255, 255))
+        self.mask = pygame.mask.from_surface(surf)
+
 
     def draw(self, surface: pygame.Surface, center: tuple[int, int], car, zoom: float):
         if not self.active:
@@ -14,6 +23,7 @@ class PowerupRendering:
         zh = max(1, int(self.h * zoom))
 
         pygame.draw.rect(surface, (255, 0, 0), (sx, sy, zw, zh))
+
 
 
 
