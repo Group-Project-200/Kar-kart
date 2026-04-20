@@ -27,7 +27,7 @@ class Renderer:
         render_scale = self.render_size[1] / self.screen.get_size()[1]
 
         draw_map_zoom = clamp_zoom(self._MAP_ZOOM) * render_scale
-        draw_car_scale = clamp_zoom(self._CAR_ZOOM) * render_scale
+        self.draw_car_scale = clamp_zoom(self._CAR_ZOOM) * render_scale
 
         self.center = (self.render_size[0] // 2, self.render_size[1] // 2)
         self.frame_surface = pygame.Surface(self.render_size).convert()
@@ -38,7 +38,7 @@ class Renderer:
         self.needs_present_scale = self.render_size != self.screen.get_size()
 
         self.map.zoom_fixing(draw_map_zoom, self.render_size)
-        self.stacker.scale_update(draw_car_scale)
+        self.stacker.scale_update(self.draw_car_scale)
 
     def _build_pixel_surface_size(self, pixelation_scale: float) -> tuple[int, int]:
         scale = clamp_scale(pixelation_scale)

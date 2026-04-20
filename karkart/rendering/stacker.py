@@ -17,8 +17,8 @@ class Stacker:
 
     _COLLISION_SCALE: float = 0.70  # Collision hitbox as a fraction of the visual size.
 
-    def __init__(self, image_stack: list[pygame.Surface], directions: int) -> None:
-        self.images = image_stack              # Original unscaled images.
+    def __init__(self,image_stack: list[pygame.Surface],  directions: int) -> None:
+        self.images = image_stack             # Original unscaled images.
         self.scaled_img: list[pygame.Surface] = []
         self.dirs = directions
         self.scale: float | None = None
@@ -59,6 +59,12 @@ class Stacker:
         for d in range(self.dirs):
             rotated_small = pygame.transform.rotate(small_base, d * step_deg)
             self.mask_cache.append(pygame.mask.from_surface(rotated_small))
+
+    def set_images(self, image_stack: list[pygame.Surface]) -> None:
+        self.images = image_stack
+        if self.scale is not None:
+            self._scale_images()
+            self._build_rotated_cache()
 
     def render_stack(
         self,

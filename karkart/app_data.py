@@ -67,6 +67,7 @@ class AppData:
         self.current_car_name: str = "car_01"
         self.current_car: list[pygame.Surface] = self.cars[self.current_car_name]
 
+
     def add_track(self, track: Track) -> None:
         self.tracks.append(track)
 
@@ -75,6 +76,10 @@ class AppData:
 
     def set_current_map(self, track: Track) -> None:
         self.current_map = track
+
+    def set_current_car(self, car_name):
+        self.current_car_name = car_name
+        self.current_car= self.cars[self.current_car_name]
 
     def return_map_layers(self) -> list[pygame.Surface]:
         """Load every layer image (except ``cover.png``) for the current map."""

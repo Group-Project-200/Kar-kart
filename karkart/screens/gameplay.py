@@ -76,6 +76,7 @@ class GamePlay:
             start_x, start_y, self.current_map.dimensions,
         )
 
+
     def handle_event(self, event) -> None:
         controls = self.current_car.controls
 
@@ -116,8 +117,12 @@ class GamePlay:
         dir_idx = snap_degrees(car_relative_rotation, dirs=self.car_stacker.dirs)
         offset = (self.current_map.car_map_x, self.current_map.car_map_y)
         self.current_car.collision_results = self.collision_detector.check(dir_idx, offset)
+    def update_resources(self):
+        self.car_stacker.set_images(self.manager.app_data.current_car)
+
 
     def update(self) -> None:
+
         if not self.countdown.complete:
             return
         self._collision_check()
@@ -140,6 +145,7 @@ class GamePlay:
         self.sparks.update()
         self.current_camera.update_camera_angle()
         self.current_map.update_checkpoints()
+        print(self.current_map.lap_times)
 
     def draw(self, _surface: pygame.Surface) -> None:
         self.current_renderer.render_frame(self.config.gameplay_stack_spread)

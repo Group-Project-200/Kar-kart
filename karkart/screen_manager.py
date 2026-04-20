@@ -27,6 +27,8 @@ class ScreenManager:
     def change_screen(self, label: str) -> None:
         """Activate a previously registered screen."""
         self.current = self.screens[label]
+        if hasattr(self.current, "update_resources"):
+            self.current.update_resources()
 
     def get_screen(self):
         """Return the currently active screen."""
