@@ -47,6 +47,31 @@ def _load_data() -> dict:
     except FileNotFoundError:
         return {}
 
+def _point_in_rect(px: int, py: int, rx: int, ry: int, rw: int, rh: int) -> bool:
+    return rx <= px <= rx + rw and ry <= py <= ry + rh
+
+def _try_delete_at(data: dict, wx: int, wy: int) -> bool:
+
+    entry = data[MAP_NAME]
+
+    # Single-placement rects first
+    for key in ("start_box", "start_checkpoint", "items"):
+        if key in entry:
+            x, y, w, h = entry[key]
+            if _point_in_rect(wx, wy, x, y, w, h):
+                del entry[key]
+                # If we removed the start box, the spawn point is meaningless.
+                if key == "start_box" and "start" in entry:
+                    del entry["start"]
+                return True
+
+    # Checkpoints: delete the top-most one clicked (iterate reversed)
+    checkpoints = entry.get("checkpoints", [])
+    for i in range(len(checkpoints) - 1, -1, -1):
+        cp = checkpoints[i]
+        if _point_in_rect(wx, wy, cp["x"], cp["y"], cp["w"], cp["h"]):
+            checkpoints.pop(i)
+            return True
 
 def main() -> None:
     pygame.init()
@@ -87,6 +112,9 @@ def main() -> None:
                     mode, placing = "item placements", False
                 elif event.key == pygame.K_ESCAPE:
                     placing = False
+                elif event.key == pygame.K_d:
+                    mode, placing = "delete", False
+
             elif event.type == pygame.MOUSEMOTION and dragging:
                 dx = event.pos[0] - last_mouse_x
                 dy = event.pos[1] - last_mouse_y
@@ -95,8 +123,12 @@ def main() -> None:
                 last_mouse_x, last_mouse_y = event.pos
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
                 mx, my = event.pos
-                place_start = (mx + camera_x, my + camera_y)
-                placing = True
+                wx, wy = mx + camera_x, my + camera_y
+                if mode == "delete":
+                    _try_delete_at(data, wx, wy)
+                else:
+                    place_start = (mx + camera_x, my + camera_y)
+                    placing = True
             elif event.type == pygame.MOUSEBUTTONUP and event.button == 3 and placing:
                 mx, my = event.pos
                 end = (mx + camera_x, my + camera_y)
