@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import time
 from dataclasses import dataclass
 
@@ -47,16 +48,35 @@ def _car_pos_scaling(x: float, y: float, map_dimensions: tuple[int, int]) -> tup
 class GamePlay:
     """Wires physics, map, camera, stacker and renderer together for one race."""
 
+    # Distance-based car-to-car collision radius, in world (map-pixel) units.
+    _CAR_COLLISION_RADIUS: float = 18.0
+
     def __init__(self, manager) -> None:
         self.manager = manager
         self.config = GameConfig()
+
+        # Alternating-frame scheduler: cheap per-frame work runs every tick;
+        # expensive checks split across even/odd frames (see update()).
+        self._frame_parity: int = 0
+
+        # HUD + debug overlay.
+        self._debug_checkpoints: bool = False
+        if not pygame.font.get_init():
+            pygame.font.init()
+        self._hud_font: pygame.font.Font = pygame.font.SysFont("monospace", 16)
+
+        # Cumulative checkpoint counters used to rank positions (lap-aware).
+        self._player_total_cp: int = 0
+        self._ai_total_cp: int = 0
+        self._prev_player_counter: int = 0
+        self._prev_ai_goal_idx: int = 0
 
         map_name = self.manager.app_data.current_map.name
         map_record = _MAP_DATA[map_name]
 
         self.current_map_data = MapData()
         self.current_map_data.checkpoints = map_record["checkpoints"]
-        self.current_map_data.start_checkpoint = map_record["start_checkpoint"]
+        self.current_map_data.finish_line = map_record["finish_line"]
         self.current_map_data.layers = self.manager.app_data.return_map_layers()
 
         self.countdown = StartSequence(self.manager.screen_display)
@@ -73,7 +93,9 @@ class GamePlay:
             self.current_map.masks, self.car_stacker.mask_cache,
         )
 
-        start_x, start_y = map_record["start"]
+        sg = map_record["start_grid"]   # [x, y, w, h]
+        start_x = sg[0] + sg[2] / 2
+        start_y = sg[1] + sg[3] / 2
         self.current_car.physics.car_x, self.current_car.physics.car_y = _car_pos_scaling(
             start_x, start_y, self.current_map.dimensions,
         )
@@ -88,7 +110,7 @@ class GamePlay:
         self.ai_collision = CollisionDetector(
             self.current_map.masks, self.ai_stacker.mask_cache,
         )
-        # Spawn the AI beside the player so they race from the same line.
+        # Spawn the AI beside the player (offset within the start grid).
         self.ai_car.physics.car_x, self.ai_car.physics.car_y = _car_pos_scaling(
             start_x + 30, start_y, self.current_map.dimensions,
         )
@@ -131,6 +153,8 @@ class GamePlay:
                     controls.down_input = True
                 case pygame.K_SPACE:
                     controls.drift_input = True
+                case pygame.K_F1:
+                    self._debug_checkpoints = not self._debug_checkpoints
         elif event.type == pygame.KEYUP:
             match event.key:
                 case pygame.K_a:
@@ -164,10 +188,57 @@ class GamePlay:
         dir_idx = snap_degrees(self.ai_car.physics.rotation, dirs=self.ai_stacker.dirs)
         self.ai_car.collision_results = self.ai_collision.check(dir_idx, (ai_map_x, ai_map_y))
 
+    def _check_car_to_car_collision(self) -> None:
+        """Push player and AI apart if they overlap, and bleed some momentum."""
+        p = self.current_car.physics
+        a = self.ai_car.physics
+        dx = p.car_x - a.car_x
+        dy = p.car_y - a.car_y
+        dist_sq = dx * dx + dy * dy
+        if dist_sq >= self._CAR_COLLISION_RADIUS ** 2:
+            return
+        dist = math.sqrt(dist_sq) or 0.001
+        nx, ny = dx / dist, dy / dist
+        p.velocity_x += nx * 0.4
+        p.velocity_y += ny * 0.4
+        a.velocity_x -= nx * 0.4
+        a.velocity_y -= ny * 0.4
+        p.speed *= 0.6
+        a.speed *= 0.6
+
+    def _update_checkpoints_player(self) -> None:
+        self.current_map.update_checkpoints()
+        cur = self.current_map.list_counter
+        if cur != self._prev_player_counter:
+            self._player_total_cp += 1
+            self._prev_player_counter = cur
+
+    def _update_checkpoints_ai(self) -> None:
+        cur = self.ai_controller._goal_idx
+        if cur != self._prev_ai_goal_idx:
+            self._ai_total_cp += 1
+            self._prev_ai_goal_idx = cur
+
     def update(self) -> None:
         if not self.countdown.complete:
             return
-        self._collision_check()
+
+        self._frame_parity ^= 1
+
+        # Even frames: mask-based collision checks and car-to-car overlap.
+        # Odd frames: checkpoint bookkeeping and AI planning.
+        # Cached collision_results and control state carry into the alternate
+        # frame, so the one-frame latency is invisible at 60 FPS.
+        if self._frame_parity == 0:
+            self._collision_check()
+            self._ai_collision_check()
+            self._check_car_to_car_collision()
+        else:
+            self._update_checkpoints_player()
+            self.ai_controller.update()
+            self._update_checkpoints_ai()
+
+        # Physics integrates every frame for both cars so motion stays smooth.
         self.current_car.physics = self.current_car.step_physics_with_controls(
             snap_step_degrees=self.config.rotation_snap_degrees,
         )
@@ -175,8 +246,6 @@ class GamePlay:
         # Only emit sparks once the hop has landed — MK drift trails start after
         # the hop finishes, not during the airborne frames.
         if physics.drift_active and physics.car_z <= 0.0:
-            # Anchor tire marks on the last safe position so a collision-rollback
-            # can't leave sparks stranded where the car never actually was.
             anchor_x = self.current_car.last_safe_x if self.current_car.last_safe_x is not None else physics.car_x
             anchor_y = self.current_car.last_safe_y if self.current_car.last_safe_y is not None else physics.car_y
             self.sparks.emit(
@@ -186,18 +255,90 @@ class GamePlay:
             )
         self.sparks.update()
         self.current_camera.update_camera_angle()
-        self.current_map.update_checkpoints()
 
-        # ------------------------------------------------------------------ #
-        # AI step (order: plan -> collide -> physics)                        #
-        # ------------------------------------------------------------------ #
-        self.ai_controller.update()
-        self._ai_collision_check()
         self.ai_car.physics = self.ai_car.step_physics_with_controls(
             snap_step_degrees=self.config.rotation_snap_degrees,
         )
 
+    # ------------------------------------------------------------------ #
+    # HUD + debug overlay                                                #
+    # ------------------------------------------------------------------ #
+
+    def _world_to_screen_real(self, wx: float, wy: float) -> tuple[int, int]:
+        """Project a world-space point onto the real (unscaled) screen surface."""
+        renderer = self.current_renderer
+        player = self.current_car.physics
+        dx = (wx - player.car_x) * renderer.map_zoom
+        dy = (wy - player.car_y) * renderer.map_zoom
+        angle_rad = math.radians(self.current_camera.angle)
+        cos_a = math.cos(angle_rad)
+        sin_a = math.sin(angle_rad)
+        rx = dx * cos_a - dy * sin_a
+        ry = dx * sin_a + dy * cos_a
+        fx = renderer.center[0] + rx
+        fy = renderer.center[1] + ry
+        screen_w, screen_h = self.manager.screen_display.get_size()
+        frame_w, frame_h = renderer.render_size
+        return int(fx * screen_w / frame_w), int(fy * screen_h / frame_h)
+
+    def _position_label(self) -> str:
+        return "1st" if self._player_total_cp >= self._ai_total_cp else "2nd"
+
+    def draw_hud(self, screen: pygame.Surface) -> None:
+        total_cps = len(self.current_map.checkpoints_list) or 1
+        cp_in_lap = self.current_map.list_counter
+        lap = self.current_map.current_lap
+        speed = self.current_car.physics.speed
+
+        lines = [
+            f"Lap  {lap}",
+            f"CP   {cp_in_lap} / {total_cps}",
+            f"Spd  {speed:+.2f}",
+            f"Pos  {self._position_label()}",
+        ]
+
+        padding = 6
+        rendered = [self._hud_font.render(text, True, (255, 255, 255)) for text in lines]
+        width = max(s.get_width() for s in rendered) + padding * 2
+        height = sum(s.get_height() for s in rendered) + padding * 2
+
+        panel = pygame.Surface((width, height), pygame.SRCALPHA)
+        panel.fill((0, 0, 0, 140))
+        screen.blit(panel, (8, 8))
+
+        y = 8 + padding
+        for surf in rendered:
+            screen.blit(surf, (8 + padding, y))
+            y += surf.get_height()
+
+        if self._debug_checkpoints:
+            self._draw_checkpoint_debug(screen)
+
+    def _draw_checkpoint_debug(self, screen: pygame.Surface) -> None:
+        target_idx = self.current_map.list_counter
+        finish_idx = len(self.current_map.checkpoints_list) - 1
+        for idx, cp in enumerate(self.current_map.checkpoints_list):
+            if idx == finish_idx:
+                colour = (0, 220, 255) if idx != target_idx else (255, 255, 255)
+            elif idx < target_idx:
+                colour = (80, 220, 80)
+            elif idx == target_idx:
+                colour = (250, 220, 60)
+            else:
+                colour = (140, 140, 140)
+
+            rect = cp.rect
+            corners_world = [
+                (rect.left, rect.top),
+                (rect.right, rect.top),
+                (rect.right, rect.bottom),
+                (rect.left, rect.bottom),
+            ]
+            corners_screen = [self._world_to_screen_real(x, y) for x, y in corners_world]
+            pygame.draw.polygon(screen, colour, corners_screen, width=2)
+
     def draw(self, _surface: pygame.Surface) -> None:
+        screen = self.manager.screen_display
         extra_cars = [(self.ai_car, self.ai_stacker)]
         self.current_renderer.render_frame(
             self.config.gameplay_stack_spread, extra_cars=extra_cars,
@@ -214,4 +355,8 @@ class GamePlay:
             self.countdown.seconds -= 1
 
         self.countdown.complete = True
+
+        # HUD draws on the full-resolution display, on top of the pixelated map.
+        self.draw_hud(screen)
+
         pygame.display.flip()

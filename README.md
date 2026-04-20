@@ -23,8 +23,15 @@ Controls:
 | `W` / `S` | Throttle / brake-reverse |
 | `A` / `D` | Steer left / right |
 | `SPACE` | Hold to drift; release to trigger a boost |
+| `F1` | Toggle the checkpoint debug overlay (green = passed, yellow = current target, grey = upcoming) |
 | `ESC` | Back (on menu screens) |
 | `RETURN` | Confirm selection |
+
+### In-race HUD
+
+A small panel in the top-left shows the current lap, checkpoint progress
+(e.g. `CP 2 / 5`), scalar speed, and current position (`1st` / `2nd`
+based on cumulative checkpoints cleared vs. the AI).
 
 ## Project layout
 
@@ -84,12 +91,23 @@ Kar-kart/
 1. `main.py` asks the `ScreenManager` for the active screen.
 2. The main loop calls `handle_event` for each pygame event, then
    `update()`, then `draw(screen)`.
-3. On the gameplay screen, `update()` runs `CollisionDetector.check()`,
-   advances the `Car.step_physics()` state, updates the follow camera,
-   and ticks checkpoints.
+3. On the gameplay screen, `update()` toggles a frame-parity flag and
+   splits the work:
+   * **Even frames** run the mask-based player and AI collision checks
+     plus the car-to-car overlap test.
+   * **Odd frames** run checkpoint bookkeeping for both cars and the
+     A\* replan inside `AIController.update()`.
+   * **Every frame** still advances `Car.step_physics()` for both cars,
+     emits sparks, and updates the follow camera, so motion never
+     stutters — only the expensive checks alternate.
 4. `draw()` asks the `Renderer` to compose the frame: the `Map` blits
    itself with camera rotation, then the `Stacker` blits the car's
-   rotated sprite stack at the centre of the frame.
+   rotated sprite stack at the centre of the frame. The HUD is drawn
+   last, on the full-resolution display, on top of the pixelated scene.
+5. If the previous frame blew the ~16.7 ms budget, `main.py` skips the
+   next `draw()` call entirely and holds the last presented image for
+   one extra tick. Physics still updates, so the simulation stays in
+   step — only the visual is one frame stale.
 
 ## Adding a new track
 
@@ -106,6 +124,20 @@ Kar-kart/
    Edit the `MAP_NAME` constant in that file first to point to your new
    track, then use the keybindings in the module docstring to place
    regions. The tool writes the result back to `map_data.json` on exit.
+
+## Checkpoints and car-to-car collision
+
+`Checkpoint.check(car_x, car_y, half_size=10.0)` tests a small square
+footprint around the car against the checkpoint rect rather than a
+single point. That matters for narrow checkpoints: the old point-in-rect
+test could silently skip a checkpoint whenever the car's centre did not
+clip it, even though the body of the car clearly crossed through.
+
+Car-to-car collision is a simple distance test, not a mask test.
+`GamePlay._check_car_to_car_collision` compares player and AI positions
+against `_CAR_COLLISION_RADIUS` (world units); on overlap it pushes
+both cars along the collision axis and bleeds some scalar speed, which
+is enough to produce a convincing bump without per-pixel work.
 
 ## Tuning the car
 
@@ -177,8 +209,13 @@ classDiagram
         +handle_event(event)
         +update()
         +draw(surface)
+        +draw_hud(screen)
         -_collision_check()
         -_ai_collision_check()
+        -_check_car_to_car_collision()
+        -_update_checkpoints_player()
+        -_update_checkpoints_ai()
+        -_draw_checkpoint_debug(screen)
         -_pick_ai_car_stack()
     }
 
@@ -260,7 +297,7 @@ classDiagram
     class Checkpoint {
         +rect: pygame.Rect
         +passed: bool
-        +check(x, y) bool
+        +check(x, y, half_size) bool
     }
 
     class Stacker {
