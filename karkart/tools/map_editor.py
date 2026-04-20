@@ -117,14 +117,11 @@ def _try_delete_at(data: dict, wx: int, wy: int) -> bool:
     entry = data[MAP_NAME]
 
     # Single-placement rects first
-    for key in ("start_box", "start_checkpoint", "items"):
+    for key in ("start_grid", "finish_line", "items"):
         if key in entry:
             x, y, w, h = entry[key]
             if _point_in_rect(wx, wy, x, y, w, h):
                 del entry[key]
-                # If we removed the start box, the spawn point is meaningless.
-                if key == "start_box" and "start" in entry:
-                    del entry["start"]
                 return True
 
     # Checkpoints: delete the top-most one clicked (iterate reversed)
@@ -134,6 +131,7 @@ def _try_delete_at(data: dict, wx: int, wy: int) -> bool:
         if _point_in_rect(wx, wy, cp["x"], cp["y"], cp["w"], cp["h"]):
             checkpoints.pop(i)
             return True
+        return False
 
 def _draw_map_overlays(
     screen: pygame.Surface,
