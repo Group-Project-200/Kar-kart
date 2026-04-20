@@ -73,6 +73,7 @@ def _try_delete_at(data: dict, wx: int, wy: int) -> bool:
             checkpoints.pop(i)
             return True
 
+
 def main() -> None:
     pygame.init()
     pygame.display.set_caption("Map Editor")

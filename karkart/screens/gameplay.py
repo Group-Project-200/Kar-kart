@@ -18,7 +18,7 @@ from karkart.rendering.renderer import Renderer
 from karkart.rendering.sparks import SparkManager
 from karkart.rendering.stacker import Stacker
 from karkart.screens.start_sequence import StartSequence
-
+from karkart.powerups.powerups_manager import PowerupRendering
 
 with MAP_DATA_FILE.open() as f:
     _MAP_DATA = json.load(f)
@@ -42,6 +42,16 @@ def _car_pos_scaling(x: float, y: float, map_dimensions: tuple[int, int]) -> tup
     return x - map_dimensions[0] / 2, y - map_dimensions[1] / 2
 
 
+def _position_mapping(current_info, map_size):
+    map_w,map_h =map_size
+    raw_x, raw_y, item_w, item_h= current_info
+    shifted_x = raw_x - map_w / 2
+    shifted_y = raw_y - map_h / 2
+
+    info = shifted_x,shifted_y,item_w, item_h
+    return  info
+
+
 class GamePlay:
     """Wires physics, map, camera, stacker and renderer together for one race."""
 
@@ -59,9 +69,11 @@ class GamePlay:
 
         self.countdown = StartSequence(self.manager.screen_display)
 
+        proper_coordinates = _position_mapping(map_record["items"], self.current_map_data.layers[0].get_size())
+        self.items_box = PowerupRendering(proper_coordinates)
         self.current_car = Car()
         self.current_camera = Camera(self.current_car)
-        self.current_map = Map(self.current_map_data, self.current_camera)
+        self.current_map = Map(self.current_map_data, self.current_camera, world_objects=[self.items_box])
         self.car_stacker = Stacker(self.manager.app_data.current_car, self.config.dirs)
         self.sparks = SparkManager()
         self.current_renderer = Renderer(

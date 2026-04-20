@@ -47,12 +47,14 @@ def _simplify_surface(surface: pygame.Surface, factor: float = 1.5) -> pygame.Su
 class Map:
     """The playable world: zoomed terrain surface + collision masks + checkpoints."""
 
-    def __init__(self, map_data: MapData, camera: Camera) -> None:
+    def __init__(self, map_data: MapData, camera: Camera, world_objects: list | None = None) -> None:
         self.data = map_data
         self.camera = camera
         self.car = camera.car.physics
 
         self.map_surface: pygame.Surface = self.data.layers[0]
+
+        self.world_objects = world_objects or []
 
         # Everything below is populated by :meth:`zoom_fixing`.
         self.dimensions: tuple[int, int] | None = None
@@ -141,16 +143,20 @@ class Map:
         display.blit(self.cache.surface, (0, 0), area=(view_x, view_y, view_width, view_height))
 
     def draw_map_camera(
-        self, display: pygame.Surface, center: tuple[int, int], render_size: tuple[int, int],
+            self, display: pygame.Surface, center: tuple[int, int], render_size: tuple[int, int],
     ) -> None:
         """Draw the map with camera rotation applied (fast path when angle ~ 0)."""
         if abs(self.camera.angle) < 1e-4:
             self.draw_map(display, center, render_size)
+            for obj in self.world_objects:
+                obj.draw(display, center, self.car, self.cache.zoom)
             return
 
         assert self.camera_buffer is not None and self.camera_buffer_center is not None
         self.camera_buffer.fill((0, 0, 0))
         self.draw_map(self.camera_buffer, self.camera_buffer_center, self.camera_buffer.get_size())
+        for obj in self.world_objects:
+            obj.draw(self.camera_buffer, self.camera_buffer_center, self.car, self.cache.zoom)
         rotated_map = pygame.transform.rotate(self.camera_buffer, -self.camera.angle)
         rotated_rect = rotated_map.get_rect(center=center)
         display.blit(rotated_map, rotated_rect)
