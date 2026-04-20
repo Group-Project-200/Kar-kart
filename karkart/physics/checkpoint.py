@@ -12,7 +12,15 @@ class Checkpoint:
         self.rect = pygame.Rect(x, y, width, height)
         self.passed: bool = False
 
-    def check(self, car_x: float, car_y: float) -> bool:
-        """Return True if (*car_x*, *car_y*) lies inside the checkpoint rect."""
-        return self.rect.collidepoint(car_x, car_y)
+    def check(self, car_x: float, car_y: float, half_size: float = 10.0) -> bool:
+        """Return True if the car's footprint overlaps the checkpoint rect.
 
+        Tests a small square around (*car_x*, *car_y*) rather than a single
+        point so narrow checkpoints still trigger when the car's edge — not
+        just its centre — crosses the rect.
+        """
+        car_rect = pygame.Rect(
+            int(car_x - half_size), int(car_y - half_size),
+            int(half_size * 2), int(half_size * 2),
+        )
+        return self.rect.colliderect(car_rect)

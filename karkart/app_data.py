@@ -67,7 +67,6 @@ class AppData:
         self.current_car_name: str = "car_01"
         self.current_car: list[pygame.Surface] = self.cars[self.current_car_name]
 
-
     def add_track(self, track: Track) -> None:
         self.tracks.append(track)
 
