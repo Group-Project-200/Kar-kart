@@ -20,7 +20,10 @@ class PowerupRendering:
         pygame.draw.rect(surface, (255, 0, 0), (sx,sy,zw,zh))
 
     def check(self,car_x: float, car_y: float):
-        return self.area.collidepoint(car_x, car_y)
+        collision= self.area.collidepoint(car_x, car_y)
+        if collision:
+            self.active = False
+        return
 
 
 

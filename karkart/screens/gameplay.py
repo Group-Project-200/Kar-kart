@@ -129,7 +129,7 @@ class GamePlay:
         dir_idx = snap_degrees(car_relative_rotation, dirs=self.car_stacker.dirs)
         offset = (self.current_map.car_map_x, self.current_map.car_map_y)
         self.current_car.collision_results = self.collision_detector.border_check(dir_idx, offset)
-        print("collision",self.items_box.check(self.current_car.physics.car_x, self.current_car.physics.car_y))
+        self.items_box.check(self.current_car.physics.car_x, self.current_car.physics.car_y)
 
 
     def update_resources(self):

@@ -15,3 +15,4 @@ class Checkpoint:
     def check(self, car_x: float, car_y: float) -> bool:
         """Return True if (*car_x*, *car_y*) lies inside the checkpoint rect."""
         return self.rect.collidepoint(car_x, car_y)
+
