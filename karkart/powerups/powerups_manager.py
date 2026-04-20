@@ -2,16 +2,11 @@ import pygame
 
 class PowerupRendering:
     def __init__(self, dimensions):
-        self.mask = None
+        self.area = None
         self.x,self.y,self.w, self.h = dimensions
         self.active = True
+        self.area = pygame.Rect(self.x,self.y,self.w,self.h)
 
-    def build_mask(self, zoom: float) -> None:
-        zw = max(1, int(self.w * zoom))
-        zh = max(1, int(self.h * zoom))
-        surf = pygame.Surface((zw, zh), pygame.SRCALPHA)
-        surf.fill((255, 255, 255, 255))
-        self.mask = pygame.mask.from_surface(surf)
 
 
     def draw(self, surface: pygame.Surface, center: tuple[int, int], car, zoom: float):
@@ -22,8 +17,10 @@ class PowerupRendering:
         zw = max(1, int(self.w * zoom))
         zh = max(1, int(self.h * zoom))
 
-        pygame.draw.rect(surface, (255, 0, 0), (sx, sy, zw, zh))
+        pygame.draw.rect(surface, (255, 0, 0), (sx,sy,zw,zh))
 
+    def check(self,car_x: float, car_y: float):
+        return self.area.collidepoint(car_x, car_y)
 
 
 

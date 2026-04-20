@@ -94,8 +94,7 @@ class Map:
         ]
         self.masks = [pygame.mask.from_surface(_simplify_surface(layer)) for layer in self.zoomed_layers]
 
-        for obj in self.world_objects:
-            obj.build_mask(zoom)
+
 
         # Use a diagonal-sized square so rotated corners never clip.
         view_width, view_height = view_size
