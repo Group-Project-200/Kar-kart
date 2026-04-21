@@ -80,8 +80,7 @@ class CarScreen:
             self.selected = max(0, self.selected - 1)
         elif event.key == pygame.K_SPACE:
             car_name = f"car_{self.selected + 1:02d}"
-            self.manager.app_data.current_car_name = car_name
-            self.manager.app_data.current_car = self.manager.app_data.cars[car_name]
+            self.manager.app_data.set_current_car(car_name)
             self.manager.change_screen("map")
 
     def update(self) -> None:

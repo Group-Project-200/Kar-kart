@@ -20,9 +20,11 @@ from karkart.screens.map_selection import MapScreen
 from karkart.screens.race_selection import RaceSelector
 from karkart.screens.start import StartScreen
 from karkart.screens.pause_menu import PauseMenu
+from karkart.screens.placeholer_leaderboard import Placeholder
 
 
 TARGET_FPS = 60
+_FRAME_BUDGET_MS: float = 1000.0 / TARGET_FPS   # ≈ 16.67 ms
 
 
 def main() -> None:
@@ -41,7 +43,13 @@ def main() -> None:
     manager.add_screen("map", MapScreen(manager))
     manager.add_screen("game", GamePlay(manager))
     manager.add_screen("pause", PauseMenu(manager))
+    manager.add_screen("placeholder",Placeholder(manager))
     manager.change_screen("start")
+
+    # When a frame blows the 16.7 ms budget, the next tick holds the prior
+    # image on screen instead of rendering again. Physics still updates, so
+    # the car state is correct — only the visual is one frame stale.
+    skip_next_render: bool = False
 
     while manager.is_running():
         current = manager.get_screen()
@@ -54,10 +62,13 @@ def main() -> None:
                 manager.toggle_running()
 
         current.update()
-        current.draw(screen)
 
-        pygame.display.update()
-        clock.tick(TARGET_FPS)
+        if not skip_next_render:
+            current.draw(screen)
+            pygame.display.update()
+
+        elapsed = clock.tick(TARGET_FPS)
+        skip_next_render = elapsed > _FRAME_BUDGET_MS * 1.15
 
     pygame.quit()
     sys.exit()

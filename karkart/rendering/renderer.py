@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import math
+
 import pygame
 
 from karkart.helpers import clamp_scale, clamp_zoom, snap_degrees
+from karkart.physics.car import Car
 from karkart.rendering.map import Map
 from karkart.rendering.sparks import SparkManager
 from karkart.rendering.stacker import Stacker
@@ -54,8 +57,40 @@ class Renderer:
             return
         pygame.transform.scale(self.frame_surface, self.screen.get_size(), self.screen)
 
-    def render_frame(self, stack_spread: float) -> None:
-        """Compose one frame: map in camera space, then car at screen centre."""
+    def _world_to_screen(self, wx: float, wy: float) -> tuple[int, int]:
+        """Project a world-space point onto the camera-rotated screen buffer."""
+        player = self.map.camera.car.physics
+        dx = (wx - player.car_x) * self.map_zoom
+        dy = (wy - player.car_y) * self.map_zoom
+        angle_rad = math.radians(self.map.camera.angle)
+        cos_a = math.cos(angle_rad)
+        sin_a = math.sin(angle_rad)
+        # Pygame rotates the map by -camera.angle (CW); points rotate the opposite way.
+        rx = dx * cos_a - dy * sin_a
+        ry = dx * sin_a + dy * cos_a
+        return int(self.center[0] + rx), int(self.center[1] + ry)
+
+    def _draw_extra_car(self, car: Car, stacker: Stacker, stack_spread: float) -> None:
+        """Blit an auxiliary car (e.g. the AI opponent) at its world position."""
+        sx, sy = self._world_to_screen(car.physics.car_x, car.physics.car_y)
+        width, height = self.render_size
+        margin = 64  # Pixels of slack so partially-visible cars still draw.
+        if sx < -margin or sx > width + margin or sy < -margin or sy > height + margin:
+            return
+        dir_idx = snap_degrees(car.physics.rotation - self.map.camera.angle, dirs=stacker.dirs)
+        hop_px = int(car.physics.car_z * self._HOP_PIXEL_SCALE)
+        stacker.render_stack(self.frame_surface, dir_idx, (sx, sy), stack_spread, hop_px)
+
+    def render_frame(
+        self,
+        stack_spread: float,
+        extra_cars: list[tuple[Car, Stacker]] | None = None,
+    ) -> None:
+        """Compose one frame: map in camera space, then car at screen centre.
+
+        *extra_cars* is an optional list of (car, stacker) pairs drawn at their
+        world-relative screen positions (used for the AI opponent).
+        """
         frame_surface = self.frame_surface
         frame_surface.fill((0, 0, 0))
 
@@ -81,6 +116,10 @@ class Renderer:
             self.map_zoom,
             self.center,
         )
+
+        if extra_cars:
+            for other_car, other_stacker in extra_cars:
+                self._draw_extra_car(other_car, other_stacker, stack_spread)
 
         hop_px = int(physics.car_z * self._HOP_PIXEL_SCALE)
         self.stacker.render_stack(self.frame_surface, dir_idx, self.center, stack_spread, hop_px)

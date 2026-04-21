@@ -23,12 +23,11 @@ class MapCache:
 
 
 class MapData:
-    """Static data about a single map (layers, checkpoints, start box)."""
+    """Static data about a single map (layers, checkpoints, finish line, start grid)."""
 
     checkpoints: list | None
-    start_pos: tuple[int, int] | None
     layers: list | None
-    start_checkpoint: list[int] | None
+    finish_line: list[int] | None
 
 
 def _convert_opaque_for_display(surface: pygame.Surface) -> pygame.Surface:
@@ -47,12 +46,15 @@ def _simplify_surface(surface: pygame.Surface, factor: float = 1.5) -> pygame.Su
 class Map:
     """The playable world: zoomed terrain surface + collision masks + checkpoints."""
 
-    def __init__(self, map_data: MapData, camera: Camera) -> None:
+    def __init__(self, map_data: MapData, camera: Camera, world_objects: list | None = None) -> None:
         self.data = map_data
         self.camera = camera
         self.car = camera.car.physics
 
         self.map_surface: pygame.Surface = self.data.layers[0]
+
+        self.world_objects = world_objects or []
+        self.active = True
 
         # Everything below is populated by :meth:`zoom_fixing`.
         self.dimensions: tuple[int, int] | None = None
@@ -67,10 +69,9 @@ class Map:
         # Checkpoint and lap bookkeeping.
         self.checkpoints: list[Checkpoint] = []
         self.checkpoints_list: list[Checkpoint] = []
-        self.start_checkpoint: Checkpoint | None = None
+        self.finish_line: Checkpoint | None = None
         self.list_counter: int = 0
-        self.current_lap: int = 0
-        self.laps: int = 0
+        self.current_lap: int = 1
         self.lap_times: list[tuple[float, int]] = []
 
         # Most recent world-space coordinates of the car, in map pixels.
@@ -113,13 +114,14 @@ class Map:
             )
             for cp in self.data.checkpoints
         ]
-        self.start_checkpoint = Checkpoint(
-            self.data.start_checkpoint[0] - self.dimensions[0] / 2,
-            self.data.start_checkpoint[1] - self.dimensions[1] / 2,
-            self.data.start_checkpoint[2],
-            self.data.start_checkpoint[3],
+        self.finish_line = Checkpoint(
+            self.data.finish_line[0] - self.dimensions[0] / 2,
+            self.data.finish_line[1] - self.dimensions[1] / 2,
+            self.data.finish_line[2],
+            self.data.finish_line[3],
         )
-        self.checkpoints_list = [self.start_checkpoint, *self.checkpoints]
+        # Finish line is last: all regular CPs must be hit in order first.
+        self.checkpoints_list = [*self.checkpoints, self.finish_line]
 
     def get_coordinates(self) -> None:
         """Refresh :attr:`car_map_x`/``car_map_y`` from the car's world position."""
@@ -146,24 +148,33 @@ class Map:
         """Draw the map with camera rotation applied (fast path when angle ~ 0)."""
         if abs(self.camera.angle) < 1e-4:
             self.draw_map(display, center, render_size)
+            for obj in self.world_objects:
+                obj.draw(display, center, self.car, self.cache.zoom)
             return
 
         assert self.camera_buffer is not None and self.camera_buffer_center is not None
         self.camera_buffer.fill((0, 0, 0))
         self.draw_map(self.camera_buffer, self.camera_buffer_center, self.camera_buffer.get_size())
+        for obj in self.world_objects:
+            obj.draw(self.camera_buffer, self.camera_buffer_center, self.car, self.cache.zoom)
         rotated_map = pygame.transform.rotate(self.camera_buffer, -self.camera.angle)
         rotated_rect = rotated_map.get_rect(center=center)
         display.blit(rotated_map, rotated_rect)
 
     def update_checkpoints(self) -> None:
-        """Advance the checkpoint cursor and record lap times as the car passes each."""
+        """Advance the checkpoint cursor; crossing the finish line after all CPs counts a lap."""
         current_checkpoint = self.checkpoints_list[self.list_counter]
         if not current_checkpoint.check(self.car.car_x, self.car.car_y):
             return
 
-        if current_checkpoint is self.start_checkpoint:
-            self.current_lap += 1
-        self.lap_times.append((time.perf_counter(), self.current_lap))
+        print(self.active)
         self.list_counter += 1
         if self.list_counter >= len(self.checkpoints_list):
+            # Completed a full lap: passed every CP then the finish line.
+            self.current_lap += 1
+            if self.active:
+                for item in self.world_objects: item.active = True
+            self.lap_times.append((time.perf_counter(), self.current_lap))
             self.list_counter = 0
+        else:
+            self.lap_times.append((time.perf_counter(), self.current_lap))

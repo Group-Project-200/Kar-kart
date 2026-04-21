@@ -24,7 +24,7 @@ class CollisionDetector:
         car_w, car_h = self.current_car_mask.get_size()
         return car_map_pos[0] - car_w // 2, car_map_pos[1] - car_h // 2
 
-    def check(self, direction_index: int, car_map_pos: tuple[int, int]) -> bool:
+    def border_check(self, direction_index: int, car_map_pos: tuple[int, int]) -> bool:
         """Return True if the car overlaps a collision layer at its current pose."""
         self.current_car_mask = self.car_masks[direction_index]
         offset = self._offset(car_map_pos)
