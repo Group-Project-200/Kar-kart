@@ -62,6 +62,7 @@ class GamePlay:
     _CAR_COLLISION_RADIUS: float = 18.0
 
     def __init__(self, manager) -> None:
+        self.ai_active = None
         self.manager = manager
         self.mode = self.manager.app_data.modes[self.manager.app_data.current_mode]
         self.config = GameConfig()
@@ -103,7 +104,7 @@ class GamePlay:
         for box in proper_coordinates:
             self.world_box.append(PowerupRendering(box, self.power_ups_manager))
         self.current_camera = Camera(self.current_car)
-        self.current_map = Map(self.current_map_data, self.current_camera, self.world_box, self.mode["Items"])
+        self.current_map = Map(self.current_map_data, self.current_camera, self.world_box)
         self.car_stacker = Stacker(self.manager.app_data.current_car, self.config.dirs)
         self.sparks = SparkManager()
         self.current_renderer = Renderer(
@@ -120,11 +121,6 @@ class GamePlay:
             start_x, start_y, self.current_map.dimensions,
         )
 
-
-
-        self.ai_active  = self.mode["Ai"]
-        for items_box in self.world_box:
-            items_box.active = self.mode["Items"]
 
 
 
@@ -233,6 +229,7 @@ class GamePlay:
         self.ai_active = self.mode["Ai"]
         for items_box in self.world_box:
             items_box.active = self.mode["Items"]
+        self.current_map.active = self.mode["Items"]
 
 
 
