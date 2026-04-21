@@ -19,6 +19,8 @@ from karkart.rendering.sparks import SparkManager
 from karkart.rendering.stacker import Stacker
 from karkart.screens.start_sequence import StartSequence
 
+from karkart.ui.pause_circle import PauseCircle
+
 
 with MAP_DATA_FILE.open() as f:
     _MAP_DATA = json.load(f)
@@ -48,6 +50,8 @@ class GamePlay:
     def __init__(self, manager) -> None:
         self.manager = manager
         self.config = GameConfig()
+
+        self.pause = PauseCircle()
 
         map_name = self.manager.app_data.current_map.name
         map_record = _MAP_DATA[map_name]
@@ -93,6 +97,10 @@ class GamePlay:
                     controls.down_input = True
                 case pygame.K_SPACE:
                     controls.drift_input = True
+
+                case pygame.K_p:
+                    self.manager.change_screen("pause")
+
         elif event.type == pygame.KEYUP:
             match event.key:
                 case pygame.K_a:
@@ -143,6 +151,8 @@ class GamePlay:
 
     def draw(self, _surface: pygame.Surface) -> None:
         self.current_renderer.render_frame(self.config.gameplay_stack_spread)
+
+        self.pause.draw(_surface)
 
         # One-shot blocking countdown at race start.
         while self.countdown.seconds > 0:
