@@ -112,6 +112,18 @@ def _draw_sidebar(
         ):
             screen.blit(surf, surf.get_rect(center=rect.center))
 
+def powerups_sizing(x,y,w,h):
+    if w > h:
+        box1 = [x, y, 60, 60]
+        box2 = [x + 80, y , 60, 60]
+        box3 = [x + 160, y, 60, 60]
+        return box1, box2, box3
+    elif w < h:
+        box1 = [x, y, 60, 60]
+        box2 = [x, y + 80, 60, 60]
+        box3 = [x, y + 160, 60, 60]
+        return box1, box2, box3
+
 def _try_delete_at(data: dict, wx: int, wy: int) -> bool:
 
     entry = data[MAP_NAME]
@@ -169,8 +181,9 @@ def _draw_map_overlays(
         screen.blit(lbl, lbl.get_rect(center=(x - camera_x + w // 2, y - camera_y + h // 2)))
 
     if "items" in data[MAP_NAME]:
-        x, y, w, h = data[MAP_NAME]["items"]
-        pygame.draw.rect(screen, (180, 0, 200), (x - camera_x, y - camera_y, w, h), 2)
+        for item in data[MAP_NAME]["items"]:
+            x, y, w, h = item
+            pygame.draw.rect(screen, (180, 0, 200), (x - camera_x, y - camera_y, w, h), 2)
 
 def main() -> None:
     pygame.init()
@@ -258,7 +271,11 @@ def main() -> None:
                     elif mode == "start_grid":
                         data[MAP_NAME]["start_grid"] = (x, y, w, h)
                     elif mode == "item placements":
-                        data[MAP_NAME]["items"] = (x, y, w, h)
+                        box1, box2,box3 = powerups_sizing(x, y, w, h)
+                        items = data[MAP_NAME].setdefault("items", [])
+                        items.append(box1)
+                        items.append(box2)
+                        items.append(box3)
                 placing = False
 
         # ---- clamp camera to map bounds ----------------------------------- #

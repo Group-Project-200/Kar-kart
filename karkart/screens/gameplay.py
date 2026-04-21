@@ -93,13 +93,17 @@ class GamePlay:
         self.current_map_data.layers = self.manager.app_data.return_map_layers()
 
         self.countdown = StartSequence(self.manager.screen_display)
-
-        proper_coordinates = _position_mapping(map_record["items"], self.current_map_data.layers[0].get_size())
+        proper_coordinates =[]
+        for item in map_record["items"]:
+            proper_coordinates.append( _position_mapping(item, self.current_map_data.layers[0].get_size()))
         self.current_car = Car()
         self.power_ups_manager = PowerupsManager(self.current_car)
-        self.items_box = PowerupRendering(proper_coordinates, self.power_ups_manager)
+
+        self.world_box = []
+        for box in proper_coordinates:
+            self.world_box.append(PowerupRendering(box, self.power_ups_manager))
         self.current_camera = Camera(self.current_car)
-        self.current_map = Map(self.current_map_data, self.current_camera, world_objects=[self.items_box])
+        self.current_map = Map(self.current_map_data, self.current_camera, self.world_box)
         self.car_stacker = Stacker(self.manager.app_data.current_car, self.config.dirs)
         self.sparks = SparkManager()
         self.current_renderer = Renderer(
@@ -116,8 +120,11 @@ class GamePlay:
             start_x, start_y, self.current_map.dimensions,
         )
 
-        self.ai_active, self.items_box.active = self.mode["Ai"], self.mode["Items"]
 
+
+        self.ai_active  = self.mode["Ai"]
+        for items_box in self.world_box:
+            items_box.active = self.mode["Items"]
 
 
 
@@ -203,10 +210,12 @@ class GamePlay:
         dir_idx = snap_degrees(car_relative_rotation, dirs=self.car_stacker.dirs)
         offset = (self.current_map.car_map_x, self.current_map.car_map_y)
         self.current_car.collision_results = self.collision_detector.border_check(dir_idx, offset)
-        powered_up = self.items_box.check(self.current_car.physics.car_x, self.current_car.physics.car_y)
-        if powered_up and self.power_ups_manager.current is None:
-            self.power_ups_manager.current = self.power_ups_manager.choose_random_powerup()
-            self.power_ups_manager.current.activate(self.current_car.physics)
+
+        for items_box in self.world_box:
+            powered_up = items_box.check(self.current_car.physics.car_x, self.current_car.physics.car_y)
+            if powered_up and self.power_ups_manager.current is None:
+                self.power_ups_manager.current = self.power_ups_manager.choose_random_powerup()
+                self.power_ups_manager.current.activate(self.current_car.physics)
 
     def _ai_collision_check(self) -> None:
         """Test the AI car against the same map masks the player uses."""
@@ -219,6 +228,8 @@ class GamePlay:
 
     def update_resources(self):
         self.car_stacker.set_images(self.manager.app_data.current_car)
+
+
     def _check_car_to_car_collision(self) -> None:
         """Push player and AI apart if they overlap, and bleed some momentum."""
         p = self.current_car.physics
