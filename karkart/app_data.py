@@ -51,8 +51,8 @@ class AppData:
     def __init__(self) -> None:
         self.tracks: list[Track] = []
         self.cars: dict[str, list[pygame.Surface]] = load_all_car_stacks()
-        self.modes = {"time_trial": {"Ai": False, "Items": False},
-                      "race_mode": {"Ai": True, "Items": True}
+        self.modes = {"Time Trial": {"Ai": False, "Items": False},
+                      "Race Mode": {"Ai": True, "Items": True}
                       }
 
         # Playable tracks discovered on disk (each has cover + per-layer images).
@@ -69,7 +69,8 @@ class AppData:
         self.current_map: Track | None = default or (self.tracks[0] if self.tracks else None)
         self.current_car_name: str = "car_01"
         self.current_car: list[pygame.Surface] = self.cars[self.current_car_name]
-        self.current_mode = "race_mode"
+        self.current_mode = "Race Mode"
+
 
 
 

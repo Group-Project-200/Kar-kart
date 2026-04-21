@@ -228,6 +228,11 @@ class GamePlay:
 
     def update_resources(self):
         self.car_stacker.set_images(self.manager.app_data.current_car)
+        self.mode = self.manager.app_data.modes[self.manager.app_data.current_mode]
+        self.ai_active = self.mode["Ai"]
+        for items_box in self.world_box:
+            items_box.active = self.mode["Items"]
+
 
 
     def _check_car_to_car_collision(self) -> None:
