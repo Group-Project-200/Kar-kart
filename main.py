@@ -1,83 +1,66 @@
-import pygame, sys
+"""Kar-Kart entry point.
 
-from screen_manager import ScreenManager
-from constants import ScreenPositions as sp
-from screens.start_screen import StartScreen
-from screens.race_selection_screen import RaceSelector
-from screens.car_selection_screen import CarScreen
-from screens.map_selection_screen import MapScreen
-from screens.gameplay_screen import GamePlay
-from app_data import AppData
+Run this file to launch the game::
 
+    python main.py
+"""
 
-# defining the screen and the clock used in the game loop
+from __future__ import annotations
 
-pygame.init()
+import sys
 
-clock = pygame.time.Clock()
+import pygame
 
-
-# put WIDTH and HEIGHT as constants
-
-screen = pygame.display.set_mode((sp.WIDTH, sp.HEIGHT))    # please if you change the screen add a comment to tell us
-
-
-def main():
-
-    # implemented a whole new system where there is:
-    #  - a ScreenManager object, that records all screens in the program in a dictionary
-    # that was done because importing a screen in multiple screens raises an ImportError
-
-    # created a file per screen:
-    # 1. implemented proper OOP programming practices
-    # 2. easier to modify each screen individually
+from karkart.app_data import AppData
+from karkart.constants import ScreenPositions as sp
+from karkart.screen_manager import ScreenManager
+from karkart.screens.car_selection import CarScreen
+from karkart.screens.gameplay import GamePlay
+from karkart.screens.map_selection import MapScreen
+from karkart.screens.race_selection import RaceSelector
+from karkart.screens.start import StartScreen
+from karkart.screens.pause_menu import PauseMenu
 
 
-    # READ ScreenManager for the new functions i created (implementing encapsulation)
-    # they do exactly the same as the original code but it just follows better practices
+TARGET_FPS = 60
 
+
+def main() -> None:
+    pygame.init()
+    screen = pygame.display.set_mode((sp.WIDTH, sp.HEIGHT))
+    clock = pygame.time.Clock()
+
+    # Shared runtime state + router for swapping between screens.
     app_data = AppData()
     manager = ScreenManager(app_data, screen)
 
-    # add all the tracks to screen manager
-    # so that we upload them just once before the for-loop
+    # Register every screen up-front so they only load assets once.
     manager.add_screen("start", StartScreen(manager))
-    manager.add_screen("race_selector", RaceSelector(manager))   # ADD THIS
+    manager.add_screen("race_selector", RaceSelector(manager))
     manager.add_screen("car", CarScreen(manager))
     manager.add_screen("map", MapScreen(manager))
     manager.add_screen("game", GamePlay(manager))
-
+    manager.add_screen("pause", PauseMenu(manager))
     manager.change_screen("start")
 
-
     while manager.is_running():
-
         current = manager.get_screen()
 
         for event in pygame.event.get():
-
-            # updates the event input
-            # NEW: put handle_event inside the for-loop and changed the name from "handle_events"
-
             current.handle_event(event)
-
             if event.type == pygame.QUIT:
                 manager.toggle_running()
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                manager.toggle_running()
 
-        #updates the screen
         current.update()
-
-        #draws the screen
         current.draw(screen)
 
         pygame.display.update()
-
-        clock.tick(60)
+        clock.tick(TARGET_FPS)
 
     pygame.quit()
     sys.exit()
-
-
 
 
 if __name__ == "__main__":
