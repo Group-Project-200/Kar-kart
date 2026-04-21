@@ -8,6 +8,7 @@ class PowerupsManager:
         self.powerups: list = [SpeedBoost(), SpeedBoost(),SpeedBoost()]
         self.current = None
         self.current_player = player
+        self.active =True
 
     def choose_random_powerup(self):
         self.current = random.choice(self.powerups)
@@ -19,7 +20,7 @@ class PowerupRendering:
         self.x,self.y,self.w, self.h = dimensions
         self.active = True
         self.area = pygame.Rect(self.x,self.y,self.w,self.h)
-        self.manager =powerups_manager
+        self.manager = powerups_manager
 
     def draw(self, surface: pygame.Surface, center: tuple[int, int], car, zoom: float):
         if not self.active:
@@ -33,6 +34,8 @@ class PowerupRendering:
 
     def check(self,car_x: float, car_y: float):
         collision= self.area.collidepoint(car_x, car_y)
+        if not self.active:
+            return False
         if collision:
             self.active = False
             return True

@@ -71,7 +71,6 @@ class Map:
         self.finish_line: Checkpoint | None = None
         self.list_counter: int = 0
         self.current_lap: int = 1
-        self.laps: int = 0
         self.lap_times: list[tuple[float, int]] = []
 
         # Most recent world-space coordinates of the car, in map pixels.

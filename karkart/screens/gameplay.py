@@ -211,6 +211,7 @@ class GamePlay:
         offset = (self.current_map.car_map_x, self.current_map.car_map_y)
         self.current_car.collision_results = self.collision_detector.border_check(dir_idx, offset)
 
+
         for items_box in self.world_box:
             powered_up = items_box.check(self.current_car.physics.car_x, self.current_car.physics.car_y)
             if powered_up and self.power_ups_manager.current is None:
