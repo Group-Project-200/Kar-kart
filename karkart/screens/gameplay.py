@@ -205,7 +205,7 @@ class GamePlay:
         self.current_car.collision_results = self.collision_detector.border_check(dir_idx, offset)
         powered_up = self.items_box.check(self.current_car.physics.car_x, self.current_car.physics.car_y)
         if powered_up and self.power_ups_manager.current is None:
-            self.power_ups_manager.current = self.power_ups_manager.powerups[0]
+            self.power_ups_manager.current = self.power_ups_manager.choose_random_powerup()
             self.power_ups_manager.current.activate(self.current_car.physics)
 
     def _ai_collision_check(self) -> None:
