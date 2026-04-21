@@ -12,6 +12,7 @@ class Checkpoint:
         self.rect = pygame.Rect(x, y, width, height)
         self.passed: bool = False
 
+
     def check(self, car_x: float, car_y: float, half_size: float = 10.0) -> bool:
         """Return True if the car's footprint overlaps the checkpoint rect.
 

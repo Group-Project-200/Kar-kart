@@ -46,7 +46,7 @@ def _simplify_surface(surface: pygame.Surface, factor: float = 1.5) -> pygame.Su
 class Map:
     """The playable world: zoomed terrain surface + collision masks + checkpoints."""
 
-    def __init__(self, map_data: MapData, camera: Camera, world_objects: list | None = None) -> None:
+    def __init__(self, map_data: MapData, camera: Camera, world_objects: list | None = None, items_active : bool= True) -> None:
         self.data = map_data
         self.camera = camera
         self.car = camera.car.physics
@@ -54,6 +54,7 @@ class Map:
         self.map_surface: pygame.Surface = self.data.layers[0]
 
         self.world_objects = world_objects or []
+        self.active = items_active
 
         # Everything below is populated by :meth:`zoom_fixing`.
         self.dimensions: tuple[int, int] | None = None
@@ -166,11 +167,13 @@ class Map:
         if not current_checkpoint.check(self.car.car_x, self.car.car_y):
             return
 
+
         self.list_counter += 1
         if self.list_counter >= len(self.checkpoints_list):
             # Completed a full lap: passed every CP then the finish line.
             self.current_lap += 1
-            for item in self.world_objects: item.active = True
+            if self.active:
+                for item in self.world_objects: item.active = True
             self.lap_times.append((time.perf_counter(), self.current_lap))
             self.list_counter = 0
         else:

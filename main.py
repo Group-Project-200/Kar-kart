@@ -19,6 +19,7 @@ from karkart.screens.gameplay import GamePlay
 from karkart.screens.map_selection import MapScreen
 from karkart.screens.race_selection import RaceSelector
 from karkart.screens.start import StartScreen
+from karkart.screens.placeholer_leaderboard import Placeholder
 
 
 TARGET_FPS = 60
@@ -40,6 +41,7 @@ def main() -> None:
     manager.add_screen("car", CarScreen(manager))
     manager.add_screen("map", MapScreen(manager))
     manager.add_screen("game", GamePlay(manager))
+    manager.add_screen("placeholder",Placeholder(manager))
     manager.change_screen("start")
 
     # When a frame blows the 16.7 ms budget, the next tick holds the prior

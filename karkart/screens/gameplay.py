@@ -103,7 +103,7 @@ class GamePlay:
         for box in proper_coordinates:
             self.world_box.append(PowerupRendering(box, self.power_ups_manager))
         self.current_camera = Camera(self.current_car)
-        self.current_map = Map(self.current_map_data, self.current_camera, self.world_box)
+        self.current_map = Map(self.current_map_data, self.current_camera, self.world_box, self.mode["Items"])
         self.car_stacker = Stacker(self.manager.app_data.current_car, self.config.dirs)
         self.sparks = SparkManager()
         self.current_renderer = Renderer(
@@ -407,7 +407,7 @@ class GamePlay:
 
     def complete_race(self):
         if self.current_map.current_lap > 3:
-            print("DONE")
+            self.manager.change_screen("placeholder")
 
     def draw(self, _surface: pygame.Surface) -> None:
         screen = self.manager.screen_display
