@@ -62,7 +62,7 @@ class GamePlay:
     _CAR_COLLISION_RADIUS: float = 18.0
 
     def __init__(self, manager) -> None:
-        self.ai_active = None
+        self.ai_active = True
         self.manager = manager
         self.mode = self.manager.app_data.modes[self.manager.app_data.current_mode]
         self.config = GameConfig()
