@@ -1,11 +1,22 @@
 import pygame
+from karkart.powerups.powerup import SpeedBoost
+
+
+class PowerupsManager:
+    def __init__(self, player):
+        self.powerups: list = [SpeedBoost()]
+        self.current = None
+        self.current_player = player
+
+
 
 class PowerupRendering:
-    def __init__(self, dimensions):
+    def __init__(self, dimensions, powerups_manager: PowerupsManager):
         self.area = None
         self.x,self.y,self.w, self.h = dimensions
         self.active = True
         self.area = pygame.Rect(self.x,self.y,self.w,self.h)
+        self.manager =powerups_manager
 
 
 
@@ -23,10 +34,10 @@ class PowerupRendering:
         collision= self.area.collidepoint(car_x, car_y)
         if collision:
             self.active = False
-        return
+            return True
+        return False
 
 
 
-class PowerupsManager:
-    def __init__(self, powerups):
-        self.powerups: list = []
+
+

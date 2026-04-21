@@ -21,7 +21,7 @@ from karkart.rendering.renderer import Renderer
 from karkart.rendering.sparks import SparkManager
 from karkart.rendering.stacker import Stacker
 from karkart.screens.start_sequence import StartSequence
-from karkart.powerups.powerups_manager import PowerupRendering
+from karkart.powerups.powerups_manager import PowerupRendering, PowerupsManager
 
 with MAP_DATA_FILE.open() as f:
     _MAP_DATA = json.load(f)
@@ -95,8 +95,9 @@ class GamePlay:
         self.countdown = StartSequence(self.manager.screen_display)
 
         proper_coordinates = _position_mapping(map_record["items"], self.current_map_data.layers[0].get_size())
-        self.items_box = PowerupRendering(proper_coordinates)
         self.current_car = Car()
+        self.power_ups_manager = PowerupsManager(self.current_car)
+        self.items_box = PowerupRendering(proper_coordinates, self.power_ups_manager)
         self.current_camera = Camera(self.current_car)
         self.current_map = Map(self.current_map_data, self.current_camera, world_objects=[self.items_box])
         self.car_stacker = Stacker(self.manager.app_data.current_car, self.config.dirs)
@@ -149,6 +150,8 @@ class GamePlay:
                 checkpoints=self.current_map.checkpoints_list,
             )
 
+
+
     def _pick_ai_car_stack(self) -> list[pygame.Surface]:
         """Pick a sprite stack that's different from the player's car if possible."""
         cars = self.manager.app_data.cars
@@ -200,7 +203,10 @@ class GamePlay:
         dir_idx = snap_degrees(car_relative_rotation, dirs=self.car_stacker.dirs)
         offset = (self.current_map.car_map_x, self.current_map.car_map_y)
         self.current_car.collision_results = self.collision_detector.border_check(dir_idx, offset)
-        self.items_box.check(self.current_car.physics.car_x, self.current_car.physics.car_y)
+        powered_up = self.items_box.check(self.current_car.physics.car_x, self.current_car.physics.car_y)
+        if powered_up and self.power_ups_manager.current is None:
+            self.power_ups_manager.current = self.power_ups_manager.powerups[0]
+            self.power_ups_manager.current.activate(self.current_car.physics)
 
     def _ai_collision_check(self) -> None:
         """Test the AI car against the same map masks the player uses."""
@@ -291,6 +297,12 @@ class GamePlay:
                 physics.rotation,
                 physics.drift_charge_frames,
             )
+
+        if self.power_ups_manager.current is not None:
+            if self.power_ups_manager.current.tick(self.current_car.physics):
+                self.power_ups_manager.current = None
+
+
         self.sparks.update()
         self.current_camera.update_camera_angle()
 
@@ -298,6 +310,7 @@ class GamePlay:
 
 
         self.complete_race()
+
     # ------------------------------------------------------------------ #
     # HUD + debug overlay                                                #
     # ------------------------------------------------------------------ #
