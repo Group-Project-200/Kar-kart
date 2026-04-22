@@ -1,6 +1,7 @@
 """Cards: decorated rectangles used as clickable/selectable UI primitives."""
 
 from __future__ import annotations
+from abc import ABC, abstractmethod
 
 import pygame
 
@@ -9,9 +10,9 @@ from karkart.constants import ScreenPositions as sp
 from karkart.paths import PIXEL_FONT
 
 
-class Card:
+class Card(ABC):
     """A bordered rectangular card. ``(x, y)`` is the *centre*."""
-
+    @abstractmethod
     def __init__(self, x: float, y: float, width: float, height: float) -> None:
         self.width = width
         self.height = height
@@ -77,7 +78,7 @@ class MapCard(Card):
         return self.track
 
 
-class PauseCard(Card):
+class PopUpCard(Card):
     """Selectable card showing an option in the pause menu."""
     
     def __init__(self, text: str, screen: Screen | None =None) -> None:

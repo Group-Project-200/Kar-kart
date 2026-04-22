@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import pygame
 
-from karkart.constants import Keys as K, ScreenPositions as sp
+from karkart.constants import ScreenPositions as sp
 from karkart.paths import PICTURES_DIR
+from karkart.settings import Keys as K
 
 
 _MODE_IMAGE_NAMES: tuple[str, ...] = (

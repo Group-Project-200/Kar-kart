@@ -5,7 +5,7 @@ from __future__ import annotations
 import pygame
 
 from karkart.constants import ScreenPositions as sp
-from karkart.constants import Keys as K
+from karkart.settings import Keys as K
 from karkart.paths import CAR_RENDER_DIR, PICTURES_DIR
 from karkart.rendering.preview import (
     RenderSetup,
@@ -13,6 +13,7 @@ from karkart.rendering.preview import (
     render_preview_debug_frame,
 )
 from karkart.ui.button import PaddingButton
+from karkart.ui.settings_icon import SettingsIcon
 
 
 class CarScreen:
@@ -57,6 +58,8 @@ class CarScreen:
         self.preview_angle: int = 0
         self.selected: int = 0
 
+        self.settings_icon = SettingsIcon(self.manager, "car")
+
     @staticmethod
     def _load_car_slices(folder_name: str) -> list[pygame.Surface]:
         folder = CAR_RENDER_DIR / folder_name
@@ -70,6 +73,8 @@ class CarScreen:
 
         if event.type != pygame.KEYDOWN:
             return
+
+        self.settings_icon.handle_event(event)
 
         # Back button selected -> RETURN brings to map & UP brings back to selection.
         if self.back_selected:
@@ -121,3 +126,4 @@ class CarScreen:
         surface.blit(preview_surface, preview_rect)
 
         self.back_btn.draw(surface)
+        self.settings_icon.draw(surface)

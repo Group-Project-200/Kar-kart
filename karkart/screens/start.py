@@ -6,6 +6,7 @@ import pygame
 
 from karkart.constants import ScreenPositions as sp
 from karkart.paths import PICTURES_DIR
+from karkart.ui.settings_icon import SettingsIcon
 
 
 class StartScreen:
@@ -21,26 +22,17 @@ class StartScreen:
         self.last_time: int = pygame.time.get_ticks()
 
         self.bg = self._try_load_image(PICTURES_DIR / "bp2.png", convert_alpha=False)
+        self.settings_icon = SettingsIcon(self.manager, "start")
 
-        gear = self._try_load_image(PICTURES_DIR / "gearicon3.png", convert_alpha=True)
-        if gear is not None:
-            gear = pygame.transform.scale(gear, (64, 64))
-        self.gear_icon = gear
-
-    @staticmethod
-    def _try_load_image(path, *, convert_alpha: bool) -> pygame.Surface | None:
-        """Best-effort image load: return ``None`` on any file/pygame error."""
-        try:
-            image = pygame.image.load(str(path))
-        except (FileNotFoundError, pygame.error):
-            return None
-        return image.convert_alpha() if convert_alpha else image.convert()
 
     def handle_event(self, event) -> None:
-        if event.type == pygame.QUIT:
-            self.manager.toggle_running()
-        elif event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+        if event.type != pygame.KEYDOWN:
+            return None
+
+        self.settings_icon.handle_event(event)
+        if event.key == pygame.K_SPACE:
             self.manager.change_screen("race_selector")
+
 
     def update(self) -> None:
         # Manual FPS counter - updates once per second.
@@ -58,8 +50,14 @@ class StartScreen:
         else:
             surface.fill((50, 100, 200))
 
-        if self.gear_icon is not None:
-            gear_pos = (sp.WIDTH - 64 - 10, 10)
-            surface.blit(self.gear_icon, gear_pos)
-
+        self.settings_icon.draw(surface)
         pygame.display.set_caption(f"Kar Kart - Start Screen (FPS: {self.fps})")
+
+    @staticmethod
+    def _try_load_image(path, *, convert_alpha: bool) -> pygame.Surface | None:
+        """Best-effort image load: return ``None`` on any file/pygame error."""
+        try:
+            image = pygame.image.load(str(path))
+        except (FileNotFoundError, pygame.error):
+            return None
+        return image.convert_alpha() if convert_alpha else image.convert()

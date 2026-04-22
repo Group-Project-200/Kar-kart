@@ -20,6 +20,7 @@ from karkart.rendering.map import Map, MapData
 from karkart.rendering.renderer import Renderer
 from karkart.rendering.sparks import SparkManager
 from karkart.rendering.stacker import Stacker
+from karkart.settings import Keys as K
 from karkart.screens.start_sequence import StartSequence
 
 from karkart.powerups.powerups_manager import PowerupRendering, PowerupsManager
@@ -169,15 +170,15 @@ class GamePlay:
 
         if event.type == pygame.KEYDOWN:
             match event.key:
-                case pygame.K_a:
+                case K.LEFT:
                     controls.left_pressed = True
                     controls.steer_input = 1
-                case pygame.K_d:
+                case K.RIGHT:
                     controls.right_pressed = True
                     controls.steer_input = -1
-                case pygame.K_w:
+                case K.UP:
                     controls.up_input = True
-                case pygame.K_s:
+                case K.DOWN:
                     controls.down_input = True
                 case pygame.K_SPACE:
                     controls.drift_input = True
@@ -185,23 +186,22 @@ class GamePlay:
                 case pygame.K_ESCAPE:
                     # Open pause menu.
                     self.manager.change_screen("pause")
-                    self.manager.get_screen().add_black_layer = True
 
                 case pygame.K_F1:
                     self._debug_checkpoints = not self._debug_checkpoints
         elif event.type == pygame.KEYUP:
             match event.key:
-                case pygame.K_a:
+                case K.LEFT:
                     controls.left_pressed = False
                     if controls.steer_input == 1:
                         controls.steer_input = -1 if controls.right_pressed else 0
-                case pygame.K_d:
+                case K.RIGHT:
                     controls.right_pressed = False
                     if controls.steer_input == -1:
                         controls.steer_input = 1 if controls.left_pressed else 0
-                case pygame.K_w:
+                case K.UP:
                     controls.up_input = False
-                case pygame.K_s:
+                case K.DOWN:
                     controls.down_input = False
                 case pygame.K_SPACE:
                     controls.drift_input = False

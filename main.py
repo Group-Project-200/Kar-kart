@@ -19,7 +19,7 @@ from karkart.screens.gameplay import GamePlay
 from karkart.screens.map_selection import MapScreen
 from karkart.screens.race_selection import RaceSelector
 from karkart.screens.start import StartScreen
-from karkart.screens.pause_menu import PauseMenu
+from karkart.screens.pop_up_menus import PauseMenu, SettingsMenu
 from karkart.screens.placeholer_leaderboard import Placeholder
 
 
@@ -38,6 +38,7 @@ def main() -> None:
 
     # Register every screen up-front so they only load assets once.
     manager.add_screen("start", StartScreen(manager))
+    manager.add_screen("settings", SettingsMenu(manager))
     manager.add_screen("race_selector", RaceSelector(manager))
     manager.add_screen("car", CarScreen(manager))
     manager.add_screen("map", MapScreen(manager))

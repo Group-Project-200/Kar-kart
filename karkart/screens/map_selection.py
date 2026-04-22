@@ -9,6 +9,7 @@ from karkart.paths import PICTURES_DIR, PIXEL_FONT
 from karkart.ui.button import PaddingButton as Button
 from karkart.ui.card import MapCard
 from karkart.ui.container import MapContainer
+from karkart.ui.settings_icon import SettingsIcon
 
 
 class MapScreen:
@@ -37,10 +38,13 @@ class MapScreen:
         )
         self.background.set_alpha(192)
 
-    def handle_event(self, event) -> None:
-        # if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-        #     self.manager.change_screen("game")
+        self.settings_icon = SettingsIcon(self.manager, "map")
 
+    def handle_event(self, event) -> None:
+        if event.type != pygame.KEYDOWN:
+            return None
+
+        self.settings_icon.handle_event(event)
         selected_track = self.container.handle_event(event)
         if selected_track is not None:
             self.manager.get_app_data().set_current_map(selected_track)
@@ -74,3 +78,4 @@ class MapScreen:
 
         self.container.draw(surface)
         self.back_button.draw(surface)
+        self.settings_icon.draw(surface)

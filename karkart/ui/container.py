@@ -6,7 +6,7 @@ import logging
 
 import pygame
 
-from karkart.constants import Keys as K
+from karkart.settings import Keys as K
 
 
 logger = logging.getLogger("container")
@@ -158,7 +158,7 @@ class MapContainer(SelectContainer):
             super().handle_event(event)
         return None
 
-class PauseContainer(SelectContainer):
+class PopUpContainer(SelectContainer):
     """:class:`SelectContainer` adapted to the pause menu."""
 
     def __init__(
@@ -175,8 +175,14 @@ class PauseContainer(SelectContainer):
             # Enter on a pause card confirms the option selection.
             screen = self.objects[self.selected].get_screen()
             if screen:
+                self.objects[self.selected].unselect()
                 self.selected = 0
+                self.objects[self.selected].select()
                 return screen
+        elif event.key == pygame.K_ESCAPE:
+            self.objects[self.selected].unselect()
+            self.selected = 0
+            self.objects[self.selected].select()
 
         super().handle_event(event)
         return None
