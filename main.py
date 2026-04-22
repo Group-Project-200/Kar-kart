@@ -19,6 +19,7 @@ from karkart.screens.gameplay import GamePlay
 from karkart.screens.map_selection import MapScreen
 from karkart.screens.race_selection import RaceSelector
 from karkart.screens.start import StartScreen
+from karkart.screens.pause_menu import PauseMenu
 from karkart.screens.placeholer_leaderboard import Placeholder
 
 
@@ -41,7 +42,9 @@ def main() -> None:
     manager.add_screen("car", CarScreen(manager))
     manager.add_screen("map", MapScreen(manager))
     manager.add_screen("game", GamePlay(manager))
+    manager.add_screen("pause", PauseMenu(manager))
     manager.add_screen("placeholder",Placeholder(manager))
+
     manager.change_screen("start")
 
     # When a frame blows the 16.7 ms budget, the next tick holds the prior
@@ -53,11 +56,12 @@ def main() -> None:
         current = manager.get_screen()
 
         for event in pygame.event.get():
-            current.handle_event(event)
             if event.type == pygame.QUIT:
                 manager.toggle_running()
-            elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_q:
                 manager.toggle_running()
+
+            current.handle_event(event)
 
         current.update()
 

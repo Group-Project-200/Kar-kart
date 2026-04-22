@@ -59,7 +59,9 @@ class AppData:
         for map_folder in sorted(p for p in MAPS_DIR.iterdir() if p.is_dir()):
             cover = map_folder / "cover.png"
             if cover.is_file():
-                self.add_track(Track(str(cover), map_folder.name, str(map_folder)))
+                # self.add_track(Track(str(cover), map_folder.name, str(map_folder)))
+                # NOTE: temporarily putting map_2 as link for each one until a track is created
+                self.add_track(Track(str(cover), "map_2", MAPS_DIR / "map_2"))
 
         # Decorative flag-only tracks (placeholders, no playable layers yet).
         for filename, label in _FLAG_TRACKS:
@@ -70,8 +72,8 @@ class AppData:
         self.current_car_name: str = "car_01"
         self.current_car: list[pygame.Surface] = self.cars[self.current_car_name]
         self.current_mode = "Race Mode"
-
-
+        # NOTE: LEFT FOR TESTS:
+        # self.current_mode = "Time Trial"
 
 
 

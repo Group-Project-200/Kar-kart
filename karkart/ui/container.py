@@ -13,77 +13,6 @@ logger = logging.getLogger("container")
 logging.basicConfig(level=logging.CRITICAL, format=" %(levelname)s - %(message)s")
 
 
-class Container:
-    """Lays out children in a fixed rows x columns grid with auto padding.
-
-    Children must expose ``get_width()``, ``get_height()`` and ``draw(surface, x, y)``.
-    Set ``first="rows"`` to fill row-by-row, or ``"columns"`` to fill column-by-column.
-    """
-
-    def __init__(
-        self, center_x: float, center_y: float,
-        width: float, height: float,
-        rows: int, columns: int, first: str = "rows",
-    ) -> None:
-        self.width = width
-        self.height = height
-        self.x = center_x - self.width / 2
-        self.y = center_y - self.height / 2
-        self.rows = rows
-        self.columns = columns
-        self.first = first
-        self.objects: list = []
-
-    def add_object(self, obj) -> None:
-        """Append *obj* (must implement get_width/get_height/draw)."""
-        self.objects.append(obj)
-
-    def draw(self, surface: pygame.Surface) -> None:
-        n = len(self.objects)
-        logger.debug(n)
-
-        if self.first == "rows":
-            first_row = self.objects[: self.rows]
-            first_column = self.objects[:: self.rows]
-            first, second = self.rows, self.columns
-        elif self.first == "columns":
-            first_row = self.objects[:: self.rows]
-            first_column = self.objects[: self.rows]
-            first, second = self.columns, self.rows
-        else:
-            raise ValueError(f"Unknown layout order: {self.first!r}")
-
-        try:
-            padding_x = (self.width - sum(obj.get_width() for obj in first_row)) / (self.columns + 1)
-            padding_y = (self.height - sum(obj.get_height() for obj in first_column)) / (self.rows + 1)
-        except AttributeError as e:
-            raise TypeError(
-                "Container children must implement get_width() and get_height()",
-            ) from e
-
-        curr_x, curr_y = self.x + padding_x, self.y + padding_y
-        i = 0
-        for f in range(first):
-            # Trim the final row/column if the last tranche isn't full.
-            if f >= first - 1:
-                second = n - (first - 1) * second
-
-            for _ in range(second):
-                obj = self.objects[i]
-                obj.draw(surface, curr_x, curr_y)
-                if self.first == "rows":
-                    curr_x += obj.get_width() + padding_x
-                else:
-                    curr_y += obj.get_height() + padding_y
-                i += 1
-
-            if self.first == "columns":
-                curr_x += obj.get_width() + padding_x
-                curr_y = self.y + padding_y
-            else:
-                curr_x = self.x + padding_x
-                curr_y += obj.get_height() + padding_y
-
 
 class SelectContainer:
     """Grid container with a keyboard-driven selection cursor."""
@@ -227,4 +156,27 @@ class MapContainer(SelectContainer):
 
         if not self.back_selected:
             super().handle_event(event)
+        return None
+
+class PauseContainer(SelectContainer):
+    """:class:`SelectContainer` adapted to the pause menu."""
+
+    def __init__(
+        self, center_x: float, center_y: float,
+        width: float, height: float,
+        rows: int, columns: int,
+    ) -> None:
+        super().__init__(center_x, center_y, width, height, rows, columns)
+
+    def handle_event(self, event):
+        if event.type != pygame.KEYDOWN:
+            return None
+        if event.key == pygame.K_RETURN:
+            # Enter on a pause card confirms the option selection.
+            screen = self.objects[self.selected].get_screen()
+            if screen:
+                self.selected = 0
+                return screen
+
+        super().handle_event(event)
         return None

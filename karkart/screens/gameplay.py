@@ -21,6 +21,7 @@ from karkart.rendering.renderer import Renderer
 from karkart.rendering.sparks import SparkManager
 from karkart.rendering.stacker import Stacker
 from karkart.screens.start_sequence import StartSequence
+
 from karkart.powerups.powerups_manager import PowerupRendering, PowerupsManager
 
 with MAP_DATA_FILE.open() as f:
@@ -66,7 +67,6 @@ class GamePlay:
         self.manager = manager
         self.mode = self.manager.app_data.modes[self.manager.app_data.current_mode]
         self.config = GameConfig()
-
 
 
         # Alternating-frame scheduler: cheap per-frame work runs every tick;
@@ -181,6 +181,12 @@ class GamePlay:
                     controls.down_input = True
                 case pygame.K_SPACE:
                     controls.drift_input = True
+
+                case pygame.K_ESCAPE:
+                    # Open pause menu.
+                    self.manager.change_screen("pause")
+                    self.manager.get_screen().add_black_layer = True
+
                 case pygame.K_F1:
                     self._debug_checkpoints = not self._debug_checkpoints
         elif event.type == pygame.KEYUP:
@@ -415,15 +421,16 @@ class GamePlay:
             self.config.gameplay_stack_spread, extra_cars=extra_cars,
         )
 
+        # TODO: DECOMMENT
         # One-shot blocking countdown at race start.
-        while self.countdown.seconds > 0:
-            self.current_renderer.render_frame(
-                self.config.gameplay_stack_spread, extra_cars=extra_cars,
-            )
-            self.countdown.write()
-            pygame.display.flip()
-            time.sleep(1)
-            self.countdown.seconds -= 1
+        # while self.countdown.seconds > 0:
+        #     self.current_renderer.render_frame(
+        #         self.config.gameplay_stack_spread, extra_cars=extra_cars,
+        #     )
+        #     self.countdown.write()
+        #     pygame.display.flip()
+        #     time.sleep(1)
+        #     self.countdown.seconds -= 1
 
         self.countdown.complete = True
 
