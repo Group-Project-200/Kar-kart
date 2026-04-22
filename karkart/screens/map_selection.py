@@ -38,8 +38,8 @@ class MapScreen:
         self.background.set_alpha(192)
 
     def handle_event(self, event) -> None:
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-            self.manager.change_screen("game")
+        # if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+        #     self.manager.change_screen("game")
 
         selected_track = self.container.handle_event(event)
         if selected_track is not None:

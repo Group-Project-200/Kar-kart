@@ -44,6 +44,7 @@ def main() -> None:
     manager.add_screen("game", GamePlay(manager))
     manager.add_screen("pause", PauseMenu(manager))
     manager.add_screen("placeholder",Placeholder(manager))
+
     manager.change_screen("start")
 
     # When a frame blows the 16.7 ms budget, the next tick holds the prior
@@ -55,11 +56,12 @@ def main() -> None:
         current = manager.get_screen()
 
         for event in pygame.event.get():
-            current.handle_event(event)
             if event.type == pygame.QUIT:
                 manager.toggle_running()
-            elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_q:
                 manager.toggle_running()
+
+            current.handle_event(event)
 
         current.update()
 

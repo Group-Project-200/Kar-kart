@@ -4,29 +4,27 @@ from __future__ import annotations
 
 import pygame
 
-from karkart.constants import Keys, ScreenPositions as sp
+from karkart.constants import ScreenPositions as sp
+from karkart.constants import Keys as K
 from karkart.paths import CAR_RENDER_DIR, PICTURES_DIR
 from karkart.rendering.preview import (
     RenderSetup,
     build_render_pipeline,
     render_preview_debug_frame,
 )
-from karkart.ui.button import ColorButton
+from karkart.ui.button import PaddingButton
 
 
 class CarScreen:
-    """Press LEFT/RIGHT to cycle cars, SPACE to confirm, mouse for back button."""
+    """Press LEFT/RIGHT to cycle cars, RETURN to confirm, DOWN + RETURN for back button."""
 
     PREVIEW_SIZE = (600, 450)
     STATBOX_SIZE = (600, 400)
 
     def __init__(self, manager) -> None:
         self.manager = manager
-
-        self.back_btn = ColorButton(
-            110, sp.H // 1.35, 100, 50, "←", "race_selector", self.manager,
-            color_normal=(254, 214, 30), color_hover=(204, 219, 213),
-        )
+        self.back_btn = PaddingButton("Back", "race_selector", self.manager)
+        self.back_selected = False
 
         self.background = pygame.transform.scale(
             pygame.image.load(str(PICTURES_DIR / "cust1.png")).convert(),
@@ -69,19 +67,35 @@ class CarScreen:
         ]
 
     def handle_event(self, event) -> None:
-        self.back_btn.handle_event(event)
 
         if event.type != pygame.KEYDOWN:
             return
 
-        if event.key == Keys.RIGHT:
-            self.selected = min(len(self.car_slices) - 1, self.selected + 1)
-        elif event.key == Keys.LEFT:
-            self.selected = max(0, self.selected - 1)
-        elif event.key == pygame.K_SPACE:
-            car_name = f"car_{self.selected + 1:02d}"
-            self.manager.app_data.set_current_car(car_name)
-            self.manager.change_screen("map")
+        # Back button selected -> RETURN brings to map & UP brings back to selection.
+        if self.back_selected:
+            if event.key == pygame.K_RETURN:
+                # Enter on Back returns to the previous screen via the button itself.
+                self.back_selected = False
+                self.back_btn.unselect()
+                self.back_btn.handle_event(event)
+
+            elif event.key == K.UP:
+                self.back_selected = False
+                self.back_btn.unselect()
+
+        # Not selected -> selection is on & DOWN brings to BACK button
+        else:
+            if event.key == K.RIGHT:
+                self.selected = min(len(self.car_slices) - 1, self.selected + 1)
+            elif event.key == K.LEFT:
+                self.selected = max(0, self.selected - 1)
+            elif event.key == K.DOWN:
+                self.back_selected = True
+                self.back_btn.select()
+            elif event.key == pygame.K_RETURN:
+                car_name = f"car_{self.selected + 1:02d}"
+                self.manager.app_data.set_current_car(car_name)
+                self.manager.change_screen("map")
 
     def update(self) -> None:
         pass
