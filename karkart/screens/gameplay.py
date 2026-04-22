@@ -421,16 +421,15 @@ class GamePlay:
             self.config.gameplay_stack_spread, extra_cars=extra_cars,
         )
 
-        # TODO: DECOMMENT
         # One-shot blocking countdown at race start.
-        # while self.countdown.seconds > 0:
-        #     self.current_renderer.render_frame(
-        #         self.config.gameplay_stack_spread, extra_cars=extra_cars,
-        #     )
-        #     self.countdown.write()
-        #     pygame.display.flip()
-        #     time.sleep(1)
-        #     self.countdown.seconds -= 1
+        while self.countdown.seconds > 0:
+            self.current_renderer.render_frame(
+                self.config.gameplay_stack_spread, extra_cars=extra_cars,
+            )
+            self.countdown.write()
+            pygame.display.flip()
+            time.sleep(1)
+            self.countdown.seconds -= 1
 
         self.countdown.complete = True
 
