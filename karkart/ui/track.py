@@ -5,9 +5,10 @@ from __future__ import annotations
 import pygame
 
 from karkart.constants import Colors
+from karkart.ui.ui_object import UIObject
 
 
-class Track:
+class Track(UIObject):
     """Wraps a track's cover image, display name, and source folder path."""
 
     def __init__(self, pic_path: str, name: str, corr_map: str | None = None) -> None:
@@ -15,10 +16,7 @@ class Track:
         self.name = name
         self.corr_map = corr_map      # Path to the folder with map layers, or None.
 
-        self.width: int = 0
-        self.height: int = 0
-        self.x: float | None = None
-        self.y: float | None = None
+        super().__init__(0, 0, 0, 0)
 
     def handle_event(self, event) -> None:  # noqa: D401 - interface symmetry.
         """Placeholder for future hover/click behaviour."""
@@ -38,20 +36,11 @@ class Track:
 
     # -- Accessors --------------------------------------------------------- #
 
-    def get_width(self) -> int:
-        return self.width
-
-    def get_height(self) -> int:
-        return self.height
-
     def get_image(self) -> pygame.Surface:
         return self.image
 
     def get_name(self) -> str:
         return self.name
-
-    def set_position(self, x: float, y: float) -> None:
-        self.x, self.y = x, y
 
     def set_dimensions(self, width: int, height: int) -> None:
         self.width, self.height = width, height

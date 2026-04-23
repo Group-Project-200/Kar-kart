@@ -12,8 +12,7 @@ from karkart.rendering.preview import (
     build_render_pipeline,
     render_preview_debug_frame,
 )
-from karkart.ui.button import PaddingButton
-from karkart.ui.settings_icon import SettingsIcon
+from karkart.ui import Button, SettingsIcon
 
 
 class CarScreen:
@@ -24,7 +23,7 @@ class CarScreen:
 
     def __init__(self, manager) -> None:
         self.manager = manager
-        self.back_btn = PaddingButton("Back", "race_selector", self.manager)
+        self.back_btn = Button("Back", "race_selector", self.manager)
         self.back_selected = False
 
         self.background = pygame.transform.scale(

@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import pygame
 
-from karkart.paths import PICTURES_DIR
 from karkart.constants import Colors, ScreenPositions as sp
+from karkart.paths import PICTURES_DIR
+from karkart.ui.ui_object import UIObject
 
-class SettingsIcon:
+class SettingsIcon(UIObject):
     def __init__(self, manager, screen: str) -> None:
         self.manager = manager
         self.screen: str = screen

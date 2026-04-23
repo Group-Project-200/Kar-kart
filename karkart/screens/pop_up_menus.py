@@ -6,8 +6,7 @@ from abc import ABC, abstractmethod
 import pygame
 from karkart.constants import Colors
 from karkart.constants import ScreenPositions as sp
-from karkart.ui.container import PopUpContainer
-from karkart.ui.card import PopUpCard, TitleCard
+from karkart.ui import Arrow, ArrowContainer, PopUpContainer, PopUpCard, TitleCard
 from karkart.screens.gameplay import GamePlay
 
 class PopUpMenu(ABC):
@@ -79,7 +78,7 @@ class PauseMenu(PopUpMenu):
     def __init__(self, manager) -> None:
         super().__init__(manager)
 
-        options : list[PopUpCard] = [PopUpCard("Settings"), PopUpCard("Restart", screen="car"), PopUpCard("Quit")]
+        options : list[PopUpCard] = [PopUpCard("Settings"), PopUpCard("Restart", state="car"), PopUpCard("Quit")]
         self.container = PopUpContainer(self.x, self.y, self.width, self.height, len(options), 1)
 
         for opt in options:
@@ -109,11 +108,16 @@ class SettingsMenu(PopUpMenu):
     def __init__(self, manager) -> None:
         super().__init__(manager)
 
-        options : list[PopUpCard] = [PopUpCard("Keys"), PopUpCard("Other Keys"), PopUpCard("Audio")]
-        self.container = PopUpContainer(self.x, self.y, self.width, self.height, 3, 1)
+        # Container that stores left and right arrows and all the selectable options.
+        key_options : list[Any] = [PopUpCard("WASD", width=150), PopUpCard("Arrows", width=150)]
+        self.keys = ArrowContainer(0, 0, 250, 150, key_options)
 
-        for opt in options:
-            self.container.add_object(opt)
+        # Container for all the settings.
+        options = [self.keys, PopUpCard("Save", width=250)]
+        self.container = PopUpContainer(self.x, self.y, self.width, self.height, len(options), 1)
+        for x in options:
+            self.container.add_object(x)
+
         self.container.calculate_padding(x_center=True, y_center=True)
 
         # Creates title.

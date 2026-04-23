@@ -8,16 +8,15 @@ import pygame
 from karkart.constants import Colors
 from karkart.constants import ScreenPositions as sp
 from karkart.paths import PIXEL_FONT
+from karkart.ui.ui_object import UIObject
 
 
-class Card(ABC):
+class Card(UIObject, ABC):
     """A bordered rectangular card. ``(x, y)`` is the *centre*."""
     @abstractmethod
-    def __init__(self, x: float, y: float, width: float, height: float) -> None:
-        self.width = width
-        self.height = height
-        self.x = x - self.width / 2
-        self.y = y - self.height / 2
+    def __init__(self, center_x: float, center_y: float, width: float, height: float) -> None:
+        super().__init__(center_x, center_y, width, height)
+
         self.unselect()
         self.inner_color = Colors.DARK_BLUE
         self.bord_color = Colors.BLACK
@@ -35,12 +34,6 @@ class Card(ABC):
     def unselect(self) -> None:
         self.color = Colors.LIGHT_BLUE
         self.inner_color = Colors.DARK_BLUE
-
-    def get_width(self) -> float:
-        return self.width
-
-    def get_height(self) -> float:
-        return self.height
 
 
 class MapCard(Card):
@@ -81,12 +74,14 @@ class MapCard(Card):
 class PopUpCard(Card):
     """Selectable card showing an option in the pause menu."""
     
-    def __init__(self, text: str, screen: Screen | None =None) -> None:
-        w, h = 200, 50
-        super().__init__(0, 0, w, h)
+    def __init__(self, text: str, state: Screen | None =None, width: int | None =200, height: int | None =50) -> None:
+        super().__init__(0, 0, width, height)
         self.color = self.inner_color
         self.text = text
-        self.screen = screen
+        self.state = state
+
+    def handle_event(self, event):
+        pass
 
     def draw(self, surface: pygame.Surface) -> None:
         super().draw(surface)
@@ -95,13 +90,11 @@ class PopUpCard(Card):
         name_text = name_font.render(self.text, True, Colors.WHITE)
         surface.blit(name_text, name_text.get_rect(center=self.outer_card.center))
 
-    def set_position(self, x: float, y: float) -> None:
-        """Place the card and re-position its track preview inside it."""
-        self.x = x
-        self.y = y
+    def get_state(self):
+        return self.state
 
-    def get_screen(self):
-        return self.screen
+    def get_text(self):
+        return self.text
 
     def unselect(self) -> None:
         super().select()

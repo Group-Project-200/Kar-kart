@@ -6,10 +6,7 @@ import pygame
 
 from karkart.constants import Colors, ScreenPositions as sp
 from karkart.paths import PICTURES_DIR, PIXEL_FONT
-from karkart.ui.button import PaddingButton as Button
-from karkart.ui.card import MapCard
-from karkart.ui.container import MapContainer
-from karkart.ui.settings_icon import SettingsIcon
+from karkart.ui import Button, MapCard, MapContainer, SettingsIcon
 
 
 class MapScreen:

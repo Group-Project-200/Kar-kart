@@ -6,41 +6,10 @@ import pygame
 
 from karkart.constants import Colors, ScreenPositions as sp
 from karkart.paths import PIXEL_FONT
+from karkart.ui.ui_object import UIObject
 
 
-class Button:
-    """A rectangular mouse-click button that switches the active screen on press.
-
-    Coordinates ``x`` and ``y`` refer to the *centre* of the button.
-    """
-
-    def __init__(self, x: float, y: float, width: float, height: float,
-                 text: str, state: str, manager) -> None:
-        self.x = x - width / 2
-        self.y = y - height / 2
-        self.width = width
-        self.height = height
-        self.rect = pygame.Rect(self.x, self.y, width, height)
-        self.text = text
-        self.state = state
-        self.manager = manager
-
-    def handle_event(self, event) -> None:
-        if event.type == pygame.MOUSEBUTTONDOWN and self.rect.collidepoint(event.pos):
-            if self.state:
-                self.manager.change_screen(self.state)
-
-    def draw(self, surface: pygame.Surface) -> None:
-        mouse_pos = pygame.mouse.get_pos()
-        color = Colors.WHITE if self.rect.collidepoint(mouse_pos) else Colors.GRAY
-        pygame.draw.rect(surface, color, self.rect, border_radius=8)
-
-        button_font = pygame.font.SysFont("arial", 20, bold=True)
-        button_text = button_font.render(self.text, True, Colors.BLACK)
-        surface.blit(button_text, button_text.get_rect(center=self.rect.center))
-
-
-class PaddingButton:
+class Button(UIObject):
     """Fixed-position pixel-font button that auto-sizes around its text."""
 
     def __init__(self, text: str, state: str, manager) -> None:
@@ -49,26 +18,27 @@ class PaddingButton:
         self.manager = manager
         self.unselect()
 
+        font_size = 15
+        button_font = pygame.font.Font(str(PIXEL_FONT), font_size)
+        self.text = button_font.render(self.text, True, Colors.WHITE)
+        self.center = self.text.get_rect(center=(sp.XLEFT, sp.XXXBOTTOM))
+
+        self.width = self.text.get_width() + font_size * 3
+        self.height = self.text.get_height() + font_size * 1.5
+        self.x = self.center.x - (self.width - self.text.get_width()) / 2
+        self.y = self.center.y - (self.height - self.text.get_height()) / 2
+        self.button_rect = pygame.Rect(self.x, self.y, self.width, self.height)
+
     def handle_event(self, event) -> None:
         if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
             self.manager.change_screen(self.state)
 
     def draw(self, surface: pygame.Surface) -> None:
-        font_size = 15
-        button_font = pygame.font.Font(str(PIXEL_FONT), font_size)
-        button_text = button_font.render(self.text, True, Colors.WHITE)
-        button_center = button_text.get_rect(center=(sp.XLEFT, sp.XXXBOTTOM))
 
-        button_width = button_text.get_width() + font_size * 3
-        button_height = button_text.get_height() + font_size * 1.5
-        button_x = button_center.x - (button_width - button_text.get_width()) / 2
-        button_y = button_center.y - (button_height - button_text.get_height()) / 2
-        button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
-
-        pygame.draw.rect(surface, self.inner_color, button_rect, border_radius=8)
-        pygame.draw.rect(surface, self.color, button_rect, 4, border_radius=8)
-        pygame.draw.rect(surface, Colors.BLACK, button_rect, 2, border_radius=8)
-        surface.blit(button_text, button_center)
+        pygame.draw.rect(surface, self.inner_color, self.button_rect, border_radius=8)
+        pygame.draw.rect(surface, self.color, self.button_rect, 4, border_radius=8)
+        pygame.draw.rect(surface, Colors.BLACK, self.button_rect, 2, border_radius=8)
+        surface.blit(self.text, self.center)
 
     def unselect(self) -> None:
         self.color = Colors.LIGHT_BLUE
