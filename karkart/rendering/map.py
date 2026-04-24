@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import math
-import time
 from dataclasses import dataclass
 
 import pygame
@@ -66,13 +65,12 @@ class Map:
         self.camera_buffer: pygame.Surface | None = None
         self.camera_buffer_center: tuple[int, int] | None = None
 
-        # Checkpoint and lap bookkeeping.
+        # Static checkpoint geometry (regular CPs followed by the finish line).
+        # Per-racer progression state lives on :class:`RacerState` in
+        # :mod:`karkart.physics.checkpoint`.
         self.checkpoints: list[Checkpoint] = []
         self.checkpoints_list: list[Checkpoint] = []
         self.finish_line: Checkpoint | None = None
-        self.list_counter: int = 0
-        self.current_lap: int = 1
-        self.lap_times: list[tuple[float, int]] = []
 
         # Most recent world-space coordinates of the car, in map pixels.
         self.car_map_x: int | None = None
@@ -161,20 +159,3 @@ class Map:
         rotated_rect = rotated_map.get_rect(center=center)
         display.blit(rotated_map, rotated_rect)
 
-    def update_checkpoints(self) -> None:
-        """Advance the checkpoint cursor; crossing the finish line after all CPs counts a lap."""
-        current_checkpoint = self.checkpoints_list[self.list_counter]
-        if not current_checkpoint.check(self.car.car_x, self.car.car_y):
-            return
-
-        print(self.active)
-        self.list_counter += 1
-        if self.list_counter >= len(self.checkpoints_list):
-            # Completed a full lap: passed every CP then the finish line.
-            self.current_lap += 1
-            if self.active:
-                for item in self.world_objects: item.active = True
-            self.lap_times.append((time.perf_counter(), self.current_lap))
-            self.list_counter = 0
-        else:
-            self.lap_times.append((time.perf_counter(), self.current_lap))

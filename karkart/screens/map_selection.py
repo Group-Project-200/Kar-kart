@@ -18,7 +18,7 @@ class MapScreen:
         self.container = MapContainer(
             sp.CENTER_X, sp.CCCBOTTOM,
             sp.WIDTH / 2, sp.HEIGHT / 16 * 9,
-            rows=3, columns=4,
+            rows=2, columns=2,
         )
         self.back_button = Button("Back", "car", self.manager)
 

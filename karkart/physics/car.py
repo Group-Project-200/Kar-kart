@@ -9,6 +9,7 @@ constants on :class:`CarHandling`. The runtime state lives on
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 
 from karkart.helpers import (
@@ -150,6 +151,12 @@ class CarHandling:
     drift_release_countersteer_degrees: float = 10.0
     drift_release_countersteer_turn_rate: float = 0.8
 
+    # Collision elasticity (0 = perfectly inelastic, 1 = perfectly elastic).
+    # Bumped to 0.7 so wall hits preserve a visibly bouncy component of the
+    # incoming speed rather than just killing momentum.
+    wall_restitution: float = 0.7
+    car_restitution: float = 0.65
+
     # Drift reward boost tiers.
     short_boost: BoostTier = field(
         default_factory=lambda: BoostTier(duration_frames=3, acceleration=0.45, max_speed_delta=1.25),
@@ -203,6 +210,47 @@ class CarHandling:
         if drift_charge_frames >= self.drift_charge_short_frames:
             return self.short_boost
         return None
+
+
+# --------------------------------------------------------------------------- #
+# Per-car-model handling profiles                                             #
+# --------------------------------------------------------------------------- #
+#
+# Each playable sprite stack has its own tuning so the four kart models
+# actually feel different rather than being cosmetic reskins. Keys match the
+# sprite folder name under ``resources/render``.
+#
+# Design: car_01 is the balanced baseline. car_02 trades grip for top speed,
+# car_03 trades top speed for punchy acceleration, and car_04 is the nimble
+# kart with the sharpest turn rate at the cost of reduced max speed.
+
+CAR_HANDLING_PROFILES: dict[str, CarHandling] = {
+    "car_01": CarHandling(),
+    "car_02": CarHandling(
+        max_speed=2.75,
+        throttle_acceleration=0.045,
+        max_turn_rate=2.1,
+        default_slide_factor=0.45,
+    ),
+    "car_03": CarHandling(
+        max_speed=2.3,
+        throttle_acceleration=0.065,
+        reverse_acceleration=0.05,
+        max_turn_rate=2.25,
+    ),
+    "car_04": CarHandling(
+        max_speed=2.35,
+        throttle_acceleration=0.05,
+        max_turn_rate=2.55,
+        plateau_turn_rate=1.8,
+        default_slide_factor=0.35,
+    ),
+}
+
+
+def get_handling_for(car_name: str) -> CarHandling:
+    """Return the tuning profile for *car_name*, falling back to defaults."""
+    return CAR_HANDLING_PROFILES.get(car_name, CarHandling())
 
 
 # --------------------------------------------------------------------------- #
@@ -260,8 +308,11 @@ class ControlState:
 class Car:
     """Bundles handling tuning, runtime physics, and current input for one car."""
 
-    def __init__(self) -> None:
-        self.handling = CarHandling()
+    def __init__(self, handling: "CarHandling | None" = None) -> None:
+        # CarHandling is frozen, so it's safe to share a single instance
+        # across every car on the grid — and cheaper than copying it. Pass
+        # the player's handling to opponents so they inherit identical tuning.
+        self.handling = handling if handling is not None else CarHandling()
         self.physics = PhysicsState()
         self.controls = ControlState()
 
@@ -272,6 +323,9 @@ class Car:
         self.last_safe_x2: float | None = None
         self.last_safe_y2: float | None = None
         self.collision_results: bool = False
+        # Estimated outward wall normal at the collision point, in map-space.
+        # Filled by the gameplay collision step; cleared on the next clean frame.
+        self.collision_normal: tuple[float, float] | None = None
 
     # -- Drift lifecycle ---------------------------------------------------- #
 
@@ -300,7 +354,9 @@ class Car:
         right_pressed: bool,
         drift_input: bool,
     ) -> None:
-        if self.physics.drift_active or not drift_input or self.physics.speed < self.handling.drift_min_speed:
+        if (self.physics.drift_active or not drift_input
+                or self.physics.speed < self.handling.drift_min_speed
+                or self.physics.car_z > 0.0 or self.physics.velocity_z > 0.0):
             return
 
         drift_direction = _resolve_drift_direction(steer_input, left_pressed, right_pressed)
@@ -548,13 +604,42 @@ class Car:
         slide_factor: float | None = None,
     ) -> PhysicsState:
         """Run one frame's worth of physics and return the updated state."""
-        # On collision, rewind to the second-most-recent safe pose and halve momentum.
+        # On collision, rewind to the second-most-recent safe pose and bounce
+        # off the wall. If the collision step sampled a real outward wall
+        # normal from the map mask, reflect with that — this preserves the
+        # tangential component of velocity, giving a proper angle-of-incidence
+        # = angle-of-reflection glance. Otherwise fall back to negating the
+        # approach vector (pure reversal). Reflection uses v' = v - 2(v·n)n,
+        # scaled by :attr:`wall_restitution`.
         if self.collision_results and self.last_safe_x2 is not None:
             self.physics.car_x = self.last_safe_x2
             self.physics.car_y = self.last_safe_y2
-            self.physics.velocity_x *= -0.5
-            self.physics.velocity_y *= -0.5
-            self.physics.speed *= -0.5
+            vx, vy = self.physics.velocity_x, self.physics.velocity_y
+
+            if self.collision_normal is not None:
+                nx, ny = self.collision_normal
+            else:
+                mag = math.hypot(vx, vy) or 1.0
+                nx, ny = -vx / mag, -vy / mag
+
+            dot = vx * nx + vy * ny
+            restitution = self.handling.wall_restitution
+            # Only reflect if the car is actually moving *into* the wall
+            # (dot < 0 against an outward normal). If it's already moving
+            # away, leave velocity alone so the car can drive free.
+            if dot < 0.0:
+                self.physics.velocity_x = (vx - 2 * dot * nx) * restitution
+                self.physics.velocity_y = (vy - 2 * dot * ny) * restitution
+            else:
+                self.physics.velocity_x = vx * restitution
+                self.physics.velocity_y = vy * restitution
+
+            # Scalar speed is how fast the car "wants" to go along its heading.
+            # Kill most of it on a wall hit so the driver has to reaccelerate,
+            # but keep a small remainder so reflection velocity isn't
+            # immediately overridden by the grip blend in update_velocity.
+            self.physics.speed *= -restitution * 0.5
+            self.collision_normal = None
             return self.physics
 
         # Frame order: drift self-check -> steering -> rotation -> speed -> velocity -> position.

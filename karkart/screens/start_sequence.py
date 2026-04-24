@@ -14,6 +14,22 @@ class StartSequence:
         self.screen_dimensions = screen.get_size()
         self.font = pygame.font.Font(None, 400)
         self.complete: bool = False
+        self.last_tick: int = pygame.time.get_ticks()
+
+    def update(self) -> None:
+        """Advance the countdown by one second if 1000 ms have elapsed."""
+        now = pygame.time.get_ticks()
+        if now - self.last_tick >= 1000:
+            self.last_tick = now
+            self.seconds -= 1
+            if self.seconds <= 0:
+                self.seconds = 0
+                self.complete = True
+
+    def resume(self) -> None:
+        """Reset the tick baseline after a pause so the countdown doesn't
+        jump by however many seconds the pause menu was open."""
+        self.last_tick = pygame.time.get_ticks()
 
     def write(self) -> None:
         """Blit the current countdown digit to the screen (caller flips display)."""
