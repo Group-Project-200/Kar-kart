@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import math
+import time
 from dataclasses import dataclass
 
 import pygame
@@ -21,6 +22,7 @@ from karkart.rendering.renderer import Renderer
 from karkart.rendering.sparks import SparkManager
 from karkart.rendering.stacker import Stacker
 from karkart.screens.start_sequence import StartSequence
+from karkart.screens.leaderboard import GAME_LEADERBOARD, LeaderboardScreen, RaceResult
 
 from karkart.powerups.powerups_manager import PowerupRendering, PowerupsManager
 
@@ -105,6 +107,11 @@ class GamePlay:
         self.ai_active = self.mode["Ai"]
         self.config = GameConfig()
 
+        self._race_finished: bool = False
+        self._race_start_time: float = 0.0
+        self._last_lap_start_time: float = 0.0
+        self._lap_times: list[float] = []
+
 
         # Alternating-frame scheduler: cheap per-frame work runs every tick;
         # expensive checks split across even/odd frames (see update()).
@@ -119,6 +126,7 @@ class GamePlay:
         # Per-racer checkpoint progression (lap, cursor, cumulative total).
         # AI states are only populated when AI cars are spawned below.
         self.player_state = RacerState()
+        self._last_recorded_lap: int = self.player_state.current_lap
         self.ai_states: list[RacerState] = []
 
         # Per-car checkpoint geometry. The map's checkpoints_list is the
@@ -497,17 +505,23 @@ class GamePlay:
         self._recompute_position_label()
 
     def _update_checkpoints_player(self) -> None:
-        prev_total = self.player_state.total_checkpoints
+        old_lap = self.player_state.current_lap
+
         advance_checkpoints(
             self.player_state,
-            self.player_checkpoints,
+            self.current_map.checkpoints_list,
             self.current_car.physics.car_x,
             self.current_car.physics.car_y,
             items_active=self.current_map.active,
             world_objects=self.world_box,
         )
-        if self.player_state.total_checkpoints != prev_total:
-            self._register_pass(self.player_state)
+
+        if self.player_state.current_lap > old_lap and self._last_lap_start_time > 0.0:
+            now = time.perf_counter()
+            lap_time = now - self._last_lap_start_time
+            self._lap_times.append(lap_time)
+            self._last_lap_start_time = now
+            self._last_recorded_lap = self.player_state.current_lap
 
     def _update_checkpoints_ai(self) -> None:
         for ai_car, state, controller, checkpoints in zip(
@@ -546,6 +560,14 @@ class GamePlay:
     def update(self) -> None:
         if not self.countdown.complete:
             self.countdown.update()
+            return
+
+        if self._race_start_time == 0.0:
+            now = time.perf_counter()
+            self._race_start_time = now
+            self._last_lap_start_time = now
+
+        if self._race_finished:
             return
 
         self._frame_parity ^= 1
@@ -740,8 +762,27 @@ class GamePlay:
             pygame.draw.polygon(screen, colour, corners_screen, width=2)
 
     def complete_race(self):
-        if self.player_state.current_lap > 3:
-            self.manager.change_screen("placeholder")
+        if self.player_state.current_lap <= 3 or self._race_finished:
+            return
+
+        self._race_finished = True
+        total_time = time.perf_counter() - self._race_start_time
+
+        try:
+            result = RaceResult(
+                player_name="Player 1",
+                car_name=self.manager.app_data.current_car_name,
+                map_name=self.manager.app_data.current_map.name,
+                total_time=total_time,
+                lap_times=self._lap_times.copy(),
+                total_laps=self.player_state.current_lap - 1,
+            )
+            GAME_LEADERBOARD.add(result)
+        except Exception as error:
+            print(f"Could not save race result: {error}")
+
+        self.manager.add_screen("placeholder", LeaderboardScreen(self.manager))
+        self.manager.change_screen("placeholder")
 
     def draw(self, _surface: pygame.Surface) -> None:
         screen = self.manager.screen_display
