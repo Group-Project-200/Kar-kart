@@ -67,14 +67,13 @@ class AppData:
                 self.add_track(Track(str(cover), map_folder.name, map_folder))
 
         default = next((t for t in self.tracks if t.name == "newmap1"), None)
+        self.current_map_name: str| None = default
         self.current_map: Track | None = default or (self.tracks[0] if self.tracks else None)
         self.current_car_name: str = "car_01"
         self.current_car: list[pygame.Surface] = self.cars[self.current_car_name]
         self.current_mode = "Race Mode"
         # NOTE: LEFT FOR TESTS:
         # self.current_mode = "Time Trial"
-
-
 
     def add_track(self, track: Track) -> None:
         self.tracks.append(track)

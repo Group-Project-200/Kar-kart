@@ -7,6 +7,7 @@ import pygame
 from karkart.constants import Colors, ScreenPositions as sp
 from karkart.paths import PICTURES_DIR, PIXEL_FONT
 from karkart.ui import Button, MapCard, MapContainer, SettingsIcon
+from karkart.screens.gameplay import GamePlay
 
 
 class MapScreen:
@@ -45,6 +46,7 @@ class MapScreen:
         selected_track = self.container.handle_event(event)
         if selected_track is not None:
             self.manager.get_app_data().set_current_map(selected_track)
+            self.manager.add_screen("game", GamePlay(self.manager))
             self.manager.change_screen("game")
 
     def update(self) -> None:

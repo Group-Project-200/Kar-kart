@@ -15,7 +15,6 @@ from karkart.app_data import AppData
 from karkart.constants import ScreenPositions as sp
 from karkart.screen_manager import ScreenManager
 from karkart.screens.car_selection import CarScreen
-from karkart.screens.gameplay import GamePlay
 from karkart.screens.map_selection import MapScreen
 from karkart.screens.race_selection import RaceSelector
 from karkart.screens.start import StartScreen
@@ -42,7 +41,6 @@ def main() -> None:
     manager.add_screen("race_selector", RaceSelector(manager))
     manager.add_screen("car", CarScreen(manager))
     manager.add_screen("map", MapScreen(manager))
-    manager.add_screen("game", GamePlay(manager))
     manager.add_screen("pause", PauseMenu(manager))
     manager.add_screen("placeholder",Placeholder(manager))
 

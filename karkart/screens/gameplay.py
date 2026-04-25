@@ -141,13 +141,7 @@ class GamePlay:
         self._cp_pass_counter: int = 0
         self._cached_position_label: str = "1st"
 
-        map_name = self.manager.app_data.current_map.name
-        map_record = _MAP_DATA[map_name]
-
-        self.current_map_data = MapData()
-        self.current_map_data.checkpoints = map_record["checkpoints"]
-        self.current_map_data.finish_line = map_record["finish_line"]
-        self.current_map_data.layers = self.manager.app_data.return_map_layers()
+        self.current_map_data, map_record = self.update_map()
 
         self.countdown = StartSequence(self.manager.screen_display)
         proper_coordinates =[]
@@ -267,6 +261,19 @@ class GamePlay:
     _GRID_ROW_GAP: float = 26.0     # Forward spacing between rows (world units).
     _GRID_SIDE: float = 20.0        # Lateral offset per lane (world units).
     _POLE_FORWARD_OFFSET: float = 12.0  # Player slightly ahead of grid centre.
+
+
+    def update_map(self):
+        map_name = self.manager.app_data.current_map.name
+        map_record = _MAP_DATA[map_name]
+
+        current_map_data = MapData()
+        current_map_data.checkpoints = map_record["checkpoints"]
+        current_map_data.finish_line = map_record["finish_line"]
+        current_map_data.layers = self.manager.app_data.return_map_layers()
+
+        return current_map_data, map_record
+
 
     def _compute_start_pose(
         self, start_world_x: float, start_world_y: float,
@@ -420,22 +427,6 @@ class GamePlay:
             else:
                 ai_car.collision_normal = None
 
-    def update_resources(self):
-        self.car_stacker.set_images(self.manager.app_data.current_car)
-        self.mode = self.manager.app_data.modes[self.manager.app_data.current_mode]
-        self.ai_active = self.mode["Ai"] and bool(self.ai_cars)
-        for items_box in self.world_box:
-            items_box.active = self.mode["Items"]
-        self.current_map.active = self.mode["Items"]
-        # ai_active can flip after a mode change; refresh the cached rank
-        # string so the HUD doesn't display a stale label.
-        self._recompute_position_label()
-
-        # Returning from the pause menu while the countdown is still running:
-        # reset the tick baseline so the 5-second timer doesn't jump by
-        # however long the player spent in the menu.
-        if not self.countdown.complete:
-            self.countdown.resume()
 
 
     def _separate_two(self, a: Car, b: Car) -> None:
