@@ -22,11 +22,11 @@ class PowerupRendering:
         self.area = pygame.Rect(self.x,self.y,self.w,self.h)
         self.manager = powerups_manager
 
-    def draw(self, surface: pygame.Surface, center: tuple[int, int], car, zoom: float):
+    def draw(self, surface: pygame.Surface, center: tuple[int, int], car_x: float, car_y: float, zoom: float):
         if not self.active:
             return
-        sx = center[0] + int((self.x - car.car_x) * zoom)
-        sy = center[1] + int((self.y - car.car_y) * zoom)
+        sx = center[0] + int((self.x - car_x) * zoom)
+        sy = center[1] + int((self.y - car_y) * zoom)
         zw = max(1, int(self.w * zoom))
         zh = max(1, int(self.h * zoom))
 

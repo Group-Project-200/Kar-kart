@@ -123,8 +123,30 @@ class SparkManager:
         map_zoom: float,
         center: tuple[int, int],
     ) -> None:
-        """Render puffs as fading circles in screen space."""
-        if not self.sparks:
+        """Render this manager's live puffs (single-thread fallback)."""
+        self.draw_from_list(
+            display, self.sparks,
+            car_x, car_y, camera_angle, map_zoom, center,
+        )
+
+    def draw_from_list(
+        self,
+        display: pygame.Surface,
+        sparks: list,
+        car_x: float,
+        car_y: float,
+        camera_angle: float,
+        map_zoom: float,
+        center: tuple[int, int],
+    ) -> None:
+        """Render an externally-supplied list of puff records.
+
+        Accepts any object with the same fields as :class:`Spark`
+        (``x``, ``y``, ``life``, ``max_life``, ``r``, ``g``, ``b``) so the
+        renderer can draw a frozen :class:`SparkSnapshot` list without
+        racing the physics thread that owns ``self.sparks``.
+        """
+        if not sparks:
             return
 
         cam_rad = math.radians(camera_angle)
@@ -133,7 +155,7 @@ class SparkManager:
         cx, cy = center
         surf_w, surf_h = display.get_size()
 
-        for s in self.sparks:
+        for s in sparks:
             dx = (s.x - car_x) * map_zoom
             dy = (s.y - car_y) * map_zoom
             sx = dx * cos_a - dy * sin_a
