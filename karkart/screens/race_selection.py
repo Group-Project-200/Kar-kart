@@ -5,6 +5,7 @@ from __future__ import annotations
 import pygame
 
 from karkart.constants import ScreenPositions as sp
+from karkart.ui.help_icon import HelpIcon
 from karkart.paths import PICTURES_DIR
 from karkart.settings import Keys as K
 
@@ -36,6 +37,7 @@ class RaceSelector:
         self.card_start_x = (sp.WIDTH - total_cards_width) // 2
 
         self.mode_images = [self._try_load_card(PICTURES_DIR / name) for name in _MODE_IMAGE_NAMES]
+        self.help_icon = HelpIcon(self.manager, "race_selector")
 
     @staticmethod
     def _try_load_background(path) -> pygame.Surface | None:
@@ -57,6 +59,8 @@ class RaceSelector:
         if event.type != pygame.KEYDOWN:
             return
 
+        self.help_icon.handle_event(event)
+        
         if event.key == K.LEFT:
             self.selected_index = (self.selected_index - 1) % len(self.races)
         elif event.key == K.RIGHT:
@@ -91,4 +95,5 @@ class RaceSelector:
                 pygame.draw.rect(surface, (255, 255, 255), glow_rect, 4, border_radius=10)
                 pygame.draw.rect(surface, (0, 0, 0), card_rect, 4, border_radius=8)
 
+        self.help_icon.draw(surface)
         pygame.display.set_caption("Kar Kart - Race Selector")
