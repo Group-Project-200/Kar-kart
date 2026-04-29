@@ -13,13 +13,14 @@ import pygame
 
 from karkart.app_data import AppData
 from karkart.constants import ScreenPositions as sp
+from karkart.screens.pop_up_menus import PauseMenu, SettingsMenu, HelpMenu
 from karkart.screen_manager import ScreenManager
 from karkart.screens.car_selection import CarScreen
 from karkart.screens.map_selection import MapScreen
 from karkart.screens.race_selection import RaceSelector
 from karkart.screens.start import StartScreen
-from karkart.screens.pop_up_menus import PauseMenu, SettingsMenu
 from karkart.screens.placeholer_leaderboard import Placeholder
+from karkart.audio import AudioManager
 
 
 TARGET_FPS = 60
@@ -38,6 +39,7 @@ def main() -> None:
     # Register every screen up-front so they only load assets once.
     manager.add_screen("start", StartScreen(manager))
     manager.add_screen("settings", SettingsMenu(manager))
+    manager.add_screen("help", HelpMenu(manager))
     manager.add_screen("race_selector", RaceSelector(manager))
     manager.add_screen("car", CarScreen(manager))
     manager.add_screen("map", MapScreen(manager))
@@ -45,6 +47,8 @@ def main() -> None:
     manager.add_screen("placeholder",Placeholder(manager))
 
     manager.change_screen("start")
+
+    AudioManager.start_background_music()
 
     # When a frame blows the 16.7 ms budget, the next tick holds the prior
     # image on screen instead of rendering again. Physics still updates, so

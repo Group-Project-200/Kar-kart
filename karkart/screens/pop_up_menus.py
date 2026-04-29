@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 from abc import ABC, abstractmethod
-
 import pygame
 from karkart.constants import Colors
 from karkart.constants import ScreenPositions as sp
 from karkart.ui import Arrow, ArrowContainer, PopUpContainer, PopUpCard, TitleCard
+from karkart.ui.ui_object import UIObject
 from karkart.screens.gameplay import GamePlay
 
 class PopUpMenu(ABC):
@@ -139,3 +139,88 @@ class SettingsMenu(PopUpMenu):
         # Clicking ESC brings back to that screen.
         self.screen = screen
         self.black_layer = True
+
+
+class HelpMenu(PopUpMenu):
+    """Controls help menu, opens with H key."""
+
+    def __init__(self, manager) -> None:
+        super().__init__(manager)
+
+        self.width = 1000
+        self.height = 600
+        self.pause_rect = pygame.Rect(self.x - self.width / 2, self.y - self.height / 2, self.width, self.height)
+
+        # Keep PopUpContainer while rendering all help text in one inner box.
+        options = [HelpTextCard(920, 490)]
+        self.container = PopUpContainer(self.x, self.y, self.width, self.height, len(options), 1)
+        for opt in options:
+            self.container.add_object(opt)
+        self.container.calculate_padding(x_center=True, y_center=True)
+
+        self.title = TitleCard(self.container.get_width(), "Help Menu")
+
+        # Returned screen is set by HelpIcon right before opening.
+        self.screen = "start"
+
+    def handle_event(self, event) -> None:
+        if event.type == pygame.KEYDOWN:
+            super().handle_event(event)
+            self.container.handle_event(event)
+            if event.key == pygame.K_h:
+                self.activate_black_layer = True
+                self.manager.change_screen(self.screen)
+
+    def set_return_screen(self, screen: str) -> None:
+        self.screen = screen
+        self.black_layer = True
+
+
+class HelpTextCard(UIObject):
+    """Single card that draws help text block."""
+
+    def __init__(self, width: int, height: int) -> None:
+        super().__init__(0, 0, width, height)
+        self.color = Colors.DARK_BLUE
+        self.bord_color = Colors.BLACK
+        self.border = 2
+        self.font = pygame.font.Font(None, 30)
+        self.lines = [
+            "Navigation Buttons:",
+            "WASD/Arrow Keys: Selection",
+            "RETURN: Confirm selection/Next screen",
+            "ESC: Settings Menu",
+            "H: Help Menu",
+            "",
+            "Game Play Buttons:",
+            "W/S: Accelerate / Brake & Reverse  ",
+            "A/D: Steer Left / Right ",
+            "SPACE: Hold to Drift, Release for Boost  ",
+            "ESC: Pause Menu",
+            "",
+            "Press H or ESC to close Help Menu",
+        ]
+
+    def select(self) -> None:
+        self.color = Colors.DARK_BLUE
+
+    def unselect(self) -> None:
+        self.color = Colors.DARK_BLUE
+
+    def get_state(self):
+        return None
+
+    def handle_event(self, event) -> None:
+        return None
+
+    def draw(self, surface: pygame.Surface) -> None:
+        rect = pygame.Rect(self.x, self.y, self.width, self.height)
+        pygame.draw.rect(surface, self.color, rect, border_radius=8)
+        pygame.draw.rect(surface, self.bord_color, rect, self.border, border_radius=8)
+
+        line_y = self.y + 20
+        line_x = self.x + 24
+        for line in self.lines:
+            line_surface = self.font.render(line, True, Colors.WHITE)
+            surface.blit(line_surface, (line_x, line_y))
+            line_y += 32

@@ -446,3 +446,10 @@ classDiagram
     Map "1" *-- "*" Checkpoint
     Renderer --> Map
 ```
+## Credits
+
+### Music
+"Backup Plan" by Zane Little Music
+From the album "Another Bag of Chips"
+Licensed under CC0 1.0 Universal (Public Domain)
+Source: https://opengameart.org/content/10-more-chiptune-tracks-another-bag-of-chips
