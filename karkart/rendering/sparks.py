@@ -123,7 +123,6 @@ class SparkManager:
         map_zoom: float,
         center: tuple[int, int],
     ) -> None:
-        """Render this manager's live puffs (single-thread fallback)."""
         self.draw_from_list(
             display, self.sparks,
             car_x, car_y, camera_angle, map_zoom, center,
@@ -139,13 +138,6 @@ class SparkManager:
         map_zoom: float,
         center: tuple[int, int],
     ) -> None:
-        """Render an externally-supplied list of puff records.
-
-        Accepts any object with the same fields as :class:`Spark`
-        (``x``, ``y``, ``life``, ``max_life``, ``r``, ``g``, ``b``) so the
-        renderer can draw a frozen :class:`SparkSnapshot` list without
-        racing the physics thread that owns ``self.sparks``.
-        """
         if not sparks:
             return
 

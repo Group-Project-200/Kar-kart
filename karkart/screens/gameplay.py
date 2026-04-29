@@ -113,10 +113,6 @@ class GamePlay:
         self.ai_active = self.mode["Ai"]
         self.config = GameConfig()
 
-        # ``_race_finished`` is the main-thread "I've already transitioned
-        # to the leaderboard" guard. The canonical race-over signal lives
-        # on ``self.world.race_finished_event`` (set by the physics
-        # thread); this flag prevents complete_race() from running twice.
         self._race_finished: bool = False
 
         # HUD + debug overlay.
@@ -126,8 +122,7 @@ class GamePlay:
         self._hud_font: pygame.font.Font = pygame.font.SysFont("monospace", 16)
 
         # Per-racer checkpoint progression (lap, cursor, cumulative total).
-        # The physics thread mutates these via World; HUD reads them via
-        # the snapshot. AI states are populated below if AI is enabled.
+        # AI states are only populated when AI cars are spawned below.
         self.player_state = RacerState()
         self.ai_states: list[RacerState] = []
 
@@ -250,8 +245,6 @@ class GamePlay:
                     checkpoints=ai_cp_list,
                     racer_state=state,
                     ai_index=i,
-                    # planner is wired up in _start_threads once the
-                    # pathfinder worker is alive.
                     planner=None,
                 )
 
@@ -262,18 +255,8 @@ class GamePlay:
                 self.ai_controllers.append(controller)
                 self.ai_checkpoints.append(ai_cp_list)
         else:
-            # Time Trial has no AI but the runtime still expects a pathfinder
-            # reference for world wiring. Leave it as None and skip planner
-            # setup below.
             self.pathfinder = None
 
-        # ------------------------------------------------------------------ #
-        # Threaded runtime                                                   #
-        # ------------------------------------------------------------------ #
-        # Build the shared World + SnapshotBuffer up front so handle_event /
-        # draw can lock against them even before the countdown completes.
-        # Threads themselves are started in _start_threads() once the
-        # countdown finishes, so the 3-2-1 sequence runs single-threaded.
         self.snapshot_buffer = SnapshotBuffer()
         self.world = World(
             player_car=self.current_car,
@@ -301,9 +284,6 @@ class GamePlay:
         self._ai_thread: AIScheduler | None = None
         self._threads_started: bool = False
 
-        # Pre-publish a snapshot built from the starting state so that the
-        # very first draw call (during the countdown, before any tick has
-        # fired) has something to read.
         self._publish_initial_snapshot()
 
     # Grid stagger offsets: each row is one car-length behind the previous,
@@ -386,8 +366,6 @@ class GamePlay:
     def handle_event(self, event) -> None:
         controls = self.current_car.controls
 
-        # All control mutations happen under the world lock so the physics
-        # thread can never read a half-updated ControlState mid-tick.
         if event.type == pygame.KEYDOWN:
             match event.key:
                 case K.LEFT:
@@ -412,8 +390,6 @@ class GamePlay:
                     # Capture frozen game frame, then open pause menu. Works
                     # during the countdown too — the backdrop is just
                     # whatever was last drawn (map + cars + countdown digit).
-                    # ScreenManager.change_screen will fire on_deactivate
-                    # which pauses the worker threads cleanly.
                     self.manager.change_screen("pause")
                     self.manager.get_screen().backdrop = self.manager.screen_display.copy()
 
@@ -441,18 +417,7 @@ class GamePlay:
                     with self.world.lock:
                         controls.drift_input = False
 
-    # ------------------------------------------------------------------ #
-    # Threading lifecycle                                                #
-    # ------------------------------------------------------------------ #
-
     def _start_threads(self) -> None:
-        """Spawn physics + collision (+ AI/pathfinder if AI is active).
-
-        Called once when the countdown completes. Threads are started in
-        order: pathfinder first so the AI scheduler can wire its planner
-        reference, then physics + collision, then AI last so it never
-        runs before there's a snapshot to read.
-        """
         if self._threads_started:
             return
 
@@ -483,14 +448,7 @@ class GamePlay:
         self._threads_started = True
 
     def _stop_threads(self) -> None:
-        """Signal every worker to exit and wait for them to drain.
-
-        Safe to call repeatedly. Uses short join timeouts so a stuck
-        thread can't lock up the screen transition.
-        """
         self.world.stop_event.set()
-        # Clearing pause makes any thread waiting in pause-mode loop wake
-        # up and observe stop_event.
         self.world.pause_event.clear()
         for thread in (self._ai_thread, self._collision_thread, self._physics_thread):
             if thread is not None and thread.is_alive():
@@ -504,26 +462,12 @@ class GamePlay:
         self._threads_started = False
 
     def on_deactivate(self) -> None:
-        """Called by ScreenManager when the player opens the pause menu.
-        Pauses the worker threads so the simulation freezes at the
-        moment the menu opens; cleared on the way back in via
-        :meth:`update_resources`."""
         self.world.pause_event.set()
 
     def on_destroy(self) -> None:
-        """Called by ScreenManager when this instance is being replaced
-        (e.g. PauseMenu's "Restart" registers a fresh GamePlay). Joins
-        every worker so the old instance does not keep simulating in
-        the background."""
         self._stop_threads()
 
     def _publish_initial_snapshot(self) -> None:
-        """Build a one-shot snapshot from the current state.
-
-        Used so the very first ``draw`` (rendered during the countdown,
-        before the physics thread has produced any tick) still has a
-        coherent view of car positions and camera angle.
-        """
         from karkart.runtime.scheduler import _car_snapshot
         from karkart.runtime.snapshot import RacerSnapshot, WorldSnapshot
 
@@ -551,17 +495,7 @@ class GamePlay:
             race_finished=False,
         ))
 
-    # ------------------------------------------------------------------ #
-    # Per-frame entry points                                             #
-    # ------------------------------------------------------------------ #
-
     def update_resources(self) -> None:
-        """Called by ScreenManager when this screen becomes active again.
-
-        Both at fresh entry and on return from a popup. Re-applies mode
-        flags (which can change in the pause menu's settings), refreshes
-        the position label, and resumes any paused worker threads.
-        """
         self.car_stacker.set_images(self.manager.app_data.current_car)
         self.mode = self.manager.app_data.modes[self.manager.app_data.current_mode]
         self.ai_active = self.mode["Ai"] and bool(self.ai_cars)
@@ -569,34 +503,21 @@ class GamePlay:
             items_box.active = self.mode["Items"]
         self.current_map.active = self.mode["Items"]
 
-        # ai_active can flip after a mode change; refresh the cached rank
-        # string so the HUD doesn't display a stale label.
         from karkart.runtime.scheduler import _compute_position_label
         with self.world.lock:
             self.world.cached_position_label = _compute_position_label(
                 self.player_state, self.ai_states, ai_active=self.ai_active,
             )
 
-        # Returning from the pause menu while the countdown is still running:
-        # reset the tick baseline so the 5-second timer doesn't jump by
-        # however long the player spent in the menu.
         if not self.countdown.complete:
             self.countdown.resume()
 
-        # Resume worker threads if they were paused on the way out.
         self.world.pause_event.clear()
 
     def update(self) -> None:
-        """Coordinator-only: tick the countdown, start threads when it
-        finishes, transition to the leaderboard when the race finishes.
-
-        All physics / AI / collision work happens on worker threads.
-        """
         if not self.countdown.complete:
             self.countdown.update()
             if self.countdown.complete:
-                # First post-countdown frame: stamp race-start time and
-                # spin up the worker threads.
                 now = time.perf_counter()
                 with self.world.lock:
                     self.world.begin_race(now)
@@ -744,16 +665,10 @@ class GamePlay:
             pygame.draw.polygon(screen, colour, corners_screen, width=2)
 
     def complete_race(self) -> None:
-        """Tear down the worker threads and switch to the leaderboard.
-
-        Idempotent — guarded by ``_race_finished`` so it only fires once
-        even if both ``update`` and a stray late tick try to invoke it.
-        """
         if self._race_finished:
             return
 
         self._race_finished = True
-        # Ensure the workers stop before we try to read final state.
         self._stop_threads()
 
         total_time = time.perf_counter() - self.world.race_start_time
@@ -779,8 +694,6 @@ class GamePlay:
 
         snapshot = self.snapshot_buffer.read()
         if snapshot is None:
-            # Should never happen — _publish_initial_snapshot fires in
-            # __init__ — but guard so a missed publish doesn't crash.
             return
 
         extra_cars = (
@@ -789,9 +702,6 @@ class GamePlay:
             else []
         )
 
-        # Mirror the snapshot's pickup-active flags onto the live world
-        # boxes so PowerupRendering.draw (called inside Map) stays in
-        # sync with what physics has consumed this tick.
         for box, active in zip(self.world_box, snapshot.item_active):
             box.active = active
 

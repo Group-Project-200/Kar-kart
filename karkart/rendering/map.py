@@ -140,8 +140,6 @@ class Map:
         assert self.cache is not None
         car_map_x = self.cache.center_x + int(car_x * self.cache.zoom)
         car_map_y = self.cache.center_y + int(car_y * self.cache.zoom)
-        # Keep the public attributes in sync for any external read (collision
-        # used to depend on these; the threaded path computes its own offsets).
         self.car_map_x = car_map_x
         self.car_map_y = car_map_y
 
