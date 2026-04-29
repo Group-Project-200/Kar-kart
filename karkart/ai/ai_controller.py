@@ -75,9 +75,6 @@ class AIController:
         self.checkpoints = checkpoints
         self.racer_state = racer_state
 
-        # Async planner: when present, ``_replan`` posts a request and the
-        # AI keeps using its previous path until ``receive_path`` lands.
-        # When None (single-threaded fallback), ``find_path`` runs inline.
         self.ai_index = ai_index
         self.planner = planner
         self._replan_pending: bool = False
@@ -106,8 +103,6 @@ class AIController:
 
     def update(self) -> None:
         """Refresh steering, throttle and drift inputs on ``self.car.controls``."""
-        # Default each tick: no minimum-speed floor. Recovery branches
-        # below set this back when they need to keep the car moving.
         self.car.controls.min_speed_request = 0.0
 
         if not self.checkpoints:
@@ -201,9 +196,6 @@ class AIController:
         self._last_goal_idx = goal_idx
         self._path = []
         self._popped_since_replan = 0
-        # An old replan request might still be in flight against the
-        # previous goal — accept it when it arrives, but immediately
-        # request a fresh plan against the new goal.
         self._replan_pending = False
         self._still_frames = 0
         self._reverse_frames = 0
@@ -307,16 +299,6 @@ class AIController:
         """Turn the car back toward the goal and drive forward.
 
         Returns True when the heading is close enough to resume normal AI.
-
-        Critical: we do *not* defer to :meth:`_steer_toward` here. That helper
-        cuts throttle for angle errors above THROTTLE_OFF_ANGLE, and the car
-        physics refuses to steer below ``min_steer_speed``. Combined, a badly
-        misaligned car would coast to a stop, lose steering, and sit idle
-        until the reorient window expired — then the stillness detector would
-        fire another reverse and the whole loop would repeat forever.
-        Instead we force throttle on and request a minimum forward speed
-        (via ``ControlState.min_speed_request``, applied by the physics
-        scheduler) so the car keeps rotating until it faces the right way.
         """
         target = self._current_goal_point()
 
@@ -326,7 +308,6 @@ class AIController:
         diff = shortest_angle_delta(self.car.physics.rotation, desired_angle)
 
         if abs(diff) <= self.REORIENT_ANGLE_OK and abs(self.car.physics.speed) < 0.6:
-            # Close enough: straighten and go.
             self.car.controls.min_speed_request = 0.5
             self.car.controls.steer_input = 0
             self.car.controls.left_pressed = False
@@ -336,8 +317,6 @@ class AIController:
             self.car.controls.drift_input = False
             return True
 
-        # Kickstart: guarantee the car is moving fast enough that
-        # filter_steer_input does not zero the steering signal.
         self.car.controls.min_speed_request = self.car.handling.min_steer_speed + 0.15
 
         if abs(diff) < self.STEER_DEADZONE:
@@ -353,8 +332,6 @@ class AIController:
             self.car.controls.left_pressed = False
             self.car.controls.right_pressed = True
 
-        # Force throttle on regardless of angle error: the car MUST keep
-        # moving for steering to engage.
         self.car.controls.up_input = True
         self.car.controls.down_input = False
         self.car.controls.drift_input = False
@@ -375,14 +352,6 @@ class AIController:
             self._popped_since_replan = 0
 
     def _replan(self) -> None:
-        """Request a fresh path. Async when a planner is wired in.
-
-        With ``planner`` set, the request goes onto a worker queue and
-        the AI keeps using its previous path (or the straight-line fall-
-        back in :meth:`update`) until ``receive_path`` lands. Without a
-        planner the call runs A* inline — kept for backwards-compatible
-        single-threaded use.
-        """
         goal = self._current_goal_point()
         start = (self.car.physics.car_x, self.car.physics.car_y)
         if self.planner is not None:
@@ -395,7 +364,6 @@ class AIController:
         self._popped_since_replan = 0
 
     def receive_path(self, path: list[tuple[float, float]]) -> None:
-        """Called by the AI scheduler once the worker delivers a plan."""
         self._path = path
         self._popped_since_replan = 0
         self._replan_pending = False

@@ -105,12 +105,7 @@ class Renderer:
         sparks: "list[SparkSnapshot] | None" = None,
         extra_cars: "list[tuple[CarSnapshot, Stacker]] | None" = None,
     ) -> None:
-        """Compose one frame from snapshot data.
-
-        Reading from a snapshot (rather than live ``Car`` / ``Camera``
-        references) keeps the renderer thread-safe — the physics thread
-        is free to mutate canonical state in parallel.
-        """
+        """Compose one frame from snapshot data."""
         frame_surface = self.frame_surface
         frame_surface.fill((0, 0, 0))
 

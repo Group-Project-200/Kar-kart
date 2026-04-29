@@ -21,27 +21,14 @@ class ScreenManager:
         self.screens: dict[str, object] = {}
 
     def add_screen(self, label: str, screen: object) -> None:
-        """Register *screen* under *label*; replaces any prior screen.
-
-        If a screen was already registered under *label*, give it a chance
-        to clean up via ``on_destroy`` (e.g. tear down threads). Required
-        because PauseMenu's "Restart" path overwrites ``"game"`` with a
-        fresh ``GamePlay`` and the old instance's worker threads would
-        otherwise keep running until process exit.
-        """
+        """Register *screen* under *label* so it can later be activated."""
         prior = self.screens.get(label)
         if prior is not None and hasattr(prior, "on_destroy"):
             prior.on_destroy()
         self.screens[label] = screen
 
     def change_screen(self, label: str) -> None:
-        """Activate a previously registered screen.
-
-        Calls ``on_deactivate`` on the outgoing screen (used by gameplay
-        to pause its worker threads while a popup is open) and
-        ``update_resources`` on the incoming one (used by gameplay to
-        resume them).
-        """
+        """Activate a previously registered screen."""
         outgoing = self.current
         if outgoing is not None and hasattr(outgoing, "on_deactivate"):
             outgoing.on_deactivate()

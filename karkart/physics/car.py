@@ -299,10 +299,6 @@ class ControlState:
     up_input: bool = False
     down_input: bool = False
     drift_input: bool = False
-    # Floor (in absolute speed units) the physics scheduler enforces after
-    # ``step_physics``. The AI's reorient phase needs the car above
-    # ``min_steer_speed`` so its steering input still bites; with AI on a
-    # separate thread it can't safely write ``physics.speed`` directly.
     min_speed_request: float = 0.0
 
 
