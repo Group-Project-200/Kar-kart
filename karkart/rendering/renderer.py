@@ -1,4 +1,4 @@
-"""The in-game renderer that composes map + car into the final frame."""
+                                                                        
 
 from __future__ import annotations
 
@@ -17,13 +17,13 @@ if TYPE_CHECKING:
 
 
 class Renderer:
-    """Draws one frame per ``render_frame`` call: pixelated map + rotated car stack."""
+                                                                                       
 
     _MAP_ZOOM: float = 3.0
     _CAR_ZOOM: float = 3.0
     _PIXELATION_SCALE: float = 0.35
-    _DRIFT_VISUAL_SKEW: float = 30.0  # Degrees the car sprite rotates sideways during drift.
-    _HOP_PIXEL_SCALE: float = 12.0    # Screen pixels of lift per car_z unit at render res.
+    _DRIFT_VISUAL_SKEW: float = 30.0                                                         
+    _HOP_PIXEL_SCALE: float = 12.0                                                         
 
     def __init__(
         self, current_map: Map, stacker: Stacker, screen: pygame.Surface, sparks: SparkManager,
@@ -54,7 +54,7 @@ class Renderer:
         return pixel_width, pixel_height
 
     def _present_frame(self) -> None:
-        """Blit (or scale-blit) the composed frame to the real display surface."""
+                                                                                  
         if not self.needs_present_scale:
             self.screen.blit(self.frame_surface, (0, 0))
             return
@@ -66,13 +66,13 @@ class Renderer:
         *,
         player_x: float, player_y: float, camera_angle: float,
     ) -> tuple[int, int]:
-        """Project a world-space point onto the camera-rotated screen buffer."""
+                                                                                
         dx = (wx - player_x) * self.map_zoom
         dy = (wy - player_y) * self.map_zoom
         angle_rad = math.radians(camera_angle)
         cos_a = math.cos(angle_rad)
         sin_a = math.sin(angle_rad)
-        # Pygame rotates the map by -camera.angle (CW); points rotate the opposite way.
+                                                                                       
         rx = dx * cos_a - dy * sin_a
         ry = dx * sin_a + dy * cos_a
         return int(self.center[0] + rx), int(self.center[1] + ry)
@@ -83,13 +83,13 @@ class Renderer:
         *,
         player_x: float, player_y: float, camera_angle: float,
     ) -> None:
-        """Blit an auxiliary car (e.g. the AI opponent) at its world position."""
+                                                                                 
         sx, sy = self._world_to_screen(
             car.car_x, car.car_y,
             player_x=player_x, player_y=player_y, camera_angle=camera_angle,
         )
         width, height = self.render_size
-        margin = 64  # Pixels of slack so partially-visible cars still draw.
+        margin = 64                                                         
         if sx < -margin or sx > width + margin or sy < -margin or sy > height + margin:
             return
         dir_idx = snap_degrees(car.rotation - camera_angle, dirs=stacker.dirs)
@@ -105,7 +105,7 @@ class Renderer:
         sparks: "list[SparkSnapshot] | None" = None,
         extra_cars: "list[tuple[CarSnapshot, Stacker]] | None" = None,
     ) -> None:
-        """Compose one frame from snapshot data."""
+                                                   
         frame_surface = self.frame_surface
         frame_surface.fill((0, 0, 0))
 
@@ -116,7 +116,7 @@ class Renderer:
 
         car_relative_rotation = player.rotation - camera_angle
 
-        # Apply a visual sideways tilt while drifting (purely cosmetic, no physics change).
+                                                                                           
         if player.drift_active:
             visual_rotation = car_relative_rotation + player.drift_direction * self._DRIFT_VISUAL_SKEW
         else:
@@ -124,7 +124,7 @@ class Renderer:
 
         dir_idx = snap_degrees(visual_rotation, dirs=self.stacker.dirs)
 
-        # Sparks drawn before the car so they appear behind it.
+                                                               
         if sparks:
             self.sparks.draw_from_list(
                 frame_surface, sparks,

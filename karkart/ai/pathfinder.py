@@ -1,14 +1,14 @@
-"""A* pathfinding on a padded occupancy grid built from the collision mask.
-
-The grid is derived once from the map's wall mask by sampling one cell per
-``cell_size`` map pixels. A multi-source BFS from every wall cell then marks
-any free cell within ``padding`` cells as blocked, so the planner naturally
-keeps the racing line away from edges.
-
-Optionally a *road mask* can be supplied: cells off the road are then also
-treated as blocked. This stops the AI from planning through grass or other
-non-track areas even when they're not walled off.
-"""
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+   
 
 from __future__ import annotations
 
@@ -20,14 +20,14 @@ import pygame
 
 
 class AStarPathfinder:
-    """A* over a downsampled, wall-padded occupancy grid."""
+                                                            
 
     def __init__(
         self,
         mask: pygame.mask.Mask,
         map_dims: tuple[int, int],
-        cell_size: int = 2,
-        padding: int = 6,
+        cell_size: int = 1,
+        padding: int = 10,
         road_mask: pygame.mask.Mask | None = None,
     ) -> None:
         self.cell_size = max(1, int(cell_size))
@@ -38,30 +38,30 @@ class AStarPathfinder:
         self.mask_scale_x = mask_w / self.map_width if self.map_width else 1.0
         self.mask_scale_y = mask_h / self.map_height if self.map_height else 1.0
 
-        # Optional road mask: when provided, any cell whose centre is *not*
-        # on the road is treated as blocked in addition to the wall check.
+                                                                           
+                                                                          
         self.road_mask = road_mask
 
         self.cols = max(1, self.map_width // self.cell_size)
         self.rows = max(1, self.map_height // self.cell_size)
 
         self._raw_grid: list[list[int]] = self._build_grid(mask)
-        # Keep an unpadded copy so pinch points (narrow corridors where the
-        # padded grid fully blocks) can be retried on demand.
+                                                                           
+                                                             
         self._grid: list[list[int]] = [row[:] for row in self._raw_grid]
         self._pad_grid()
 
-    # ------------------------------------------------------------------ #
-    # Grid construction                                                  #
-    # ------------------------------------------------------------------ #
+                                                                          
+                                                                          
+                                                                          
 
     def _build_grid(self, mask: pygame.mask.Mask) -> list[list[int]]:
-        """Sample *mask* at each cell's centre. 1 = blocked, 0 = free.
-
-        A cell is blocked when either:
-        - the wall mask is set at that centre pixel, or
-        - a road mask was supplied and the cell centre is off the road.
-        """
+\
+\
+\
+\
+\
+           
         mask_w, mask_h = mask.get_size()
         road_w = road_h = 0
         if self.road_mask is not None:
@@ -86,7 +86,7 @@ class AStarPathfinder:
         return grid
 
     def _pad_grid(self) -> None:
-        """Multi-source BFS from every wall; block cells within ``padding`` cells."""
+                                                                                     
         if self.padding <= 0:
             return
 
@@ -103,7 +103,10 @@ class AStarPathfinder:
             d = dist[row][col]
             if d >= self.padding:
                 continue
-            for dr, dc in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            for dr, dc in (
+                (-1, 0), (1, 0), (0, -1), (0, 1),
+                (-1, -1), (-1, 1), (1, -1), (1, 1),
+            ):
                 nr, nc = row + dr, col + dc
                 if not (0 <= nr < self.rows and 0 <= nc < self.cols):
                     continue
@@ -117,12 +120,12 @@ class AStarPathfinder:
                 if 0 <= dist[row][col] <= self.padding and self._grid[row][col] == 0:
                     self._grid[row][col] = 1
 
-    # ------------------------------------------------------------------ #
-    # Coordinate helpers                                                 #
-    # ------------------------------------------------------------------ #
+                                                                          
+                                                                          
+                                                                          
 
     def _world_to_cell(self, wx: float, wy: float) -> tuple[int, int]:
-        """Convert world-centred coords to (row, col) on the grid."""
+                                                                     
         mx = wx + self.map_width / 2
         my = wy + self.map_height / 2
         col = int(mx // self.cell_size)
@@ -132,7 +135,7 @@ class AStarPathfinder:
         return row, col
 
     def _cell_to_world(self, row: int, col: int) -> tuple[float, float]:
-        """Convert a (row, col) cell centre back to world-centred coords."""
+                                                                            
         mx = (col + 0.5) * self.cell_size
         my = (row + 0.5) * self.cell_size
         return mx - self.map_width / 2, my - self.map_height / 2
@@ -143,7 +146,7 @@ class AStarPathfinder:
         return self._grid[row][col] == 0
 
     def _nearest_free(self, row: int, col: int, max_radius: int = 30) -> tuple[int, int] | None:
-        """If (row, col) is blocked (e.g. car clipping through padding), BFS to a free cell."""
+                                                                                               
         if self._is_free(row, col):
             return row, col
         seen: set[tuple[int, int]] = {(row, col)}
@@ -168,16 +171,16 @@ class AStarPathfinder:
                 queue.append((nr, nc, d + 1))
         return None
 
-    # ------------------------------------------------------------------ #
-    # Public API                                                         #
-    # ------------------------------------------------------------------ #
+                                                                          
+                                                                          
+                                                                          
 
     def find_path(
         self,
         start_world: tuple[float, float],
         goal_world: tuple[float, float],
     ) -> list[tuple[float, float]]:
-        """Return a list of world-space waypoints from start to goal, or [] on failure."""
+                                                                                          
         start_cell = self._world_to_cell(*start_world)
         goal_cell = self._world_to_cell(*goal_world)
         start_free = self._nearest_free(*start_cell)
@@ -187,10 +190,10 @@ class AStarPathfinder:
             if cells:
                 return [self._cell_to_world(r, c) for r, c in cells]
 
-        # Fallback: narrow corridors get fully consumed by the padding pass,
-        # making A* on the padded grid return []. Retry against the unpadded
-        # raw grid so the AI can still find *some* route even if it hugs the
-        # walls a bit. Better than driving straight into a pinch point.
+                                                                            
+                                                                            
+                                                                            
+                                                                       
         saved_grid = self._grid
         self._grid = self._raw_grid
         try:
@@ -205,16 +208,16 @@ class AStarPathfinder:
             return []
         return [self._cell_to_world(r, c) for r, c in cells]
 
-    # ------------------------------------------------------------------ #
-    # A*                                                                 #
-    # ------------------------------------------------------------------ #
+                                                                          
+                                                                          
+                                                                          
 
     def _astar(
         self,
         start: tuple[int, int],
         goal: tuple[int, int],
     ) -> list[tuple[int, int]]:
-        """Standard A* with 8-directional movement and Euclidean heuristic."""
+                                                                              
         neighbours = (
             (-1, 0, 1.0), (1, 0, 1.0), (0, -1, 1.0), (0, 1, 1.0),
             (-1, -1, 1.41421356), (-1, 1, 1.41421356),

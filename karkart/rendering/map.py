@@ -1,4 +1,4 @@
-"""Zoomed world map, collision masks and checkpoint bookkeeping."""
+                                                                   
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from karkart.physics.checkpoint import Checkpoint
 
 @dataclass(frozen=True, slots=True)
 class MapCache:
-    """Immutable snapshot of the zoomed map surface used as a blit source."""
+                                                                             
 
     surface: pygame.Surface | None
     zoom: float | None
@@ -22,7 +22,7 @@ class MapCache:
 
 
 class MapData:
-    """Static data about a single map (layers, checkpoints, finish line, start grid)."""
+                                                                                        
 
     checkpoints: list | None
     layers: list | None
@@ -36,14 +36,14 @@ def _convert_opaque_for_display(surface: pygame.Surface) -> pygame.Surface:
 
 
 def _simplify_surface(surface: pygame.Surface, factor: float = 1.5) -> pygame.Surface:
-    """Downsample then upsample *surface* to build a coarser mask source."""
+                                                                            
     w, h = surface.get_size()
     small = pygame.transform.scale(surface, (max(1, int(w // factor)), max(1, int(h // factor))))
     return pygame.transform.scale(small, (w, h))
 
 
 class Map:
-    """The playable world: zoomed terrain surface + collision masks + checkpoints."""
+                                                                                     
 
     def __init__(self, map_data: MapData, camera: Camera, world_objects: list | None = None) -> None:
         self.data = map_data
@@ -55,7 +55,7 @@ class Map:
         self.world_objects = world_objects or []
         self.active = True
 
-        # Everything below is populated by :meth:`zoom_fixing`.
+                                                               
         self.dimensions: tuple[int, int] | None = None
         self.cache: MapCache | None = None
         self.zoomed_map: pygame.Surface | None = None
@@ -65,19 +65,19 @@ class Map:
         self.camera_buffer: pygame.Surface | None = None
         self.camera_buffer_center: tuple[int, int] | None = None
 
-        # Static checkpoint geometry (regular CPs followed by the finish line).
-        # Per-racer progression state lives on :class:`RacerState` in
-        # :mod:`karkart.physics.checkpoint`.
+                                                                               
+                                                                     
+                                            
         self.checkpoints: list[Checkpoint] = []
         self.checkpoints_list: list[Checkpoint] = []
         self.finish_line: Checkpoint | None = None
 
-        # Most recent world-space coordinates of the car, in map pixels.
+                                                                        
         self.car_map_x: int | None = None
         self.car_map_y: int | None = None
 
     def zoom_fixing(self, zoom: float, view_size: tuple[int, int]) -> None:
-        """Pre-bake every zoom-dependent surface, mask and checkpoint rect."""
+                                                                              
         map_width, map_height = self.map_surface.get_size()
         self.dimensions = (map_width, map_height)
         self.zoomed_size = (max(1, int(map_width * zoom)), max(1, int(map_height * zoom)))
@@ -91,7 +91,7 @@ class Map:
         ]
         self.masks = [pygame.mask.from_surface(_simplify_surface(layer)) for layer in self.zoomed_layers]
 
-        # Use a diagonal-sized square so rotated corners never clip.
+                                                                    
         view_width, view_height = view_size
         side = max(1, int(math.ceil(math.hypot(view_width, view_height))) + 2)
         self.camera_buffer = pygame.Surface((side, side)).convert()
@@ -118,11 +118,11 @@ class Map:
             self.data.finish_line[2],
             self.data.finish_line[3],
         )
-        # Finish line is last: all regular CPs must be hit in order first.
+                                                                          
         self.checkpoints_list = [*self.checkpoints, self.finish_line]
 
     def get_coordinates(self) -> None:
-        """Refresh :attr:`car_map_x`/``car_map_y`` from the car's world position."""
+                                                                                    
         assert self.cache is not None
         self.car_map_x = self.cache.center_x + int(self.car.car_x * self.cache.zoom)
         self.car_map_y = self.cache.center_y + int(self.car.car_y * self.cache.zoom)
@@ -136,7 +136,7 @@ class Map:
         car_x: float,
         car_y: float,
     ) -> None:
-        """Blit the zoomed map into *display* centred on (*car_x*, *car_y*)."""
+                                                                               
         assert self.cache is not None
         car_map_x = self.cache.center_x + int(car_x * self.cache.zoom)
         car_map_y = self.cache.center_y + int(car_y * self.cache.zoom)
@@ -158,7 +158,7 @@ class Map:
         car_y: float,
         camera_angle: float,
     ) -> None:
-        """Draw the map with camera rotation applied (fast path when angle ~ 0)."""
+                                                                                   
         if abs(camera_angle) < 1e-4:
             self.draw_map(display, center, render_size, car_x=car_x, car_y=car_y)
             for obj in self.world_objects:

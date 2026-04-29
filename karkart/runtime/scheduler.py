@@ -5,7 +5,7 @@ import time
 import traceback
 from typing import TYPE_CHECKING
 
-from karkart.helpers import snap_degrees
+from karkart.helpers import forward_vector, snap_degrees
 from karkart.physics.checkpoint import advance_checkpoints
 from karkart.runtime.snapshot import (
     CarSnapshot,
@@ -16,7 +16,6 @@ from karkart.runtime.snapshot import (
 
 if TYPE_CHECKING:
     from karkart.physics.car import Car, PhysicsState
-    from karkart.runtime.pathfinder_worker import PathfinderWorker
     from karkart.runtime.snapshot import SnapshotBuffer
     from karkart.runtime.world import World
 
@@ -243,23 +242,12 @@ class CollisionScheduler(FixedRateThread):
 
 
 class AIScheduler(FixedRateThread):
-    def __init__(
-        self,
-        *,
-        world: "World",
-        snapshot_buffer: "SnapshotBuffer",
-        pathfinder_worker: "PathfinderWorker",
-    ) -> None:
+    def __init__(self, *, world: "World", snapshot_buffer: "SnapshotBuffer") -> None:
         super().__init__(world=world, target_hz=30.0, name="kk-ai")
         self.snapshot_buffer = snapshot_buffer
-        self.pathfinder_worker = pathfinder_worker
 
     def _tick(self) -> None:
-        new_paths = self.pathfinder_worker.collect()
         with self.world.lock:
-            for ai_index, path in new_paths.items():
-                if 0 <= ai_index < len(self.world.ai_controllers):
-                    self.world.ai_controllers[ai_index].receive_path(path)
             for controller in self.world.ai_controllers:
                 controller.update()
 
@@ -304,25 +292,26 @@ def _resolve_pair(
     dist = dist_sq ** 0.5 or 0.001
     nx, ny = dx / dist, dy / dist
     overlap = radius - dist
-    if overlap > 0.0:
-        p.car_x += nx * overlap / 2
-        p.car_y += ny * overlap / 2
-        q.car_x -= nx * overlap / 2
-        q.car_y -= ny * overlap / 2
-    impulse = a.handling.car_restitution
-    p.velocity_x += nx * impulse
-    p.velocity_y += ny * impulse
-    q.velocity_x -= nx * impulse
-    q.velocity_y -= ny * impulse
-    if a_cp > b_cp:
-        p.speed *= 0.85
-        q.speed *= 0.45
-    elif b_cp > a_cp:
-        p.speed *= 0.45
-        q.speed *= 0.85
-    else:
-        p.speed *= 0.6
-        q.speed *= 0.6
+    p.car_x += nx * overlap * 0.5
+    p.car_y += ny * overlap * 0.5
+    q.car_x -= nx * overlap * 0.5
+    q.car_y -= ny * overlap * 0.5
+
+    e = a.handling.car_restitution
+    vrel_n = (p.velocity_x - q.velocity_x) * nx + (p.velocity_y - q.velocity_y) * ny
+    if vrel_n >= 0.0:
+        return
+    j = -(1.0 + e) * vrel_n * 0.5
+    p.velocity_x += j * nx
+    p.velocity_y += j * ny
+    q.velocity_x -= j * nx
+    q.velocity_y -= j * ny
+
+    # sync speed so physics doesn't fight the new velocity
+    fwd_ax, fwd_ay = forward_vector(p.rotation)
+    fwd_bx, fwd_by = forward_vector(q.rotation)
+    p.speed = p.velocity_x * fwd_ax + p.velocity_y * fwd_ay
+    q.speed = q.velocity_x * fwd_bx + q.velocity_y * fwd_by
 
 
 def _compute_position_label(player_state, ai_states, *, ai_active: bool) -> str:

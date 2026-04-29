@@ -1,4 +1,4 @@
-"""ui_object - stores all attributes and functions that an UI object must have"""
+                                                                                 
 
 from __future__ import annotations
 from abc import ABC, abstractmethod
@@ -19,6 +19,6 @@ class UIObject(ABC):
         return self.height
 
     def set_position(self, x: float, y: float):
-        """Set a new position for the object"""
+                                               
         self.x = x
         self.y = y

@@ -1,4 +1,4 @@
-"""Car dynamics, camera, checkpoints and collision detection."""
+                                                                
 
 from karkart.physics.camera import Camera, CameraFollowSettings
 from karkart.physics.car import BoostTier, Car, CarHandling, ControlState, PhysicsState

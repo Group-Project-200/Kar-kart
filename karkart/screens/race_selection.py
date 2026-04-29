@@ -1,4 +1,4 @@
-"""Race mode picker: Time Trial / Race / Championship."""
+                                                         
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ _MODE_LABELS: tuple[str, ...] = ("Time Trial", "Race Mode", "Championship")
 
 
 class RaceSelector:
-    """Horizontal card picker for race modes."""
+                                                
 
     CARD_WIDTH = 280
     CARD_HEIGHT = 220
@@ -86,7 +86,7 @@ class RaceSelector:
                 pygame.draw.rect(surface, (220, 200, 160), card_rect, border_radius=8)
 
             if i == self.selected_index:
-                # White outer glow + black inner outline make the selection pop.
+                                                                                
                 glow_rect = card_rect.inflate(8, 8)
                 pygame.draw.rect(surface, (255, 255, 255), glow_rect, 4, border_radius=10)
                 pygame.draw.rect(surface, (0, 0, 0), card_rect, 4, border_radius=8)

@@ -1,4 +1,4 @@
-"""Game rendering: pre-baked sprite stacks, map blitting, preview pipeline."""
+                                                                              
 
 from karkart.rendering.map import Map, MapCache, MapData
 from karkart.rendering.preview import RenderPipeline, RenderSetup, build_render_pipeline, render_preview_debug_frame

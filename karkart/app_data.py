@@ -1,5 +1,3 @@
-"""Global runtime state: loaded track metadata and car sprite stacks."""
-
 from __future__ import annotations
 
 import json
@@ -11,21 +9,15 @@ import pygame
 from karkart.paths import CAR_RENDER_DIR, MAP_DATA_FILE, MAPS_DIR
 from karkart.ui.track import Track
 
-
 with MAP_DATA_FILE.open() as _f:
     _MAP_DATA_KEYS: frozenset[str] = frozenset(json.load(_f).keys())
 
-
-# Only these folder names are exposed as playable tracks. Other folders
-# (legacy flags, WIP maps) exist on disk but are intentionally hidden so the
-# selector shows a tidy 2x2 grid of the currently-supported tracks.
 _ALLOWED_TRACKS: frozenset[str] = frozenset({
     "newmap1", "newmap2", "newmap3", "newmap4",
 })
 
-
 def load_all_car_stacks() -> dict[str, list[pygame.Surface]]:
-    """Load every ``car_*`` folder under ``resources/render`` as a sprite stack."""
+
     if not CAR_RENDER_DIR.is_dir():
         raise RuntimeError(f"Car render folder not found: {CAR_RENDER_DIR}")
 
@@ -45,9 +37,7 @@ def load_all_car_stacks() -> dict[str, list[pygame.Surface]]:
 
     return car_stacks
 
-
 class AppData:
-    """Owns the playable track list and the currently selected car/map."""
 
     def __init__(self) -> None:
         self.tracks: list[Track] = []
@@ -56,9 +46,6 @@ class AppData:
                       "Race Mode": {"Ai": True, "Items": True}
                       }
 
-        # Playable tracks discovered on disk (each has cover + per-layer images).
-        # Filter against _ALLOWED_TRACKS so only the currently-supported maps
-        # appear in the picker even if other map folders are present on disk.
         for map_folder in sorted(p for p in MAPS_DIR.iterdir() if p.is_dir()):
             cover = map_folder / "cover.png"
             if (cover.is_file()
@@ -71,10 +58,6 @@ class AppData:
         self.current_car_name: str = "car_01"
         self.current_car: list[pygame.Surface] = self.cars[self.current_car_name]
         self.current_mode = "Race Mode"
-        # NOTE: LEFT FOR TESTS:
-        # self.current_mode = "Time Trial"
-
-
 
     def add_track(self, track: Track) -> None:
         self.tracks.append(track)
@@ -90,7 +73,7 @@ class AppData:
         self.current_car= self.cars[self.current_car_name]
 
     def return_map_layers(self) -> list[pygame.Surface]:
-        """Load every layer image (except ``cover.png``) for the current map."""
+
         if not (self.current_map and self.current_map.corr_map):
             return []
 

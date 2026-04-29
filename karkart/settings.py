@@ -1,12 +1,8 @@
-"""settings.py - these are the saved modifiable settings"""
-
 from __future__ import annotations
 
 import pygame
 
 class Settings:
-
-    """Contains all the settings that can be modified."""
 
     def __init__(self) -> None:
         self.key_bindings: {str:pygame.key} = {
@@ -25,9 +21,7 @@ class Settings:
         self.key_bindings["left"] = pygame.K_LEFT
         self.key_bindings["right"] = pygame.K_RIGHT
 
-
 class _Keys:
-    """Keybindings. Change these to remap movement controls."""
 
     @property
     def UP(self):
@@ -46,5 +40,5 @@ class _Keys:
         return settings.get_key("right")
 
 settings = Settings()
-# settings.set_arrows()
+
 Keys = _Keys()

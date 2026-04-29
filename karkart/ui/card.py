@@ -1,4 +1,4 @@
-"""Cards: decorated rectangles used as clickable/selectable UI primitives."""
+                                                                             
 
 from __future__ import annotations
 from abc import ABC, abstractmethod
@@ -12,7 +12,7 @@ from karkart.ui.ui_object import UIObject
 
 
 class Card(UIObject, ABC):
-    """A bordered rectangular card. ``(x, y)`` is the *centre*."""
+                                                                  
     @abstractmethod
     def __init__(self, center_x: float, center_y: float, width: float, height: float) -> None:
         super().__init__(center_x, center_y, width, height)
@@ -37,7 +37,7 @@ class Card(UIObject, ABC):
 
 
 class MapCard(Card):
-    """Selectable card showing a map preview plus the track name."""
+                                                                    
 
     def __init__(self, track, manager) -> None:
         self.w, self.h = 120, 120
@@ -59,7 +59,7 @@ class MapCard(Card):
         surface.blit(name_text, name_text.get_rect(center=name_rect.center))
 
     def set_position(self, x: float, y: float) -> None:
-        """Place the card and re-position its track preview inside it."""
+                                                                         
         self.x = x
         self.y = y
         self.track.set_position(
@@ -72,7 +72,7 @@ class MapCard(Card):
 
 
 class PopUpCard(Card):
-    """Selectable card showing an option in the pause menu."""
+                                                              
     
     def __init__(self, text: str, state: Screen | None =None, width: int | None =200, height: int | None =50) -> None:
         super().__init__(0, 0, width, height)
@@ -101,10 +101,10 @@ class PopUpCard(Card):
         self.color = Colors.DARK_BLUE
 
 class TitleCard:
-    """
-    Title card of selection screens.
-    NOT CHILD OF CARD.
-    """
+\
+\
+\
+       
 
     def __init__(self, container_width: int, text: str) -> None:
         font_size = 15

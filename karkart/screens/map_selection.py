@@ -1,4 +1,4 @@
-"""Map (track) picker screen."""
+                                
 
 from __future__ import annotations
 
@@ -6,11 +6,12 @@ import pygame
 
 from karkart.constants import Colors, ScreenPositions as sp
 from karkart.paths import PICTURES_DIR, PIXEL_FONT
+from karkart.screens.gameplay import GamePlay
 from karkart.ui import Button, MapCard, MapContainer, SettingsIcon
 
 
 class MapScreen:
-    """3x4 grid of map cards with a Back button below."""
+                                                         
 
     def __init__(self, manager) -> None:
         self.manager = manager
@@ -45,6 +46,7 @@ class MapScreen:
         selected_track = self.container.handle_event(event)
         if selected_track is not None:
             self.manager.get_app_data().set_current_map(selected_track)
+            self.manager.add_screen("game", GamePlay(self.manager))
             self.manager.change_screen("game")
 
     def update(self) -> None:
@@ -56,7 +58,7 @@ class MapScreen:
         surface.fill(Colors.BLACK)
         surface.blit(self.background, (0, 0))
 
-        # Instruction banner above the grid.
+                                            
         font_size = 15
         instr_font = pygame.font.Font(str(PIXEL_FONT), font_size)
         instr_text = instr_font.render("Select the track you want to race on", True, Colors.WHITE)

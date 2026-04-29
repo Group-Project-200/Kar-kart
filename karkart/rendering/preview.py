@@ -1,9 +1,9 @@
-"""Standalone render pipeline used by the car-selection screen preview.
-
-This path is intentionally independent from the game-runtime OOP renderer:
-it rotates the car every frame (instead of reading a pre-baked index), so
-the preview can spin smoothly through any angle.
-"""
+\
+\
+\
+\
+\
+   
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from karkart.helpers import clamp_scale, clamp_zoom
 
 
 DEFAULT_DIRS = 36
-PREVIEW_BG_COLOR = (0, 0, 0, 0)   # Fully transparent for preview blits.
+PREVIEW_BG_COLOR = (0, 0, 0, 0)                                         
 
 
 @dataclass(frozen=True, slots=True)
@@ -48,9 +48,9 @@ class RenderPipeline:
     dirs: int
 
 
-# --------------------------------------------------------------------------- #
-# Surface helpers                                                             #
-# --------------------------------------------------------------------------- #
+                                                                               
+                                                                               
+                                                                               
 
 def _convert_for_display(surface: pygame.Surface) -> pygame.Surface:
     if pygame.display.get_surface() is None:
@@ -112,9 +112,9 @@ def _build_camera_buffer(view_size: tuple[int, int]) -> tuple[pygame.Surface, tu
     return pygame.Surface((side, side)).convert(), (side // 2, side // 2)
 
 
-# --------------------------------------------------------------------------- #
-# Public API                                                                  #
-# --------------------------------------------------------------------------- #
+                                                                               
+                                                                               
+                                                                               
 
 def build_render_pipeline(
     *,
@@ -124,7 +124,7 @@ def build_render_pipeline(
     setup: RenderSetup,
     dirs: int = DEFAULT_DIRS,
 ) -> RenderPipeline:
-    """Pre-build every surface, cache and rotated slice needed to render previews."""
+                                                                                     
     render_size = _build_pixel_surface_size(screen_size, setup.pixelation_scale)
     render_scale = render_size[1] / screen_size[1]
     needs_present_scale = render_size != screen_size
@@ -161,7 +161,7 @@ def _render_stack_smooth(
     spread: int,
     rotation_degrees: float,
 ) -> None:
-    """Rotate each slice afresh so the preview rotates at any sub-step angle."""
+                                                                                
     x, y = pos
     for i, img in enumerate(source_slices):
         rotated = pygame.transform.rotate(img, rotation_degrees)
@@ -187,7 +187,7 @@ def render_preview_debug_frame(
     car_rotation: float,
     stack_spread: int,
 ) -> None:
-    """Render just the car stack at an arbitrary rotation onto *screen*."""
+                                                                           
     frame_surface = pipeline.frame_surface
     frame_surface.fill(PREVIEW_BG_COLOR)
     _render_stack_smooth(

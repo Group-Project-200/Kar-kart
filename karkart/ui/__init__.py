@@ -1,5 +1,3 @@
-"""Small, screen-agnostic widgets: buttons, cards, grid containers, tracks."""
-
 from karkart.ui.arrow import Arrow
 from karkart.ui.button import Button, ColorButton
 from karkart.ui.card import Card, MapCard, PopUpCard, TitleCard

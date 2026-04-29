@@ -1,4 +1,4 @@
-"""pause_menu.py - when game is paused, it appears"""
+                                                     
 
 from __future__ import annotations
 from abc import ABC, abstractmethod
@@ -10,7 +10,7 @@ from karkart.ui import Arrow, ArrowContainer, PopUpContainer, PopUpCard, TitleCa
 from karkart.screens.gameplay import GamePlay
 
 class PopUpMenu(ABC):
-    """Abstract class for all pop-up menus""" 
+                                              
 
     @abstractmethod
     def __init__(self, manager) -> None:
@@ -25,10 +25,10 @@ class PopUpMenu(ABC):
         self.container = None
         self.title = None
 
-        # Creates outer rectangle.
+                                  
         self.pause_rect = pygame.Rect(self.x - self.width / 2, self.y - self.height / 2, self.width, self.height)
 
-        # Activated when pressing ESC to draw a black layer next time pop-up is open.
+                                                                                     
         self.activate_black_layer: bool = False
 
         self.black_layer: bool = True
@@ -37,7 +37,7 @@ class PopUpMenu(ABC):
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
 
-            # Press ESC -> brings back to original screen.
+                                                          
             if event.key == pygame.K_ESCAPE:
                 self.activate_black_layer = True
                 self.manager.change_screen(self.screen)
@@ -47,7 +47,7 @@ class PopUpMenu(ABC):
 
     def draw(self, surface : pygame.Surface):
 
-        # First time calling draw() -> create a semi-transparent black layer.
+                                                                             
         if self.black_layer:
             black_layer = pygame.Surface((sp.WIDTH, sp.HEIGHT))
             black_layer.fill(Colors.BLACK)
@@ -56,7 +56,7 @@ class PopUpMenu(ABC):
 
             self.black_layer = False
 
-        # Draw title, container and outer rectangle.
+                                                    
         pygame.draw.rect(surface, Colors.LIGHT_BLUE, self.pause_rect, border_radius=8)
         pygame.draw.rect(surface, Colors.BLACK, self.pause_rect, 2, border_radius=8)
         self.container.draw(surface)
@@ -68,12 +68,12 @@ class PopUpMenu(ABC):
 
 
 class PauseMenu(PopUpMenu):
-    """
-    List of options to select in the pause menu.
-    They call different screens.
-    """
+\
+\
+\
+       
 
-    # TODO: add all the features
+                                
 
     def __init__(self, manager) -> None:
         super().__init__(manager)
@@ -85,10 +85,10 @@ class PauseMenu(PopUpMenu):
             self.container.add_object(opt)
         self.container.calculate_padding(x_center=True, y_center=True)
 
-        # Creates title.
+                        
         self.title = TitleCard(self.container.get_width(), "Pause Menu")
 
-        # Clicking ESC brings back to game.
+                                           
         self.screen: str = "game"
         
 
@@ -96,7 +96,7 @@ class PauseMenu(PopUpMenu):
         if event.type == pygame.KEYDOWN:
             super().handle_event(event)
             
-            # Container returns a screen -> update the screen.
+                                                              
             screen = self.container.handle_event(event)
             if screen:
                 if screen == "car":
@@ -108,11 +108,11 @@ class SettingsMenu(PopUpMenu):
     def __init__(self, manager) -> None:
         super().__init__(manager)
 
-        # Container that stores left and right arrows and all the selectable options.
+                                                                                     
         key_options : list[Any] = [PopUpCard("WASD", width=150), PopUpCard("Arrows", width=150)]
         self.keys = ArrowContainer(0, 0, 250, 150, key_options)
 
-        # Container for all the settings.
+                                         
         options = [self.keys, PopUpCard("Save", width=250)]
         self.container = PopUpContainer(self.x, self.y, self.width, self.height, len(options), 1)
         for x in options:
@@ -120,14 +120,14 @@ class SettingsMenu(PopUpMenu):
 
         self.container.calculate_padding(x_center=True, y_center=True)
 
-        # Creates title.
+                        
         self.title = TitleCard(self.container.get_width(), "Settings")
 
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
             super().handle_event(event)
             
-            # Container returns a screen -> update the screen.
+                                                              
             screen = self.container.handle_event(event)
             if screen:
                 if screen == "car":
@@ -136,6 +136,6 @@ class SettingsMenu(PopUpMenu):
 
     def set_return_screen(self, screen):
 
-        # Clicking ESC brings back to that screen.
+                                                  
         self.screen = screen
         self.black_layer = True
