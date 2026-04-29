@@ -2,25 +2,26 @@
 
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 
 import pygame
 
-from karkart.paths import CAR_RENDER_DIR, MAPS_DIR, PICTURES_DIR
+from karkart.paths import CAR_RENDER_DIR, MAP_DATA_FILE, MAPS_DIR
 from karkart.ui.track import Track
 
 
-_FLAG_TRACKS: tuple[tuple[str, str], ...] = (
-    ("australia_flag.png", "Australia"),
-    ("japan_flag.png", "Japan"),
-    ("china_flag.png", "China"),
-    ("singapore_flag.png", "Singapore"),
-    ("usa_flag.png", "USA"),
-    ("canada_flag.png", "Canada"),
-    ("mexico_flag.png", "Mexico"),
-    ("brazil_flag.png", "Brazil"),
-)
+with MAP_DATA_FILE.open() as _f:
+    _MAP_DATA_KEYS: frozenset[str] = frozenset(json.load(_f).keys())
+
+
+# Only these folder names are exposed as playable tracks. Other folders
+# (legacy flags, WIP maps) exist on disk but are intentionally hidden so the
+# selector shows a tidy 2x2 grid of the currently-supported tracks.
+_ALLOWED_TRACKS: frozenset[str] = frozenset({
+    "newmap1", "newmap2", "newmap3", "newmap4",
+})
 
 
 def load_all_car_stacks() -> dict[str, list[pygame.Surface]]:
@@ -56,18 +57,16 @@ class AppData:
                       }
 
         # Playable tracks discovered on disk (each has cover + per-layer images).
+        # Filter against _ALLOWED_TRACKS so only the currently-supported maps
+        # appear in the picker even if other map folders are present on disk.
         for map_folder in sorted(p for p in MAPS_DIR.iterdir() if p.is_dir()):
             cover = map_folder / "cover.png"
-            if cover.is_file():
-                # self.add_track(Track(str(cover), map_folder.name, str(map_folder)))
-                # NOTE: temporarily putting map_2 as link for each one until a track is created
-                self.add_track(Track(str(cover), "map_2", MAPS_DIR / "map_2"))
+            if (cover.is_file()
+                    and map_folder.name in _MAP_DATA_KEYS
+                    and map_folder.name in _ALLOWED_TRACKS):
+                self.add_track(Track(str(cover), map_folder.name, map_folder))
 
-        # Decorative flag-only tracks (placeholders, no playable layers yet).
-        for filename, label in _FLAG_TRACKS:
-            self.add_track(Track(str(PICTURES_DIR / filename), label, None))
-
-        default = next((t for t in self.tracks if t.name == "map_2"), None)
+        default = next((t for t in self.tracks if t.name == "newmap1"), None)
         self.current_map: Track | None = default or (self.tracks[0] if self.tracks else None)
         self.current_car_name: str = "car_01"
         self.current_car: list[pygame.Surface] = self.cars[self.current_car_name]

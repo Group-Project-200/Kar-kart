@@ -126,3 +126,4 @@ class CarScreen:
 
         self.back_btn.draw(surface)
         self.settings_icon.draw(surface)
+

@@ -11,17 +11,24 @@ import pygame
 
 from karkart.ai.ai_controller import AIController
 from karkart.ai.pathfinder import AStarPathfinder
-from karkart.helpers import snap_degrees
 from karkart.paths import MAP_DATA_FILE
 from karkart.physics.camera import Camera
-from karkart.physics.car import Car
+from karkart.physics.car import Car, get_handling_for
+from karkart.physics.checkpoint import Checkpoint, RacerState
 from karkart.physics.collision import CollisionDetector
 from karkart.rendering.map import Map, MapData
 from karkart.rendering.renderer import Renderer
 from karkart.rendering.sparks import SparkManager
 from karkart.rendering.stacker import Stacker
+from karkart.runtime.pathfinder_worker import PathfinderWorker
+from karkart.runtime.scheduler import (
+    AIScheduler, CollisionScheduler, PhysicsScheduler,
+)
+from karkart.runtime.snapshot import SnapshotBuffer, WorldSnapshot
+from karkart.runtime.world import World
 from karkart.settings import Keys as K
 from karkart.screens.start_sequence import StartSequence
+from karkart.screens.leaderboard import GAME_LEADERBOARD, LeaderboardScreen, RaceResult
 
 from karkart.powerups.powerups_manager import PowerupRendering, PowerupsManager
 
@@ -47,6 +54,40 @@ def _car_pos_scaling(x: float, y: float, map_dimensions: tuple[int, int]) -> tup
     return x - map_dimensions[0] / 2, y - map_dimensions[1] / 2
 
 
+def _build_collision_masks(
+    layer_masks: list[pygame.mask.Mask],
+) -> tuple[pygame.mask.Mask, pygame.mask.Mask | None]:
+    """Pick the (wall_mask, road_mask) pair to use for a given map.
+
+    Old-style maps ship three mask layers: ``layer_masks[0]`` is solid walls
+    and ``layer_masks[1]`` is the road surface — those can be used as-is.
+    New-style maps ship only a single layer which is the road; for those the
+    collision test has to fire *off* the road, so we invert the road mask
+    into an "off-road" mask and use that as the wall layer.
+    """
+    if len(layer_masks) >= 2:
+        return layer_masks[0], layer_masks[1]
+
+    road = layer_masks[0]
+    w, h = road.get_size()
+    off_road = pygame.mask.Mask((w, h), fill=True)
+    off_road.erase(road, (0, 0))
+    return off_road, road
+
+
+def _duplicate_checkpoints(source: list[Checkpoint]) -> list[Checkpoint]:
+    """Clone the checkpoint geometry so every car owns its own list.
+
+    Checkpoint instances carry mutable state (``passed``) and the game
+    advances each racer independently — sharing the same list between cars
+    risks one racer's progression leaking into another's.
+    """
+    return [
+        Checkpoint(cp.rect.x, cp.rect.y, cp.rect.width, cp.rect.height)
+        for cp in source
+    ]
+
+
 def _position_mapping(current_info, map_size):
     map_w,map_h =map_size
     raw_x, raw_y, item_w, item_h= current_info
@@ -63,16 +104,20 @@ class GamePlay:
     # Distance-based car-to-car collision radius, in world (map-pixel) units.
     _CAR_COLLISION_RADIUS: float = 18.0
 
+    # How many AI opponents spawn in Race Mode. Time Trial always has zero.
+    _AI_COUNT_RACE: int = 4
+
     def __init__(self, manager) -> None:
-        self.ai_active = True
         self.manager = manager
         self.mode = self.manager.app_data.modes[self.manager.app_data.current_mode]
+        self.ai_active = self.mode["Ai"]
         self.config = GameConfig()
 
-
-        # Alternating-frame scheduler: cheap per-frame work runs every tick;
-        # expensive checks split across even/odd frames (see update()).
-        self._frame_parity: int = 0
+        # ``_race_finished`` is the main-thread "I've already transitioned
+        # to the leaderboard" guard. The canonical race-over signal lives
+        # on ``self.world.race_finished_event`` (set by the physics
+        # thread); this flag prevents complete_race() from running twice.
+        self._race_finished: bool = False
 
         # HUD + debug overlay.
         self._debug_checkpoints: bool = False
@@ -80,11 +125,17 @@ class GamePlay:
             pygame.font.init()
         self._hud_font: pygame.font.Font = pygame.font.SysFont("monospace", 16)
 
-        # Cumulative checkpoint counters used to rank positions (lap-aware).
-        self._player_total_cp: int = 0
-        self._ai_total_cp: int = 0
-        self._prev_player_counter: int = 0
-        self._prev_ai_goal_idx: int = 0
+        # Per-racer checkpoint progression (lap, cursor, cumulative total).
+        # The physics thread mutates these via World; HUD reads them via
+        # the snapshot. AI states are populated below if AI is enabled.
+        self.player_state = RacerState()
+        self.ai_states: list[RacerState] = []
+
+        # Per-car checkpoint geometry. The map's checkpoints_list is the
+        # shared source of truth; each car gets its own independent clone so
+        # their per-racer state can't interfere with each other.
+        self.player_checkpoints: list[Checkpoint] = []
+        self.ai_checkpoints: list[list[Checkpoint]] = []
 
         map_name = self.manager.app_data.current_map.name
         map_record = _MAP_DATA[map_name]
@@ -98,7 +149,11 @@ class GamePlay:
         proper_coordinates =[]
         for item in map_record["items"]:
             proper_coordinates.append( _position_mapping(item, self.current_map_data.layers[0].get_size()))
-        self.current_car = Car()
+        # Player car uses the handling profile tied to whichever sprite stack
+        # was selected in the car picker.
+        self.current_car = Car(
+            handling=get_handling_for(self.manager.app_data.current_car_name),
+        )
         self.power_ups_manager = PowerupsManager(self.current_car)
 
         self.world_box = []
@@ -111,237 +166,462 @@ class GamePlay:
         self.current_renderer = Renderer(
             self.current_map, self.car_stacker, self.manager.screen_display, self.sparks,
         )
+        # The renderer calls Map.zoom_fixing, which populates the map's
+        # checkpoints_list. Clone it for the player now that it exists.
+        self.player_checkpoints = _duplicate_checkpoints(
+            self.current_map.checkpoints_list,
+        )
+        # Resolve which mask represents "blocked" for this map (walls for old
+        # maps, inverted road for new maps) and which represents the driveable
+        # surface (used by A* to stay on-track).
+        wall_mask, road_mask = _build_collision_masks(self.current_map.masks)
         self.collision_detector = CollisionDetector(
-            self.current_map.masks, self.car_stacker.mask_cache,
+            [wall_mask], self.car_stacker.mask_cache,
         )
 
+        # Compute start pose: centre of the start-grid box in world coords,
+        # heading pointing at the first checkpoint so every car faces the
+        # correct way down the track regardless of how the grid was drawn.
         sg = map_record["start_grid"]   # [x, y, w, h]
-        start_x = sg[0] + sg[2] / 2
-        start_y = sg[1] + sg[3] / 2
-        self.current_car.physics.car_x, self.current_car.physics.car_y = _car_pos_scaling(
-            start_x, start_y, self.current_map.dimensions,
+        grid_cx = sg[0] + sg[2] / 2
+        grid_cy = sg[1] + sg[3] / 2
+        start_world_x, start_world_y = _car_pos_scaling(
+            grid_cx, grid_cy, self.current_map.dimensions,
         )
 
+        start_rotation, forward, right = self._compute_start_pose(
+            start_world_x, start_world_y,
+        )
+        ai_count = self._AI_COUNT_RACE if self.ai_active else 0
+        player_pos, ai_positions = self._grid_positions(
+            start_world_x, start_world_y, forward, right, ai_count,
+        )
 
+        self.current_car.physics.car_x, self.current_car.physics.car_y = player_pos
+        self.current_car.physics.rotation = start_rotation
 
+        # Match the camera heading to the car's heading so the very first
+        # rendered frame (during the countdown, before update_camera_angle
+        # runs) shows the world oriented correctly — without this the cars
+        # render rotated against a north-up map during the 3-2-1 sequence.
+        self.current_camera.angle = start_rotation
 
         # ------------------------------------------------------------------ #
-        # AI opponent                                                        #
+        # AI opponents                                                       #
         # ------------------------------------------------------------------ #
+
+        self.ai_cars: list[Car] = []
+        self.ai_stackers: list[Stacker] = []
+        self.ai_collisions: list[CollisionDetector] = []
+        self.ai_controllers: list[AIController] = []
 
         if self.ai_active:
-            self.ai_car = Car()
-            ai_stack = self._pick_ai_car_stack()
-            self.ai_stacker = Stacker(ai_stack, self.config.dirs)
-            self.ai_stacker.scale_update(self.car_stacker.scale)
-            self.ai_collision = CollisionDetector(
-                self.current_map.masks, self.ai_stacker.mask_cache,
-            )
-            # Spawn the AI beside the player (offset within the start grid).
-            self.ai_car.physics.car_x, self.ai_car.physics.car_y = _car_pos_scaling(
-                start_x + 30, start_y, self.current_map.dimensions,
-            )
-
+            # Padding 3 keeps tight corridors
             self.pathfinder = AStarPathfinder(
-                mask=self.current_map.masks[0],
+                mask=wall_mask,
                 map_dims=self.current_map.dimensions,
                 cell_size=8,
                 padding=4,
-            )
-            self.ai_controller = AIController(
-                car=self.ai_car,
-                pathfinder=self.pathfinder,
-                checkpoints=self.current_map.checkpoints_list,
+                road_mask=road_mask,
             )
 
+            ai_stacks = self._pick_ai_car_stacks(ai_count)
+            for i in range(ai_count):
+                ai_name, ai_stack = ai_stacks[i]
+                # Every AI uses the handling profile bound to its own car
+                # model, so opponents actually drive like their respective
+                # karts instead of all sharing the player's tuning.
+                ai_car = Car(handling=get_handling_for(ai_name))
+                ai_car.physics.car_x, ai_car.physics.car_y = ai_positions[i]
+                ai_car.physics.rotation = start_rotation
 
+                stacker = Stacker(ai_stack, self.config.dirs)
+                stacker.scale_update(self.car_stacker.scale)
 
-    def _pick_ai_car_stack(self) -> list[pygame.Surface]:
-        """Pick a sprite stack that's different from the player's car if possible."""
+                collision = CollisionDetector([wall_mask], stacker.mask_cache)
+
+                state = RacerState()
+                ai_cp_list = _duplicate_checkpoints(
+                    self.current_map.checkpoints_list,
+                )
+                controller = AIController(
+                    car=ai_car,
+                    pathfinder=self.pathfinder,
+                    checkpoints=ai_cp_list,
+                    racer_state=state,
+                    ai_index=i,
+                    # planner is wired up in _start_threads once the
+                    # pathfinder worker is alive.
+                    planner=None,
+                )
+
+                self.ai_cars.append(ai_car)
+                self.ai_stackers.append(stacker)
+                self.ai_collisions.append(collision)
+                self.ai_states.append(state)
+                self.ai_controllers.append(controller)
+                self.ai_checkpoints.append(ai_cp_list)
+        else:
+            # Time Trial has no AI but the runtime still expects a pathfinder
+            # reference for world wiring. Leave it as None and skip planner
+            # setup below.
+            self.pathfinder = None
+
+        # ------------------------------------------------------------------ #
+        # Threaded runtime                                                   #
+        # ------------------------------------------------------------------ #
+        # Build the shared World + SnapshotBuffer up front so handle_event /
+        # draw can lock against them even before the countdown completes.
+        # Threads themselves are started in _start_threads() once the
+        # countdown finishes, so the 3-2-1 sequence runs single-threaded.
+        self.snapshot_buffer = SnapshotBuffer()
+        self.world = World(
+            player_car=self.current_car,
+            ai_cars=self.ai_cars,
+            camera=self.current_camera,
+            sparks=self.sparks,
+            player_state=self.player_state,
+            ai_states=self.ai_states,
+            player_checkpoints=self.player_checkpoints,
+            ai_checkpoints=self.ai_checkpoints,
+            ai_controllers=self.ai_controllers,
+            powerups_manager=self.power_ups_manager,
+            world_box=self.world_box,
+            current_map=self.current_map,
+            car_stacker=self.car_stacker,
+            ai_stackers=self.ai_stackers,
+            collision_detector=self.collision_detector,
+            ai_collisions=self.ai_collisions,
+            car_collision_radius=self._CAR_COLLISION_RADIUS,
+            snap_step_degrees=self.config.rotation_snap_degrees,
+        )
+        self._pathfinder_worker: PathfinderWorker | None = None
+        self._physics_thread: PhysicsScheduler | None = None
+        self._collision_thread: CollisionScheduler | None = None
+        self._ai_thread: AIScheduler | None = None
+        self._threads_started: bool = False
+
+        # Pre-publish a snapshot built from the starting state so that the
+        # very first draw call (during the countdown, before any tick has
+        # fired) has something to read.
+        self._publish_initial_snapshot()
+
+    # Grid stagger offsets: each row is one car-length behind the previous,
+    # and cars alternate right/left so the line-up spreads across the track.
+    _GRID_ROW_GAP: float = 26.0     # Forward spacing between rows (world units).
+    _GRID_SIDE: float = 20.0        # Lateral offset per lane (world units).
+    _POLE_FORWARD_OFFSET: float = 12.0  # Player slightly ahead of grid centre.
+
+    def _compute_start_pose(
+        self, start_world_x: float, start_world_y: float,
+    ) -> tuple[float, tuple[float, float], tuple[float, float]]:
+        """Return (rotation_degrees, forward_unit, right_unit) for the grid.
+
+        Heading is derived from the direction to the first checkpoint so cars
+        always face down the racing line regardless of how the start box was
+        drawn. Falls back to facing up the map if no checkpoint is available.
+        """
+        checkpoints = self.current_map.checkpoints_list
+        if checkpoints:
+            target = checkpoints[0].rect
+            dx = target.centerx - start_world_x
+            dy = target.centery - start_world_y
+        else:
+            dx, dy = 0.0, -1.0
+        length = math.hypot(dx, dy) or 1.0
+        fx, fy = dx / length, dy / length
+
+        # Screen-right perpendicular (Y grows downward): rotate forward 90° CW.
+        rx, ry = -fy, fx
+
+        # forward_vector(r) returns (-sin r, -cos r), so solve for r.
+        rotation = math.degrees(math.atan2(-fx, -fy))
+        return rotation, (fx, fy), (rx, ry)
+
+    def _grid_positions(
+        self,
+        start_world_x: float, start_world_y: float,
+        forward: tuple[float, float], right: tuple[float, float],
+        ai_count: int,
+    ) -> tuple[tuple[float, float], list[tuple[float, float]]]:
+        """Staggered F1-style grid: player on pole, AI cars fanned out behind."""
+        fx, fy = forward
+        rx, ry = right
+
+        # Player on pole: slightly forward, left of grid centre.
+        player = (
+            start_world_x + fx * self._POLE_FORWARD_OFFSET - rx * self._GRID_SIDE,
+            start_world_y + fy * self._POLE_FORWARD_OFFSET - ry * self._GRID_SIDE,
+        )
+
+        # AI cars fill rows behind the player, alternating right/left.
+        # Index 0 -> row 0 right; 1 -> row 1 left; 2 -> row 1 right; ...
+        ai_positions: list[tuple[float, float]] = []
+        for i in range(ai_count):
+            row = (i + 1) // 2
+            side = 1 if (i % 2 == 0) else -1
+            fwd = -self._GRID_ROW_GAP * row - self._POLE_FORWARD_OFFSET
+            lat = side * self._GRID_SIDE
+            ai_positions.append((
+                start_world_x + fx * fwd + rx * lat,
+                start_world_y + fy * fwd + ry * lat,
+            ))
+        return player, ai_positions
+
+    def _pick_ai_car_stacks(self, count: int) -> list[tuple[str, list[pygame.Surface]]]:
+        """Pick *count* (name, sprite_stack) pairs, avoiding the player's car.
+
+        The name is returned alongside the stack so each AI can look up the
+        handling profile bound to its own car model.
+        """
         cars = self.manager.app_data.cars
         player_name = self.manager.app_data.current_car_name
-        for name in sorted(cars.keys()):
-            if name != player_name:
-                return cars[name]
-        return cars[player_name]
+        others = [(name, cars[name]) for name in sorted(cars.keys()) if name != player_name]
+        if not others:
+            others = [(player_name, cars[player_name])]
+        # Cycle through the available non-player stacks to fill the grid even
+        # if there are fewer unique cars than AI slots.
+        return [others[i % len(others)] for i in range(count)]
 
     def handle_event(self, event) -> None:
         controls = self.current_car.controls
 
+        # All control mutations happen under the world lock so the physics
+        # thread can never read a half-updated ControlState mid-tick.
         if event.type == pygame.KEYDOWN:
             match event.key:
                 case K.LEFT:
-                    controls.left_pressed = True
-                    controls.steer_input = 1
+                    with self.world.lock:
+                        controls.left_pressed = True
+                        controls.steer_input = 1
                 case K.RIGHT:
-                    controls.right_pressed = True
-                    controls.steer_input = -1
+                    with self.world.lock:
+                        controls.right_pressed = True
+                        controls.steer_input = -1
                 case K.UP:
-                    controls.up_input = True
+                    with self.world.lock:
+                        controls.up_input = True
                 case K.DOWN:
-                    controls.down_input = True
+                    with self.world.lock:
+                        controls.down_input = True
                 case pygame.K_SPACE:
-                    controls.drift_input = True
+                    with self.world.lock:
+                        controls.drift_input = True
 
                 case pygame.K_ESCAPE:
-                    # Open pause menu.
+                    # Capture frozen game frame, then open pause menu. Works
+                    # during the countdown too — the backdrop is just
+                    # whatever was last drawn (map + cars + countdown digit).
+                    # ScreenManager.change_screen will fire on_deactivate
+                    # which pauses the worker threads cleanly.
                     self.manager.change_screen("pause")
+                    self.manager.get_screen().backdrop = self.manager.screen_display.copy()
 
                 case pygame.K_F1:
                     self._debug_checkpoints = not self._debug_checkpoints
         elif event.type == pygame.KEYUP:
             match event.key:
                 case K.LEFT:
-                    controls.left_pressed = False
-                    if controls.steer_input == 1:
-                        controls.steer_input = -1 if controls.right_pressed else 0
+                    with self.world.lock:
+                        controls.left_pressed = False
+                        if controls.steer_input == 1:
+                            controls.steer_input = -1 if controls.right_pressed else 0
                 case K.RIGHT:
-                    controls.right_pressed = False
-                    if controls.steer_input == -1:
-                        controls.steer_input = 1 if controls.left_pressed else 0
+                    with self.world.lock:
+                        controls.right_pressed = False
+                        if controls.steer_input == -1:
+                            controls.steer_input = 1 if controls.left_pressed else 0
                 case K.UP:
-                    controls.up_input = False
+                    with self.world.lock:
+                        controls.up_input = False
                 case K.DOWN:
-                    controls.down_input = False
+                    with self.world.lock:
+                        controls.down_input = False
                 case pygame.K_SPACE:
-                    controls.drift_input = False
+                    with self.world.lock:
+                        controls.drift_input = False
 
-    def _collision_check(self) -> None:
-        car_relative_rotation = self.current_car.physics.rotation - self.current_camera.angle
-        self.current_map.get_coordinates()
-        dir_idx = snap_degrees(car_relative_rotation, dirs=self.car_stacker.dirs)
-        offset = (self.current_map.car_map_x, self.current_map.car_map_y)
-        self.current_car.collision_results = self.collision_detector.border_check(dir_idx, offset)
+    # ------------------------------------------------------------------ #
+    # Threading lifecycle                                                #
+    # ------------------------------------------------------------------ #
 
+    def _start_threads(self) -> None:
+        """Spawn physics + collision (+ AI/pathfinder if AI is active).
 
-        for items_box in self.world_box:
-            powered_up = items_box.check(self.current_car.physics.car_x, self.current_car.physics.car_y)
-            if powered_up and self.power_ups_manager.current is None:
-                self.power_ups_manager.current = self.power_ups_manager.choose_random_powerup()
-                self.power_ups_manager.current.activate(self.current_car.physics)
+        Called once when the countdown completes. Threads are started in
+        order: pathfinder first so the AI scheduler can wire its planner
+        reference, then physics + collision, then AI last so it never
+        runs before there's a snapshot to read.
+        """
+        if self._threads_started:
+            return
 
-    def _ai_collision_check(self) -> None:
-        """Test the AI car against the same map masks the player uses."""
-        cache = self.current_map.cache
-        assert cache is not None and cache.zoom is not None
-        ai_map_x = cache.center_x + int(self.ai_car.physics.car_x * cache.zoom)
-        ai_map_y = cache.center_y + int(self.ai_car.physics.car_y * cache.zoom)
-        dir_idx = snap_degrees(self.ai_car.physics.rotation, dirs=self.ai_stacker.dirs)
-        self.ai_car.collision_results = self.ai_collision.border_check(dir_idx, (ai_map_x, ai_map_y))
+        if self.ai_active and self.pathfinder is not None:
+            worker = PathfinderWorker(self.pathfinder)
+            worker.start()
+            self._pathfinder_worker = worker
+            for controller in self.ai_controllers:
+                controller.planner = worker
 
-    def update_resources(self):
+        self._physics_thread = PhysicsScheduler(
+            world=self.world, snapshot_buffer=self.snapshot_buffer,
+        )
+        self._collision_thread = CollisionScheduler(
+            world=self.world, snapshot_buffer=self.snapshot_buffer,
+        )
+        self._physics_thread.start()
+        self._collision_thread.start()
+
+        if self.ai_active and self._pathfinder_worker is not None:
+            self._ai_thread = AIScheduler(
+                world=self.world,
+                snapshot_buffer=self.snapshot_buffer,
+                pathfinder_worker=self._pathfinder_worker,
+            )
+            self._ai_thread.start()
+
+        self._threads_started = True
+
+    def _stop_threads(self) -> None:
+        """Signal every worker to exit and wait for them to drain.
+
+        Safe to call repeatedly. Uses short join timeouts so a stuck
+        thread can't lock up the screen transition.
+        """
+        self.world.stop_event.set()
+        # Clearing pause makes any thread waiting in pause-mode loop wake
+        # up and observe stop_event.
+        self.world.pause_event.clear()
+        for thread in (self._ai_thread, self._collision_thread, self._physics_thread):
+            if thread is not None and thread.is_alive():
+                thread.join(timeout=1.0)
+        if self._pathfinder_worker is not None:
+            self._pathfinder_worker.stop(timeout=1.0)
+        self._ai_thread = None
+        self._collision_thread = None
+        self._physics_thread = None
+        self._pathfinder_worker = None
+        self._threads_started = False
+
+    def on_deactivate(self) -> None:
+        """Called by ScreenManager when the player opens the pause menu.
+        Pauses the worker threads so the simulation freezes at the
+        moment the menu opens; cleared on the way back in via
+        :meth:`update_resources`."""
+        self.world.pause_event.set()
+
+    def on_destroy(self) -> None:
+        """Called by ScreenManager when this instance is being replaced
+        (e.g. PauseMenu's "Restart" registers a fresh GamePlay). Joins
+        every worker so the old instance does not keep simulating in
+        the background."""
+        self._stop_threads()
+
+    def _publish_initial_snapshot(self) -> None:
+        """Build a one-shot snapshot from the current state.
+
+        Used so the very first ``draw`` (rendered during the countdown,
+        before the physics thread has produced any tick) still has a
+        coherent view of car positions and camera angle.
+        """
+        from karkart.runtime.scheduler import _car_snapshot
+        from karkart.runtime.snapshot import RacerSnapshot, WorldSnapshot
+
+        self.snapshot_buffer.publish(WorldSnapshot(
+            tick=0,
+            player=_car_snapshot(self.current_car.physics),
+            ai=[_car_snapshot(c.physics) for c in self.ai_cars],
+            camera_angle=self.current_camera.angle,
+            sparks=[],
+            player_racer=RacerSnapshot(
+                list_counter=self.player_state.list_counter,
+                current_lap=self.player_state.current_lap,
+                total_checkpoints=self.player_state.total_checkpoints,
+            ),
+            ai_racers=[
+                RacerSnapshot(
+                    list_counter=s.list_counter,
+                    current_lap=s.current_lap,
+                    total_checkpoints=s.total_checkpoints,
+                )
+                for s in self.ai_states
+            ],
+            item_active=[box.active for box in self.world_box],
+            position_label=self.world.cached_position_label,
+            race_finished=False,
+        ))
+
+    # ------------------------------------------------------------------ #
+    # Per-frame entry points                                             #
+    # ------------------------------------------------------------------ #
+
+    def update_resources(self) -> None:
+        """Called by ScreenManager when this screen becomes active again.
+
+        Both at fresh entry and on return from a popup. Re-applies mode
+        flags (which can change in the pause menu's settings), refreshes
+        the position label, and resumes any paused worker threads.
+        """
         self.car_stacker.set_images(self.manager.app_data.current_car)
         self.mode = self.manager.app_data.modes[self.manager.app_data.current_mode]
-        self.ai_active = self.mode["Ai"]
+        self.ai_active = self.mode["Ai"] and bool(self.ai_cars)
         for items_box in self.world_box:
             items_box.active = self.mode["Items"]
         self.current_map.active = self.mode["Items"]
 
-
-
-    def _check_car_to_car_collision(self) -> None:
-        """Push player and AI apart if they overlap, and bleed some momentum."""
-        p = self.current_car.physics
-        a = self.ai_car.physics
-        dx = p.car_x - a.car_x
-        dy = p.car_y - a.car_y
-        dist_sq = dx * dx + dy * dy
-        if dist_sq >= self._CAR_COLLISION_RADIUS ** 2:
-            return
-        dist = math.sqrt(dist_sq) or 0.001
-        nx, ny = dx / dist, dy / dist
-        p.velocity_x += nx * 0.4
-        p.velocity_y += ny * 0.4
-        a.velocity_x -= nx * 0.4
-        a.velocity_y -= ny * 0.4
-        p.speed *= 0.6
-        a.speed *= 0.6
-
-    def _update_checkpoints_player(self) -> None:
-        self.current_map.update_checkpoints()
-        cur = self.current_map.list_counter
-        if cur != self._prev_player_counter:
-            self._player_total_cp += 1
-            self._prev_player_counter = cur
-
-    def _update_checkpoints_ai(self) -> None:
-        cur = self.ai_controller._goal_idx
-        if cur != self._prev_ai_goal_idx:
-            self._ai_total_cp += 1
-            self._prev_ai_goal_idx = cur
-
-    def ai_update(self):
-        if not self.ai_active:
-            return
-
-        if self._frame_parity == 0:
-            self._ai_collision_check()
-            self._check_car_to_car_collision()
-        else:
-            self.ai_controller.update()
-            self._update_checkpoints_ai()
-
-        self.ai_car.physics = self.ai_car.step_physics_with_controls(
-            snap_step_degrees=self.config.rotation_snap_degrees,
-        )
-
-    def update(self) -> None:
-        if not self.countdown.complete:
-            return
-
-        self._frame_parity ^= 1
-
-        # Even frames: mask-based collision checks and car-to-car overlap.
-        # Odd frames: checkpoint bookkeeping and AI planning.
-        # Cached collision_results and control state carry into the alternate
-        # frame, so the one-frame latency is invisible at 60 FPS.
-        if self._frame_parity == 0:
-            self._collision_check()
-
-        else:
-            self._update_checkpoints_player()
-
-
-        # Physics integrates every frame for both cars so motion stays smooth.
-        self.current_car.physics = self.current_car.step_physics_with_controls(
-            snap_step_degrees=self.config.rotation_snap_degrees,
-        )
-        physics = self.current_car.physics
-        # Only emit sparks once the hop has landed — MK drift trails start after
-        # the hop finishes, not during the airborne frames.
-        if physics.drift_active and physics.car_z <= 0.0:
-            anchor_x = self.current_car.last_safe_x if self.current_car.last_safe_x is not None else physics.car_x
-            anchor_y = self.current_car.last_safe_y if self.current_car.last_safe_y is not None else physics.car_y
-            self.sparks.emit(
-                anchor_x, anchor_y,
-                physics.rotation,
-                physics.drift_charge_frames,
+        # ai_active can flip after a mode change; refresh the cached rank
+        # string so the HUD doesn't display a stale label.
+        from karkart.runtime.scheduler import _compute_position_label
+        with self.world.lock:
+            self.world.cached_position_label = _compute_position_label(
+                self.player_state, self.ai_states, ai_active=self.ai_active,
             )
 
-        if self.power_ups_manager.current is not None:
-            if self.power_ups_manager.current.tick(self.current_car.physics):
-                self.power_ups_manager.current = None
+        # Returning from the pause menu while the countdown is still running:
+        # reset the tick baseline so the 5-second timer doesn't jump by
+        # however long the player spent in the menu.
+        if not self.countdown.complete:
+            self.countdown.resume()
 
+        # Resume worker threads if they were paused on the way out.
+        self.world.pause_event.clear()
 
-        self.sparks.update()
-        self.current_camera.update_camera_angle()
+    def update(self) -> None:
+        """Coordinator-only: tick the countdown, start threads when it
+        finishes, transition to the leaderboard when the race finishes.
 
-        self.ai_update()
+        All physics / AI / collision work happens on worker threads.
+        """
+        if not self.countdown.complete:
+            self.countdown.update()
+            if self.countdown.complete:
+                # First post-countdown frame: stamp race-start time and
+                # spin up the worker threads.
+                now = time.perf_counter()
+                with self.world.lock:
+                    self.world.begin_race(now)
+                self._start_threads()
+            return
 
+        if self._race_finished:
+            return
 
-        self.complete_race()
+        if self.world.race_finished_event.is_set():
+            self.complete_race()
 
     # ------------------------------------------------------------------ #
     # HUD + debug overlay                                                #
     # ------------------------------------------------------------------ #
 
-    def _world_to_screen_real(self, wx: float, wy: float) -> tuple[int, int]:
+    def _world_to_screen_real(
+        self, wx: float, wy: float,
+        *, player_x: float, player_y: float, camera_angle: float,
+    ) -> tuple[int, int]:
         """Project a world-space point onto the real (unscaled) screen surface."""
         renderer = self.current_renderer
-        player = self.current_car.physics
-        dx = (wx - player.car_x) * renderer.map_zoom
-        dy = (wy - player.car_y) * renderer.map_zoom
-        angle_rad = math.radians(self.current_camera.angle)
+        dx = (wx - player_x) * renderer.map_zoom
+        dy = (wy - player_y) * renderer.map_zoom
+        angle_rad = math.radians(camera_angle)
         cos_a = math.cos(angle_rad)
         sin_a = math.sin(angle_rad)
         rx = dx * cos_a - dy * sin_a
@@ -352,20 +632,17 @@ class GamePlay:
         frame_w, frame_h = renderer.render_size
         return int(fx * screen_w / frame_w), int(fy * screen_h / frame_h)
 
-    def _position_label(self) -> str:
-        return "1st" if self._player_total_cp >= self._ai_total_cp else "2nd"
-
-    def draw_hud(self, screen: pygame.Surface) -> None:
+    def draw_hud(self, screen: pygame.Surface, snapshot: WorldSnapshot) -> None:
         total_cps = len(self.current_map.checkpoints_list) or 1
-        cp_in_lap = self.current_map.list_counter
-        lap = self.current_map.current_lap
-        speed = self.current_car.physics.speed
+        cp_in_lap = snapshot.player_racer.list_counter
+        lap = snapshot.player_racer.current_lap
+        speed = snapshot.player.speed
 
         lines = [
             f"Lap  {lap}",
             f"CP   {cp_in_lap} / {total_cps}",
             f"Spd  {speed:+.2f}",
-            f"Pos  {self._position_label()}",
+            f"Pos  {snapshot.position_label}",
         ]
 
         padding = 6
@@ -382,11 +659,61 @@ class GamePlay:
             screen.blit(surf, (8 + padding, y))
             y += surf.get_height()
 
-        if self._debug_checkpoints:
-            self._draw_checkpoint_debug(screen)
+        self._draw_minimap(screen, snapshot)
 
-    def _draw_checkpoint_debug(self, screen: pygame.Surface) -> None:
-        target_idx = self.current_map.list_counter
+        if self._debug_checkpoints:
+            self._draw_checkpoint_debug(screen, snapshot)
+
+    # ------------------------------------------------------------------ #
+    # Minimap                                                            #
+    # ------------------------------------------------------------------ #
+
+    _MINIMAP_SIZE: int = 180
+    _MINIMAP_MARGIN: int = 12
+
+    def _draw_minimap(self, screen: pygame.Surface, snapshot: WorldSnapshot) -> None:
+        """Top-right corner minimap: shrunk track + dots for every car."""
+        map_surf = self.current_map.map_surface
+        map_w, map_h = map_surf.get_size()
+        if map_w <= 0 or map_h <= 0:
+            return
+
+        size = self._MINIMAP_SIZE
+        scale = min(size / map_w, size / map_h)
+        mini_w = max(1, int(map_w * scale))
+        mini_h = max(1, int(map_h * scale))
+
+        screen_w = screen.get_size()[0]
+        ox = screen_w - mini_w - self._MINIMAP_MARGIN
+        oy = self._MINIMAP_MARGIN
+
+        # Backdrop panel (semi-transparent so the track still reads clearly).
+        panel = pygame.Surface((mini_w + 4, mini_h + 4), pygame.SRCALPHA)
+        panel.fill((0, 0, 0, 160))
+        screen.blit(panel, (ox - 2, oy - 2))
+
+        mini_map = pygame.transform.smoothscale(map_surf, (mini_w, mini_h))
+        screen.blit(mini_map, (ox, oy))
+
+        def world_to_mini(wx: float, wy: float) -> tuple[int, int]:
+            # World is centred at origin — shift into [0, map_w) then scale.
+            mx = (wx + map_w / 2) * scale
+            my = (wy + map_h / 2) * scale
+            return ox + int(mx), oy + int(my)
+
+        # AI dots (red) first so the player stays on top when cars overlap.
+        for ai_snap in snapshot.ai:
+            ax, ay = world_to_mini(ai_snap.car_x, ai_snap.car_y)
+            pygame.draw.circle(screen, (0, 0, 0), (ax, ay), 5)
+            pygame.draw.circle(screen, (230, 70, 70), (ax, ay), 4)
+
+        # Player dot (yellow).
+        px, py = world_to_mini(snapshot.player.car_x, snapshot.player.car_y)
+        pygame.draw.circle(screen, (0, 0, 0), (px, py), 5)
+        pygame.draw.circle(screen, (250, 220, 60), (px, py), 4)
+
+    def _draw_checkpoint_debug(self, screen: pygame.Surface, snapshot: WorldSnapshot) -> None:
+        target_idx = snapshot.player_racer.list_counter
         finish_idx = len(self.current_map.checkpoints_list) - 1
         for idx, cp in enumerate(self.current_map.checkpoints_list):
             if idx == finish_idx:
@@ -405,35 +732,81 @@ class GamePlay:
                 (rect.right, rect.bottom),
                 (rect.left, rect.bottom),
             ]
-            corners_screen = [self._world_to_screen_real(x, y) for x, y in corners_world]
+            corners_screen = [
+                self._world_to_screen_real(
+                    x, y,
+                    player_x=snapshot.player.car_x,
+                    player_y=snapshot.player.car_y,
+                    camera_angle=snapshot.camera_angle,
+                )
+                for x, y in corners_world
+            ]
             pygame.draw.polygon(screen, colour, corners_screen, width=2)
 
-    def complete_race(self):
-        if self.current_map.current_lap > 3:
-            self.manager.change_screen("placeholder")
+    def complete_race(self) -> None:
+        """Tear down the worker threads and switch to the leaderboard.
+
+        Idempotent — guarded by ``_race_finished`` so it only fires once
+        even if both ``update`` and a stray late tick try to invoke it.
+        """
+        if self._race_finished:
+            return
+
+        self._race_finished = True
+        # Ensure the workers stop before we try to read final state.
+        self._stop_threads()
+
+        total_time = time.perf_counter() - self.world.race_start_time
+
+        try:
+            result = RaceResult(
+                player_name="Player 1",
+                car_name=self.manager.app_data.current_car_name,
+                map_name=self.manager.app_data.current_map.name,
+                total_time=total_time,
+                lap_times=self.world.player_lap_times.copy(),
+                total_laps=self.player_state.current_lap - 1,
+            )
+            GAME_LEADERBOARD.add(result)
+        except Exception as error:
+            print(f"Could not save race result: {error}")
+
+        self.manager.add_screen("placeholder", LeaderboardScreen(self.manager))
+        self.manager.change_screen("placeholder")
 
     def draw(self, _surface: pygame.Surface) -> None:
         screen = self.manager.screen_display
 
-        extra_cars = [(self.ai_car, self.ai_stacker)] if self.ai_active else []
+        snapshot = self.snapshot_buffer.read()
+        if snapshot is None:
+            # Should never happen — _publish_initial_snapshot fires in
+            # __init__ — but guard so a missed publish doesn't crash.
+            return
 
-        self.current_renderer.render_frame(
-            self.config.gameplay_stack_spread, extra_cars=extra_cars,
+        extra_cars = (
+            list(zip(snapshot.ai, self.ai_stackers))
+            if self.ai_active and snapshot.ai
+            else []
         )
 
-        # One-shot blocking countdown at race start.
-        while self.countdown.seconds > 0:
-            self.current_renderer.render_frame(
-                self.config.gameplay_stack_spread, extra_cars=extra_cars,
-            )
-            self.countdown.write()
-            pygame.display.flip()
-            time.sleep(1)
-            self.countdown.seconds -= 1
+        # Mirror the snapshot's pickup-active flags onto the live world
+        # boxes so PowerupRendering.draw (called inside Map) stays in
+        # sync with what physics has consumed this tick.
+        for box, active in zip(self.world_box, snapshot.item_active):
+            box.active = active
 
-        self.countdown.complete = True
+        self.current_renderer.render_frame(
+            self.config.gameplay_stack_spread,
+            player=snapshot.player,
+            camera_angle=snapshot.camera_angle,
+            sparks=snapshot.sparks,
+            extra_cars=extra_cars,
+        )
+
+        if not self.countdown.complete:
+            self.countdown.write()
 
         # HUD draws on the full-resolution display, on top of the pixelated map.
-        self.draw_hud(screen)
+        self.draw_hud(screen, snapshot)
 
         pygame.display.flip()

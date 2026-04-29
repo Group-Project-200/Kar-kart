@@ -123,6 +123,31 @@ class MapContainer(SelectContainer):
         self.back_button = button
 
     def handle_event(self, event):
+        # if event.type == pygame.MOUSEMOTION:
+        #     pos = event.pos
+        #     for i, obj in enumerate(self.objects):
+        #         if pygame.Rect(obj.x, obj.y, obj.width, obj.height).collidepoint(pos):
+        #             if i != self.selected:
+        #                 self.objects[self.selected].unselect()
+        #                 self.back_selected = False
+        #                 if self.back_button:
+        #                     self.back_button.unselect()
+        #                 self.selected = i
+        #                 obj.select()
+        #             return None
+        #     return None
+
+        # if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+        #     pos = event.pos
+        #     for i, obj in enumerate(self.objects):
+        #         if pygame.Rect(obj.x, obj.y, obj.width, obj.height).collidepoint(pos):
+        #             self.objects[self.selected].unselect()
+        #             self.back_selected = False
+        #             self.selected = i
+        #             obj.select()
+        #             return obj.get_map()
+        #     return None
+
         if event.type != pygame.KEYDOWN:
             return None
 

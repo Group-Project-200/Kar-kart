@@ -4,6 +4,10 @@ The grid is derived once from the map's wall mask by sampling one cell per
 ``cell_size`` map pixels. A multi-source BFS from every wall cell then marks
 any free cell within ``padding`` cells as blocked, so the planner naturally
 keeps the racing line away from edges.
+
+Optionally a *road mask* can be supplied: cells off the road are then also
+treated as blocked. This stops the AI from planning through grass or other
+non-track areas even when they're not walled off.
 """
 
 from __future__ import annotations
@@ -22,8 +26,9 @@ class AStarPathfinder:
         self,
         mask: pygame.mask.Mask,
         map_dims: tuple[int, int],
-        cell_size: int = 8,
+        cell_size: int = 2,
         padding: int = 6,
+        road_mask: pygame.mask.Mask | None = None,
     ) -> None:
         self.cell_size = max(1, int(cell_size))
         self.padding = max(0, int(padding))
@@ -33,10 +38,17 @@ class AStarPathfinder:
         self.mask_scale_x = mask_w / self.map_width if self.map_width else 1.0
         self.mask_scale_y = mask_h / self.map_height if self.map_height else 1.0
 
+        # Optional road mask: when provided, any cell whose centre is *not*
+        # on the road is treated as blocked in addition to the wall check.
+        self.road_mask = road_mask
+
         self.cols = max(1, self.map_width // self.cell_size)
         self.rows = max(1, self.map_height // self.cell_size)
 
-        self._grid: list[list[int]] = self._build_grid(mask)
+        self._raw_grid: list[list[int]] = self._build_grid(mask)
+        # Keep an unpadded copy so pinch points (narrow corridors where the
+        # padded grid fully blocks) can be retried on demand.
+        self._grid: list[list[int]] = [row[:] for row in self._raw_grid]
         self._pad_grid()
 
     # ------------------------------------------------------------------ #
@@ -44,8 +56,17 @@ class AStarPathfinder:
     # ------------------------------------------------------------------ #
 
     def _build_grid(self, mask: pygame.mask.Mask) -> list[list[int]]:
-        """Sample *mask* at each cell's centre. 1 = wall, 0 = free."""
+        """Sample *mask* at each cell's centre. 1 = blocked, 0 = free.
+
+        A cell is blocked when either:
+        - the wall mask is set at that centre pixel, or
+        - a road mask was supplied and the cell centre is off the road.
+        """
         mask_w, mask_h = mask.get_size()
+        road_w = road_h = 0
+        if self.road_mask is not None:
+            road_w, road_h = self.road_mask.get_size()
+
         grid = [[0] * self.cols for _ in range(self.rows)]
         for row in range(self.rows):
             for col in range(self.cols):
@@ -53,6 +74,15 @@ class AStarPathfinder:
                 my = int((row + 0.5) * self.cell_size * self.mask_scale_y)
                 if 0 <= mx < mask_w and 0 <= my < mask_h and mask.get_at((mx, my)):
                     grid[row][col] = 1
+                    continue
+                if self.road_mask is not None:
+                    on_road = (
+                        0 <= mx < road_w
+                        and 0 <= my < road_h
+                        and self.road_mask.get_at((mx, my))
+                    )
+                    if not on_road:
+                        grid[row][col] = 1
         return grid
 
     def _pad_grid(self) -> None:
@@ -152,9 +182,25 @@ class AStarPathfinder:
         goal_cell = self._world_to_cell(*goal_world)
         start_free = self._nearest_free(*start_cell)
         goal_free = self._nearest_free(*goal_cell)
-        if start_free is None or goal_free is None:
-            return []
-        cells = self._astar(start_free, goal_free)
+        if start_free is not None and goal_free is not None:
+            cells = self._astar(start_free, goal_free)
+            if cells:
+                return [self._cell_to_world(r, c) for r, c in cells]
+
+        # Fallback: narrow corridors get fully consumed by the padding pass,
+        # making A* on the padded grid return []. Retry against the unpadded
+        # raw grid so the AI can still find *some* route even if it hugs the
+        # walls a bit. Better than driving straight into a pinch point.
+        saved_grid = self._grid
+        self._grid = self._raw_grid
+        try:
+            start_free = self._nearest_free(*start_cell)
+            goal_free = self._nearest_free(*goal_cell)
+            if start_free is None or goal_free is None:
+                return []
+            cells = self._astar(start_free, goal_free)
+        finally:
+            self._grid = saved_grid
         if not cells:
             return []
         return [self._cell_to_world(r, c) for r, c in cells]

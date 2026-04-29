@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import math
-import time
 from dataclasses import dataclass
 
 import pygame
@@ -66,13 +65,12 @@ class Map:
         self.camera_buffer: pygame.Surface | None = None
         self.camera_buffer_center: tuple[int, int] | None = None
 
-        # Checkpoint and lap bookkeeping.
+        # Static checkpoint geometry (regular CPs followed by the finish line).
+        # Per-racer progression state lives on :class:`RacerState` in
+        # :mod:`karkart.physics.checkpoint`.
         self.checkpoints: list[Checkpoint] = []
         self.checkpoints_list: list[Checkpoint] = []
         self.finish_line: Checkpoint | None = None
-        self.list_counter: int = 0
-        self.current_lap: int = 1
-        self.lap_times: list[tuple[float, int]] = []
 
         # Most recent world-space coordinates of the car, in map pixels.
         self.car_map_x: int | None = None
@@ -130,51 +128,54 @@ class Map:
         self.car_map_y = self.cache.center_y + int(self.car.car_y * self.cache.zoom)
 
     def draw_map(
-        self, display: pygame.Surface, center: tuple[int, int], render_size: tuple[int, int],
+        self,
+        display: pygame.Surface,
+        center: tuple[int, int],
+        render_size: tuple[int, int],
+        *,
+        car_x: float,
+        car_y: float,
     ) -> None:
-        """Blit the zoomed map into *display* centred on the car's world position."""
+        """Blit the zoomed map into *display* centred on (*car_x*, *car_y*)."""
         assert self.cache is not None
-        self.car_map_x = self.cache.center_x + int(self.car.car_x * self.cache.zoom)
-        self.car_map_y = self.cache.center_y + int(self.car.car_y * self.cache.zoom)
+        car_map_x = self.cache.center_x + int(car_x * self.cache.zoom)
+        car_map_y = self.cache.center_y + int(car_y * self.cache.zoom)
+        # Keep the public attributes in sync for any external read (collision
+        # used to depend on these; the threaded path computes its own offsets).
+        self.car_map_x = car_map_x
+        self.car_map_y = car_map_y
 
-        view_x = self.car_map_x - center[0]
-        view_y = self.car_map_y - center[1]
+        view_x = car_map_x - center[0]
+        view_y = car_map_y - center[1]
         view_width, view_height = render_size
         display.blit(self.cache.surface, (0, 0), area=(view_x, view_y, view_width, view_height))
 
     def draw_map_camera(
-        self, display: pygame.Surface, center: tuple[int, int], render_size: tuple[int, int],
+        self,
+        display: pygame.Surface,
+        center: tuple[int, int],
+        render_size: tuple[int, int],
+        *,
+        car_x: float,
+        car_y: float,
+        camera_angle: float,
     ) -> None:
         """Draw the map with camera rotation applied (fast path when angle ~ 0)."""
-        if abs(self.camera.angle) < 1e-4:
-            self.draw_map(display, center, render_size)
+        if abs(camera_angle) < 1e-4:
+            self.draw_map(display, center, render_size, car_x=car_x, car_y=car_y)
             for obj in self.world_objects:
-                obj.draw(display, center, self.car, self.cache.zoom)
+                obj.draw(display, center, car_x, car_y, self.cache.zoom)
             return
 
         assert self.camera_buffer is not None and self.camera_buffer_center is not None
         self.camera_buffer.fill((0, 0, 0))
-        self.draw_map(self.camera_buffer, self.camera_buffer_center, self.camera_buffer.get_size())
+        self.draw_map(
+            self.camera_buffer, self.camera_buffer_center, self.camera_buffer.get_size(),
+            car_x=car_x, car_y=car_y,
+        )
         for obj in self.world_objects:
-            obj.draw(self.camera_buffer, self.camera_buffer_center, self.car, self.cache.zoom)
-        rotated_map = pygame.transform.rotate(self.camera_buffer, -self.camera.angle)
+            obj.draw(self.camera_buffer, self.camera_buffer_center, car_x, car_y, self.cache.zoom)
+        rotated_map = pygame.transform.rotate(self.camera_buffer, -camera_angle)
         rotated_rect = rotated_map.get_rect(center=center)
         display.blit(rotated_map, rotated_rect)
 
-    def update_checkpoints(self) -> None:
-        """Advance the checkpoint cursor; crossing the finish line after all CPs counts a lap."""
-        current_checkpoint = self.checkpoints_list[self.list_counter]
-        if not current_checkpoint.check(self.car.car_x, self.car.car_y):
-            return
-
-        print(self.active)
-        self.list_counter += 1
-        if self.list_counter >= len(self.checkpoints_list):
-            # Completed a full lap: passed every CP then the finish line.
-            self.current_lap += 1
-            if self.active:
-                for item in self.world_objects: item.active = True
-            self.lap_times.append((time.perf_counter(), self.current_lap))
-            self.list_counter = 0
-        else:
-            self.lap_times.append((time.perf_counter(), self.current_lap))
