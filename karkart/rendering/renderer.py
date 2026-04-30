@@ -1,5 +1,3 @@
-                                                                        
-
 from __future__ import annotations
 
 import math
@@ -17,16 +15,19 @@ if TYPE_CHECKING:
 
 
 class Renderer:
-                                                                                       
 
     _MAP_ZOOM: float = 3.0
     _CAR_ZOOM: float = 3.0
     _PIXELATION_SCALE: float = 0.35
-    _DRIFT_VISUAL_SKEW: float = 30.0                                                         
-    _HOP_PIXEL_SCALE: float = 12.0                                                         
+    _DRIFT_VISUAL_SKEW: float = 30.0
+    _HOP_PIXEL_SCALE: float = 12.0
 
     def __init__(
-        self, current_map: Map, stacker: Stacker, screen: pygame.Surface, sparks: SparkManager,
+        self,
+        current_map: Map,
+        stacker: Stacker,
+        screen: pygame.Surface,
+        sparks: SparkManager,
     ) -> None:
         self.screen = screen
         self.render_size = self._build_pixel_surface_size(self._PIXELATION_SCALE)
@@ -54,7 +55,7 @@ class Renderer:
         return pixel_width, pixel_height
 
     def _present_frame(self) -> None:
-                                                                                  
+
         if not self.needs_present_scale:
             self.screen.blit(self.frame_surface, (0, 0))
             return
@@ -62,39 +63,51 @@ class Renderer:
 
     def _world_to_screen(
         self,
-        wx: float, wy: float,
+        wx: float,
+        wy: float,
         *,
-        player_x: float, player_y: float, camera_angle: float,
+        player_x: float,
+        player_y: float,
+        camera_angle: float,
     ) -> tuple[int, int]:
-                                                                                
+
         dx = (wx - player_x) * self.map_zoom
         dy = (wy - player_y) * self.map_zoom
         angle_rad = math.radians(camera_angle)
         cos_a = math.cos(angle_rad)
         sin_a = math.sin(angle_rad)
-                                                                                       
+
         rx = dx * cos_a - dy * sin_a
         ry = dx * sin_a + dy * cos_a
         return int(self.center[0] + rx), int(self.center[1] + ry)
 
     def _draw_extra_car(
         self,
-        car: "CarSnapshot", stacker: Stacker, stack_spread: float,
+        car: "CarSnapshot",
+        stacker: Stacker,
+        stack_spread: float,
         *,
-        player_x: float, player_y: float, camera_angle: float,
+        player_x: float,
+        player_y: float,
+        camera_angle: float,
     ) -> None:
-                                                                                 
+
         sx, sy = self._world_to_screen(
-            car.car_x, car.car_y,
-            player_x=player_x, player_y=player_y, camera_angle=camera_angle,
+            car.car_x,
+            car.car_y,
+            player_x=player_x,
+            player_y=player_y,
+            camera_angle=camera_angle,
         )
         width, height = self.render_size
-        margin = 64                                                         
+        margin = 64
         if sx < -margin or sx > width + margin or sy < -margin or sy > height + margin:
             return
         dir_idx = snap_degrees(car.rotation - camera_angle, dirs=stacker.dirs)
         hop_px = int(car.car_z * self._HOP_PIXEL_SCALE)
-        stacker.render_stack(self.frame_surface, dir_idx, (sx, sy), stack_spread, hop_px)
+        stacker.render_stack(
+            self.frame_surface, dir_idx, (sx, sy), stack_spread, hop_px
+        )
 
     def render_frame(
         self,
@@ -105,30 +118,36 @@ class Renderer:
         sparks: "list[SparkSnapshot] | None" = None,
         extra_cars: "list[tuple[CarSnapshot, Stacker]] | None" = None,
     ) -> None:
-                                                   
+
         frame_surface = self.frame_surface
         frame_surface.fill((0, 0, 0))
 
         self.map.draw_map_camera(
-            display=frame_surface, center=self.center, render_size=self.render_size,
-            car_x=player.car_x, car_y=player.car_y, camera_angle=camera_angle,
+            display=frame_surface,
+            center=self.center,
+            render_size=self.render_size,
+            car_x=player.car_x,
+            car_y=player.car_y,
+            camera_angle=camera_angle,
         )
 
         car_relative_rotation = player.rotation - camera_angle
 
-                                                                                           
         if player.drift_active:
-            visual_rotation = car_relative_rotation + player.drift_direction * self._DRIFT_VISUAL_SKEW
+            visual_rotation = (
+                car_relative_rotation + player.drift_direction * self._DRIFT_VISUAL_SKEW
+            )
         else:
             visual_rotation = car_relative_rotation
 
         dir_idx = snap_degrees(visual_rotation, dirs=self.stacker.dirs)
 
-                                                               
         if sparks:
             self.sparks.draw_from_list(
-                frame_surface, sparks,
-                player.car_x, player.car_y,
+                frame_surface,
+                sparks,
+                player.car_x,
+                player.car_y,
                 camera_angle,
                 self.map_zoom,
                 self.center,
@@ -137,11 +156,17 @@ class Renderer:
         if extra_cars:
             for other_car, other_stacker in extra_cars:
                 self._draw_extra_car(
-                    other_car, other_stacker, stack_spread,
-                    player_x=player.car_x, player_y=player.car_y, camera_angle=camera_angle,
+                    other_car,
+                    other_stacker,
+                    stack_spread,
+                    player_x=player.car_x,
+                    player_y=player.car_y,
+                    camera_angle=camera_angle,
                 )
 
         hop_px = int(player.car_z * self._HOP_PIXEL_SCALE)
-        self.stacker.render_stack(self.frame_surface, dir_idx, self.center, stack_spread, hop_px)
+        self.stacker.render_stack(
+            self.frame_surface, dir_idx, self.center, stack_spread, hop_px
+        )
 
         self._present_frame()

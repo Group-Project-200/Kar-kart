@@ -24,7 +24,7 @@ from karkart.screens.placeholer_leaderboard import Placeholder
 
 
 TARGET_FPS = 60
-_FRAME_BUDGET_MS: float = 1000.0 / TARGET_FPS   # ≈ 16.67 ms
+_FRAME_BUDGET_MS: float = 1000.0 / TARGET_FPS  # ≈ 16.67 ms
 
 
 def main() -> None:
@@ -44,7 +44,7 @@ def main() -> None:
     manager.add_screen("map", MapScreen(manager))
     manager.add_screen("game", GamePlay(manager))
     manager.add_screen("pause", PauseMenu(manager))
-    manager.add_screen("placeholder",Placeholder(manager))
+    manager.add_screen("placeholder", Placeholder(manager))
 
     manager.change_screen("start")
 

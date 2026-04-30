@@ -7,6 +7,7 @@ import pygame
 if TYPE_CHECKING:
     from karkart.app_data import AppData
 
+
 class ScreenManager:
 
     def __init__(self, app_data: "AppData", screen_display: pygame.Surface) -> None:

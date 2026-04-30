@@ -1,11 +1,7 @@
-\
-\
-\
-\
-
 from __future__ import annotations
 
 from pathlib import Path
+
 
 def _find_project_root(marker: str = "main.py") -> Path:
 
@@ -14,6 +10,7 @@ def _find_project_root(marker: str = "main.py") -> Path:
         if (parent / marker).exists():
             return parent
     raise RuntimeError(f"Could not find project root (no {marker} found)")
+
 
 PROJECT_ROOT: Path = _find_project_root()
 RESOURCES_DIR: Path = PROJECT_ROOT / "resources"

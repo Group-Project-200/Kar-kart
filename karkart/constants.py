@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pygame
 
+
 class Colors:
 
     BLACK = (0, 0, 0)
@@ -22,11 +23,8 @@ class Colors:
     DARK_RED = (128, 0, 0)
     DARK_BLUE = (46, 81, 116)
 
+
 class ScreenPositions:
-\
-\
-\
-\
 
     WIDTH = 1280
     HEIGHT = 720

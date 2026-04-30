@@ -1,5 +1,3 @@
-                                                      
-
 from __future__ import annotations
 
 import pygame
@@ -16,7 +14,6 @@ from karkart.ui import Button, SettingsIcon
 
 
 class CarScreen:
-                                                                                           
 
     PREVIEW_SIZE = (600, 450)
     STATBOX_SIZE = (600, 400)
@@ -33,11 +30,16 @@ class CarScreen:
 
         self.loaded_statboxes = [
             pygame.transform.scale(
-                pygame.image.load(str(PICTURES_DIR / "statsboxes" / name)).convert_alpha(),
+                pygame.image.load(
+                    str(PICTURES_DIR / "statsboxes" / name)
+                ).convert_alpha(),
                 self.STATBOX_SIZE,
             )
             for name in (
-                "car01_stats.png", "car02_stats.png", "car03_stats.png", "car04_stats.png",
+                "car01_stats.png",
+                "car02_stats.png",
+                "car03_stats.png",
+                "car04_stats.png",
             )
         ]
 
@@ -75,10 +77,9 @@ class CarScreen:
 
         self.settings_icon.handle_event(event)
 
-                                                                                     
         if self.back_selected:
             if event.key == pygame.K_RETURN:
-                                                                                     
+
                 self.back_selected = False
                 self.back_btn.unselect()
                 self.back_btn.handle_event(event)
@@ -87,7 +88,6 @@ class CarScreen:
                 self.back_selected = False
                 self.back_btn.unselect()
 
-                                                                      
         else:
             if event.key == K.RIGHT:
                 self.selected = min(len(self.car_slices) - 1, self.selected + 1)
@@ -111,19 +111,17 @@ class CarScreen:
         surface.blit(self.loaded_statboxes[self.selected], (770, 400))
         pipeline = self.pipelines[self.selected]
 
-                                    
         self.preview_angle = (self.preview_angle + 1) % 360
 
-                                                                                  
         preview_surface = pygame.Surface(self.PREVIEW_SIZE, pygame.SRCALPHA)
         render_preview_debug_frame(
-            preview_surface, pipeline,
+            preview_surface,
+            pipeline,
             car_rotation=self.preview_angle,
-            stack_spread=-8,                                                   
+            stack_spread=-8,
         )
         preview_rect = preview_surface.get_rect(center=(sp.WIDTH // 2, sp.HEIGHT // 2))
         surface.blit(preview_surface, preview_rect)
 
         self.back_btn.draw(surface)
         self.settings_icon.draw(surface)
-

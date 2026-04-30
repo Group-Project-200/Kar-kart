@@ -1,24 +1,21 @@
-                                                                      
-
 from __future__ import annotations
 
 import pygame
 
 
 def _convert_for_display(surface: pygame.Surface) -> pygame.Surface:
-                                                                              
+
     if pygame.display.get_surface() is None:
         return surface
     return surface.convert_alpha()
 
 
 class Stacker:
-                                                                                
 
-    _COLLISION_SCALE: float = 0.70                                                      
+    _COLLISION_SCALE: float = 0.70
 
-    def __init__(self,image_stack: list[pygame.Surface],  directions: int) -> None:
-        self.images = image_stack                                        
+    def __init__(self, image_stack: list[pygame.Surface], directions: int) -> None:
+        self.images = image_stack
         self.scaled_img: list[pygame.Surface] = []
         self.dirs = directions
         self.scale: float | None = None
@@ -26,7 +23,7 @@ class Stacker:
         self.mask_cache: list[pygame.mask.Mask] | None = None
 
     def scale_update(self, scale: float) -> None:
-                                                                                
+
         self.scale = scale
         self._scale_images()
         self._build_rotated_cache()
@@ -46,11 +43,13 @@ class Stacker:
     def _build_rotated_cache(self) -> None:
         step_deg = 360 / self.dirs
         self.rotated_cache = [
-            [_convert_for_display(pygame.transform.rotate(img, d * step_deg)) for img in self.scaled_img]
+            [
+                _convert_for_display(pygame.transform.rotate(img, d * step_deg))
+                for img in self.scaled_img
+            ]
             for d in range(self.dirs)
         ]
-                                                                                 
-                                                      
+
         self.mask_cache = []
         base = self.scaled_img[0]
         coll_w = max(1, int(base.get_width() * self._COLLISION_SCALE))
@@ -74,14 +73,12 @@ class Stacker:
         spread: float,
         hop_offset_y: int = 0,
     ) -> None:
-\
-\
-\
-           
+
         assert self.rotated_cache is not None, "Call scale_update() first"
         x, y = pos
         y -= hop_offset_y
         for i, img in enumerate(self.rotated_cache[dir_idx]):
             display.blit(
-                img, (x - img.get_width() // 2, y - img.get_height() // 2 + i * spread),
+                img,
+                (x - img.get_width() // 2, y - img.get_height() // 2 + i * spread),
             )

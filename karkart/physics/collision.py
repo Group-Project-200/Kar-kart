@@ -1,5 +1,3 @@
-                                                                         
-
 from __future__ import annotations
 
 import math
@@ -7,7 +5,6 @@ import math
 import pygame
 
 
-                                                                          
 _NORMAL_SAMPLE_DIRECTIONS: tuple[tuple[float, float], ...] = tuple(
     (math.cos(math.radians(a)), math.sin(math.radians(a)))
     for a in range(0, 360, 360 // 16)
@@ -15,15 +12,13 @@ _NORMAL_SAMPLE_DIRECTIONS: tuple[tuple[float, float], ...] = tuple(
 
 
 class CollisionDetector:
-                                                                              
 
     def __init__(
         self,
         map_masks: list[pygame.mask.Mask],
         car_masks: list[pygame.mask.Mask],
     ) -> None:
-                                                                                    
-                                                                      
+
         self.car_masks = car_masks
         self.layers = [map_masks[0]]
         self.current_car_mask: pygame.mask.Mask | None = None
@@ -34,26 +29,19 @@ class CollisionDetector:
         return car_map_pos[0] - car_w // 2, car_map_pos[1] - car_h // 2
 
     def border_check(self, direction_index: int, car_map_pos: tuple[int, int]) -> bool:
-                                                                                    
+
         self.current_car_mask = self.car_masks[direction_index]
         offset = self._offset(car_map_pos)
-        return any(layer.overlap(self.current_car_mask, offset) for layer in self.layers)
+        return any(
+            layer.overlap(self.current_car_mask, offset) for layer in self.layers
+        )
 
     def estimate_normal(
         self,
         car_map_pos: tuple[int, int],
         radius: int = 20,
     ) -> tuple[float, float] | None:
-\
-\
-\
-\
-\
-\
-\
-\
-\
-           
+
         if not self.layers:
             return None
         mask = self.layers[0]
@@ -67,7 +55,7 @@ class CollisionDetector:
             sx = int(cx + dx * radius)
             sy = int(cy + dy * radius)
             if not (0 <= sx < mask_w and 0 <= sy < mask_h):
-                                                                              
+
                 solid_count += 1
                 continue
             if mask.get_at((sx, sy)):
@@ -104,7 +92,7 @@ def push_out_of_wall(
     car_x: float,
     car_y: float,
     normal: tuple[float, float],
-    step: float = 3.0,
+    step: float = 6.0,
 ) -> tuple[float, float]:
     # push position clear of the wall along its normal
     nx, ny = normal

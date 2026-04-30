@@ -24,7 +24,9 @@ class PathfinderWorker:
         if self._thread is not None:
             return
         self._thread = threading.Thread(
-            target=self._run, name="kk-pathfinder", daemon=True,
+            target=self._run,
+            name="kk-pathfinder",
+            daemon=True,
         )
         self._thread.start()
 

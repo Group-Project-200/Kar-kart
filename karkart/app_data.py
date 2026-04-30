@@ -12,9 +12,15 @@ from karkart.ui.track import Track
 with MAP_DATA_FILE.open() as _f:
     _MAP_DATA_KEYS: frozenset[str] = frozenset(json.load(_f).keys())
 
-_ALLOWED_TRACKS: frozenset[str] = frozenset({
-    "newmap1", "newmap2", "newmap3", "newmap4",
-})
+_ALLOWED_TRACKS: frozenset[str] = frozenset(
+    {
+        "newmap1",
+        "newmap2",
+        "newmap3",
+        "newmap4",
+    }
+)
+
 
 def load_all_car_stacks() -> dict[str, list[pygame.Surface]]:
 
@@ -37,24 +43,30 @@ def load_all_car_stacks() -> dict[str, list[pygame.Surface]]:
 
     return car_stacks
 
+
 class AppData:
 
     def __init__(self) -> None:
         self.tracks: list[Track] = []
         self.cars: dict[str, list[pygame.Surface]] = load_all_car_stacks()
-        self.modes = {"Time Trial": {"Ai": False, "Items": False},
-                      "Race Mode": {"Ai": True, "Items": True}
-                      }
+        self.modes = {
+            "Time Trial": {"Ai": False, "Items": False},
+            "Race Mode": {"Ai": True, "Items": True},
+        }
 
         for map_folder in sorted(p for p in MAPS_DIR.iterdir() if p.is_dir()):
             cover = map_folder / "cover.png"
-            if (cover.is_file()
-                    and map_folder.name in _MAP_DATA_KEYS
-                    and map_folder.name in _ALLOWED_TRACKS):
+            if (
+                cover.is_file()
+                and map_folder.name in _MAP_DATA_KEYS
+                and map_folder.name in _ALLOWED_TRACKS
+            ):
                 self.add_track(Track(str(cover), map_folder.name, map_folder))
 
         default = next((t for t in self.tracks if t.name == "newmap1"), None)
-        self.current_map: Track | None = default or (self.tracks[0] if self.tracks else None)
+        self.current_map: Track | None = default or (
+            self.tracks[0] if self.tracks else None
+        )
         self.current_car_name: str = "car_01"
         self.current_car: list[pygame.Surface] = self.cars[self.current_car_name]
         self.current_mode = "Race Mode"
@@ -70,7 +82,7 @@ class AppData:
 
     def set_current_car(self, car_name):
         self.current_car_name = car_name
-        self.current_car= self.cars[self.current_car_name]
+        self.current_car = self.cars[self.current_car_name]
 
     def return_map_layers(self) -> list[pygame.Surface]:
 

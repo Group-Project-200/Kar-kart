@@ -1,10 +1,3 @@
-\
-\
-\
-\
-\
-   
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -15,7 +8,7 @@ from karkart.helpers import clamp_scale, clamp_zoom
 
 
 DEFAULT_DIRS = 36
-PREVIEW_BG_COLOR = (0, 0, 0, 0)                                         
+PREVIEW_BG_COLOR = (0, 0, 0, 0)
 
 
 @dataclass(frozen=True, slots=True)
@@ -48,10 +41,6 @@ class RenderPipeline:
     dirs: int
 
 
-                                                                               
-                                                                               
-                                                                               
-
 def _convert_for_display(surface: pygame.Surface) -> pygame.Surface:
     if pygame.display.get_surface() is None:
         return surface
@@ -76,45 +65,55 @@ def _scale_images(images: list[pygame.Surface], scale: float) -> list[pygame.Sur
 
 
 def _build_rotated_cache(
-    images: list[pygame.Surface], dirs: int = DEFAULT_DIRS,
+    images: list[pygame.Surface],
+    dirs: int = DEFAULT_DIRS,
 ) -> list[list[pygame.Surface]]:
     step_deg = 360 / dirs
     return [
-        [_convert_for_display(pygame.transform.rotate(img, d * step_deg)) for img in images]
+        [
+            _convert_for_display(pygame.transform.rotate(img, d * step_deg))
+            for img in images
+        ]
         for d in range(dirs)
     ]
 
 
 def _build_pixel_surface_size(
-    screen_size: tuple[int, int], pixelation_scale: float,
+    screen_size: tuple[int, int],
+    pixelation_scale: float,
 ) -> tuple[int, int]:
     scale = clamp_scale(pixelation_scale)
     w, h = screen_size
     return max(1, int(w * scale)), max(1, int(h * scale))
 
 
-def _build_map_cache(map_surface: pygame.Surface | None, zoom: float) -> MapCache | None:
+def _build_map_cache(
+    map_surface: pygame.Surface | None, zoom: float
+) -> MapCache | None:
     if map_surface is None:
         return None
     map_w, map_h = map_surface.get_size()
     zoomed_size = (max(1, int(map_w * zoom)), max(1, int(map_h * zoom)))
-    zoomed_map = _convert_opaque_for_display(pygame.transform.scale(map_surface, zoomed_size))
+    zoomed_map = _convert_opaque_for_display(
+        pygame.transform.scale(map_surface, zoomed_size)
+    )
     return MapCache(
-        surface=zoomed_map, zoom=zoom,
-        center_x=zoomed_size[0] // 2, center_y=zoomed_size[1] // 2,
+        surface=zoomed_map,
+        zoom=zoom,
+        center_x=zoomed_size[0] // 2,
+        center_y=zoomed_size[1] // 2,
     )
 
 
-def _build_camera_buffer(view_size: tuple[int, int]) -> tuple[pygame.Surface, tuple[int, int]]:
+def _build_camera_buffer(
+    view_size: tuple[int, int],
+) -> tuple[pygame.Surface, tuple[int, int]]:
     import math
+
     w, h = view_size
     side = max(1, int(math.ceil(math.hypot(w, h))) + 2)
     return pygame.Surface((side, side)).convert(), (side // 2, side // 2)
 
-
-                                                                               
-                                                                               
-                                                                               
 
 def build_render_pipeline(
     *,
@@ -124,7 +123,7 @@ def build_render_pipeline(
     setup: RenderSetup,
     dirs: int = DEFAULT_DIRS,
 ) -> RenderPipeline:
-                                                                                     
+
     render_size = _build_pixel_surface_size(screen_size, setup.pixelation_scale)
     render_scale = render_size[1] / screen_size[1]
     needs_present_scale = render_size != screen_size
@@ -161,11 +160,14 @@ def _render_stack_smooth(
     spread: int,
     rotation_degrees: float,
 ) -> None:
-                                                                                
+
     x, y = pos
     for i, img in enumerate(source_slices):
         rotated = pygame.transform.rotate(img, rotation_degrees)
-        display.blit(rotated, (x - rotated.get_width() // 2, y - rotated.get_height() // 2 + i * spread))
+        display.blit(
+            rotated,
+            (x - rotated.get_width() // 2, y - rotated.get_height() // 2 + i * spread),
+        )
 
 
 def _present_frame(
@@ -187,10 +189,16 @@ def render_preview_debug_frame(
     car_rotation: float,
     stack_spread: int,
 ) -> None:
-                                                                           
+
     frame_surface = pipeline.frame_surface
     frame_surface.fill(PREVIEW_BG_COLOR)
     _render_stack_smooth(
-        frame_surface, pipeline.scaled_car_stack, pipeline.center, stack_spread, car_rotation,
+        frame_surface,
+        pipeline.scaled_car_stack,
+        pipeline.center,
+        stack_spread,
+        car_rotation,
     )
-    _present_frame(screen, frame_surface, pipeline.screen_size, pipeline.needs_present_scale)
+    _present_frame(
+        screen, frame_surface, pipeline.screen_size, pipeline.needs_present_scale
+    )

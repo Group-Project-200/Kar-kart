@@ -5,6 +5,7 @@ import pygame
 from karkart.constants import Colors
 from karkart.ui.ui_object import UIObject
 
+
 class Track(UIObject):
 
     def __init__(self, pic_path: str, name: str, corr_map: str | None = None) -> None:
@@ -27,7 +28,12 @@ class Track(UIObject):
         scaled.blit(subsurf, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
 
         surface.blit(scaled, (self.x, self.y))
-        pygame.draw.rect(surface, Colors.BLACK, pygame.Rect(self.x, self.y, self.width, self.height), 2)
+        pygame.draw.rect(
+            surface,
+            Colors.BLACK,
+            pygame.Rect(self.x, self.y, self.width, self.height),
+            2,
+        )
 
     def get_image(self) -> pygame.Surface:
         return self.image

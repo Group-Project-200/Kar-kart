@@ -1,15 +1,3 @@
-\
-\
-\
-\
-\
-\
-\
-\
-\
-\
-   
-
 from __future__ import annotations
 
 import heapq
@@ -20,7 +8,6 @@ import pygame
 
 
 class AStarPathfinder:
-                                                            
 
     def __init__(
         self,
@@ -38,30 +25,18 @@ class AStarPathfinder:
         self.mask_scale_x = mask_w / self.map_width if self.map_width else 1.0
         self.mask_scale_y = mask_h / self.map_height if self.map_height else 1.0
 
-                                                                           
-                                                                          
         self.road_mask = road_mask
 
         self.cols = max(1, self.map_width // self.cell_size)
         self.rows = max(1, self.map_height // self.cell_size)
 
         self._raw_grid: list[list[int]] = self._build_grid(mask)
-                                                                           
-                                                             
+
         self._grid: list[list[int]] = [row[:] for row in self._raw_grid]
         self._pad_grid()
 
-                                                                          
-                                                                          
-                                                                          
-
     def _build_grid(self, mask: pygame.mask.Mask) -> list[list[int]]:
-\
-\
-\
-\
-\
-           
+
         mask_w, mask_h = mask.get_size()
         road_w = road_h = 0
         if self.road_mask is not None:
@@ -86,7 +61,7 @@ class AStarPathfinder:
         return grid
 
     def _pad_grid(self) -> None:
-                                                                                     
+
         if self.padding <= 0:
             return
 
@@ -104,8 +79,14 @@ class AStarPathfinder:
             if d >= self.padding:
                 continue
             for dr, dc in (
-                (-1, 0), (1, 0), (0, -1), (0, 1),
-                (-1, -1), (-1, 1), (1, -1), (1, 1),
+                (-1, 0),
+                (1, 0),
+                (0, -1),
+                (0, 1),
+                (-1, -1),
+                (-1, 1),
+                (1, -1),
+                (1, 1),
             ):
                 nr, nc = row + dr, col + dc
                 if not (0 <= nr < self.rows and 0 <= nc < self.cols):
@@ -120,12 +101,8 @@ class AStarPathfinder:
                 if 0 <= dist[row][col] <= self.padding and self._grid[row][col] == 0:
                     self._grid[row][col] = 1
 
-                                                                          
-                                                                          
-                                                                          
-
     def _world_to_cell(self, wx: float, wy: float) -> tuple[int, int]:
-                                                                     
+
         mx = wx + self.map_width / 2
         my = wy + self.map_height / 2
         col = int(mx // self.cell_size)
@@ -135,7 +112,7 @@ class AStarPathfinder:
         return row, col
 
     def _cell_to_world(self, row: int, col: int) -> tuple[float, float]:
-                                                                            
+
         mx = (col + 0.5) * self.cell_size
         my = (row + 0.5) * self.cell_size
         return mx - self.map_width / 2, my - self.map_height / 2
@@ -145,15 +122,23 @@ class AStarPathfinder:
             return False
         return self._grid[row][col] == 0
 
-    def _nearest_free(self, row: int, col: int, max_radius: int = 30) -> tuple[int, int] | None:
-                                                                                               
+    def _nearest_free(
+        self, row: int, col: int, max_radius: int = 30
+    ) -> tuple[int, int] | None:
+
         if self._is_free(row, col):
             return row, col
         seen: set[tuple[int, int]] = {(row, col)}
         queue: deque[tuple[int, int, int]] = deque([(row, col, 0)])
         neighbours = (
-            (-1, 0), (1, 0), (0, -1), (0, 1),
-            (-1, -1), (-1, 1), (1, -1), (1, 1),
+            (-1, 0),
+            (1, 0),
+            (0, -1),
+            (0, 1),
+            (-1, -1),
+            (-1, 1),
+            (1, -1),
+            (1, 1),
         )
         while queue:
             r, c, d = queue.popleft()
@@ -171,16 +156,12 @@ class AStarPathfinder:
                 queue.append((nr, nc, d + 1))
         return None
 
-                                                                          
-                                                                          
-                                                                          
-
     def find_path(
         self,
         start_world: tuple[float, float],
         goal_world: tuple[float, float],
     ) -> list[tuple[float, float]]:
-                                                                                          
+
         start_cell = self._world_to_cell(*start_world)
         goal_cell = self._world_to_cell(*goal_world)
         start_free = self._nearest_free(*start_cell)
@@ -190,10 +171,6 @@ class AStarPathfinder:
             if cells:
                 return [self._cell_to_world(r, c) for r, c in cells]
 
-                                                                            
-                                                                            
-                                                                            
-                                                                       
         saved_grid = self._grid
         self._grid = self._raw_grid
         try:
@@ -208,20 +185,21 @@ class AStarPathfinder:
             return []
         return [self._cell_to_world(r, c) for r, c in cells]
 
-                                                                          
-                                                                          
-                                                                          
-
     def _astar(
         self,
         start: tuple[int, int],
         goal: tuple[int, int],
     ) -> list[tuple[int, int]]:
-                                                                              
+
         neighbours = (
-            (-1, 0, 1.0), (1, 0, 1.0), (0, -1, 1.0), (0, 1, 1.0),
-            (-1, -1, 1.41421356), (-1, 1, 1.41421356),
-            (1, -1, 1.41421356), (1, 1, 1.41421356),
+            (-1, 0, 1.0),
+            (1, 0, 1.0),
+            (0, -1, 1.0),
+            (0, 1, 1.0),
+            (-1, -1, 1.41421356),
+            (-1, 1, 1.41421356),
+            (1, -1, 1.41421356),
+            (1, 1, 1.41421356),
         )
 
         def heuristic(a: tuple[int, int], b: tuple[int, int]) -> float:

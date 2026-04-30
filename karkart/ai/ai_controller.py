@@ -1,14 +1,3 @@
-\
-\
-\
-\
-\
-\
-\
-\
-\
-   
-
 from __future__ import annotations
 
 import math
@@ -18,11 +7,7 @@ from karkart.physics.car import Car
 
 
 class AIController:
-                                                                                       
 
-                                               
-                                                                       
-                                                              
     LOOKAHEAD: int = 8
     STEER_DEADZONE: float = 8.0
     THROTTLE_OFF_ANGLE: float = 55.0
@@ -36,6 +21,7 @@ class AIController:
 
     NO_PROGRESS_FRAME_LIMIT: int = 50
     NO_PROGRESS_MIN_DELTA: float = 20.0
+    SKIP_STUCK_FRAME_LIMIT: int = 150
 
     def __init__(
         self,
@@ -52,17 +38,14 @@ class AIController:
         self._reorient_frames: int = 0
         self._best_dist_to_goal: float = float("inf")
         self._no_progress_frames: int = 0
-
-                                                                          
-                                                                          
-                                                                          
+        self._skip_stuck_frames: int = 0
 
     def is_in_recovery(self) -> bool:
-                                                                    
+
         return self._reverse_frames > 0 or self._reorient_frames > 0
 
     def update(self) -> None:
-                                                                                   
+
         self.car.controls.min_speed_request = 0.0
         if not self.circuit_waypoints:
             return
@@ -90,12 +73,18 @@ class AIController:
         self._steer_toward(self.circuit_waypoints[aim_idx])
         self.car.controls.drift_input = False
 
-                                                                          
-                                                                          
-                                                                          
-
     def _current_target(self) -> tuple[float, float]:
         return self.circuit_waypoints[self._wp_idx]
+
+    def _skip_current_target(self) -> None:
+        n = len(self.circuit_waypoints)
+        if n == 0:
+            return
+        self._wp_idx = (self._wp_idx + 1) % n
+        self._best_dist_to_goal = float("inf")
+        self._no_progress_frames = 0
+        self._skip_stuck_frames = 0
+        self._still_frames = 0
 
     def _advance_waypoints(self) -> None:
         car_x, car_y = self.car.physics.car_x, self.car.physics.car_y
@@ -106,6 +95,7 @@ class AIController:
                 self._wp_idx = (self._wp_idx + 1) % n
                 self._best_dist_to_goal = float("inf")
                 self._no_progress_frames = 0
+                self._skip_stuck_frames = 0
             else:
                 break
 
@@ -128,7 +118,11 @@ class AIController:
             self._still_frames = 0
 
     def _update_no_progress(self) -> None:
-        if self._reverse_frames > 0 or self._reorient_frames > 0 or self.car.physics.wall_stun_frames > 0:
+        if (
+            self._reverse_frames > 0
+            or self._reorient_frames > 0
+            or self.car.physics.wall_stun_frames > 0
+        ):
             return
         target = self._current_target()
         dist = math.hypot(
@@ -138,8 +132,15 @@ class AIController:
         if dist < self._best_dist_to_goal - self.NO_PROGRESS_MIN_DELTA:
             self._best_dist_to_goal = dist
             self._no_progress_frames = 0
+            self._skip_stuck_frames = 0
         else:
             self._no_progress_frames += 1
+            self._skip_stuck_frames += 1
+
+        if self._skip_stuck_frames >= self.SKIP_STUCK_FRAME_LIMIT:
+            self._skip_current_target()
+            return
+
         if self._no_progress_frames >= self.NO_PROGRESS_FRAME_LIMIT:
             self._reverse_frames = self.RECOVER_REVERSE_FRAMES
             self._reorient_frames = 0

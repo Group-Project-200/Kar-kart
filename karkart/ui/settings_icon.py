@@ -6,6 +6,7 @@ from karkart.constants import Colors, ScreenPositions as sp
 from karkart.paths import PICTURES_DIR
 from karkart.ui.ui_object import UIObject
 
+
 class SettingsIcon(UIObject):
     def __init__(self, manager, screen: str) -> None:
         self.manager = manager
@@ -30,8 +31,14 @@ class SettingsIcon(UIObject):
 
     def draw(self, surface):
 
-        pygame.draw.circle(surface, Colors.DARK_BLUE, self.circle_position, self.radius*1.5)
-        pygame.draw.circle(surface, Colors.LIGHT_BLUE, self.circle_position, self.radius*1.5, 4)
-        pygame.draw.circle(surface, Colors.BLACK, self.circle_position, self.radius*1.5, 2)
+        pygame.draw.circle(
+            surface, Colors.DARK_BLUE, self.circle_position, self.radius * 1.5
+        )
+        pygame.draw.circle(
+            surface, Colors.LIGHT_BLUE, self.circle_position, self.radius * 1.5, 4
+        )
+        pygame.draw.circle(
+            surface, Colors.BLACK, self.circle_position, self.radius * 1.5, 2
+        )
 
         surface.blit(self.pic, self.position)

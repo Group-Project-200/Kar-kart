@@ -2,14 +2,15 @@ from __future__ import annotations
 
 import pygame
 
+
 class Settings:
 
     def __init__(self) -> None:
-        self.key_bindings: {str:pygame.key} = {
-            "up" : pygame.K_w,
-            "down" : pygame.K_s,
-            "left" : pygame.K_a,
-            "right" : pygame.K_d
+        self.key_bindings: {str: pygame.key} = {
+            "up": pygame.K_w,
+            "down": pygame.K_s,
+            "left": pygame.K_a,
+            "right": pygame.K_d,
         }
 
     def get_key(self, key: str) -> pygame.key:
@@ -20,6 +21,7 @@ class Settings:
         self.key_bindings["down"] = pygame.K_DOWN
         self.key_bindings["left"] = pygame.K_LEFT
         self.key_bindings["right"] = pygame.K_RIGHT
+
 
 class _Keys:
 
@@ -38,6 +40,7 @@ class _Keys:
     @property
     def RIGHT(self):
         return settings.get_key("right")
+
 
 settings = Settings()
 

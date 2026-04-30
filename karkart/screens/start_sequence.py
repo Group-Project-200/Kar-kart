@@ -1,12 +1,9 @@
-                                 
-
 from __future__ import annotations
 
 import pygame
 
 
 class StartSequence:
-                                                                      
 
     def __init__(self, screen: pygame.Surface, start_seconds: int = 5) -> None:
         self.seconds = start_seconds
@@ -17,7 +14,7 @@ class StartSequence:
         self.last_tick: int = pygame.time.get_ticks()
 
     def update(self) -> None:
-                                                                          
+
         now = pygame.time.get_ticks()
         if now - self.last_tick >= 1000:
             self.last_tick = now
@@ -27,12 +24,11 @@ class StartSequence:
                 self.complete = True
 
     def resume(self) -> None:
-\
-                                                                
+
         self.last_tick = pygame.time.get_ticks()
 
     def write(self) -> None:
-                                                                                    
+
         text_surface = self.font.render(str(self.seconds), True, (255, 255, 255))
         text_rect = text_surface.get_rect(
             center=(self.screen_dimensions[0] // 2, self.screen_dimensions[1] // 2),

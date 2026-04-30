@@ -1,5 +1,3 @@
-                                                         
-
 from __future__ import annotations
 
 import pygame
@@ -18,7 +16,6 @@ _MODE_LABELS: tuple[str, ...] = ("Time Trial", "Race Mode", "Championship")
 
 
 class RaceSelector:
-                                                
 
     CARD_WIDTH = 280
     CARD_HEIGHT = 220
@@ -32,10 +29,14 @@ class RaceSelector:
         self.bg = self._try_load_background(PICTURES_DIR / "race_selection_bg.png")
 
         self.card_y = sp.HEIGHT - self.CARD_HEIGHT - 100
-        total_cards_width = self.CARD_WIDTH * len(self.races) + self.CARD_GAP * (len(self.races) - 1)
+        total_cards_width = self.CARD_WIDTH * len(self.races) + self.CARD_GAP * (
+            len(self.races) - 1
+        )
         self.card_start_x = (sp.WIDTH - total_cards_width) // 2
 
-        self.mode_images = [self._try_load_card(PICTURES_DIR / name) for name in _MODE_IMAGE_NAMES]
+        self.mode_images = [
+            self._try_load_card(PICTURES_DIR / name) for name in _MODE_IMAGE_NAMES
+        ]
 
     @staticmethod
     def _try_load_background(path) -> pygame.Surface | None:
@@ -86,9 +87,11 @@ class RaceSelector:
                 pygame.draw.rect(surface, (220, 200, 160), card_rect, border_radius=8)
 
             if i == self.selected_index:
-                                                                                
+
                 glow_rect = card_rect.inflate(8, 8)
-                pygame.draw.rect(surface, (255, 255, 255), glow_rect, 4, border_radius=10)
+                pygame.draw.rect(
+                    surface, (255, 255, 255), glow_rect, 4, border_radius=10
+                )
                 pygame.draw.rect(surface, (0, 0, 0), card_rect, 4, border_radius=8)
 
         pygame.display.set_caption("Kar Kart - Race Selector")

@@ -1,5 +1,3 @@
-                                                                              
-
 from __future__ import annotations
 
 import pygame
@@ -12,12 +10,15 @@ from karkart.ui.ui_object import UIObject
 
 
 class SelectContainer(UIObject):
-                                                                 
 
     def __init__(
-        self, center_x: float, center_y: float,
-        width: float, height: float,
-        rows: int, columns: int,
+        self,
+        center_x: float,
+        center_y: float,
+        width: float,
+        height: float,
+        rows: int,
+        columns: int,
     ) -> None:
         super().__init__(center_x, center_y, width, height)
         self.rows = rows
@@ -54,16 +55,10 @@ class SelectContainer(UIObject):
         self.objects[self.selected].select()
 
     def draw(self, surface: pygame.Surface) -> None:
-\
-\
-\
-           
+
         n = len(self.objects)
         rows, columns = self.rows, self.columns
         curr_x, curr_y = self.x, self.y
-
-                                  
-                                                                                                
 
         i = 0
         obj = None
@@ -88,18 +83,26 @@ class SelectContainer(UIObject):
         first_column = self.objects[:: self.columns]
 
         if x_center:
-            self.padding_x = (self.width - sum(obj.get_width() for obj in first_row)) / (self.columns + 1)
+            self.padding_x = (
+                self.width - sum(obj.get_width() for obj in first_row)
+            ) / (self.columns + 1)
             self.x += self.padding_x
         elif self.columns > 1:
-            self.padding_x = (self.width - sum(obj.get_width() for obj in first_row)) / (self.columns - 1)
+            self.padding_x = (
+                self.width - sum(obj.get_width() for obj in first_row)
+            ) / (self.columns - 1)
         else:
             self.padding_x = 0
 
         if y_center:
-            self.padding_y = (self.height - sum(obj.get_height() for obj in first_column)) / (self.rows + 1)
+            self.padding_y = (
+                self.height - sum(obj.get_height() for obj in first_column)
+            ) / (self.rows + 1)
             self.y += self.padding_y
         elif self.rows > 1:
-            self.padding_y = (self.height - sum(obj.get_height() for obj in first_column)) / (self.rows - 1)
+            self.padding_y = (
+                self.height - sum(obj.get_height() for obj in first_column)
+            ) / (self.rows - 1)
         else:
             self.padding_y = 0
 
@@ -108,12 +111,15 @@ class SelectContainer(UIObject):
 
 
 class MapContainer(SelectContainer):
-                                                                                
 
     def __init__(
-        self, center_x: float, center_y: float,
-        width: float, height: float,
-        rows: int, columns: int,
+        self,
+        center_x: float,
+        center_y: float,
+        width: float,
+        height: float,
+        rows: int,
+        columns: int,
     ) -> None:
         super().__init__(center_x, center_y, width, height, rows, columns)
         self.back_button = None
@@ -123,39 +129,15 @@ class MapContainer(SelectContainer):
         self.back_button = button
 
     def handle_event(self, event):
-                                              
-                             
-                                                    
-                                                                                        
-                                            
-                                                                
-                                                    
-                                              
-                                                         
-                                           
-                                      
-                                 
-                         
-
-                                                                        
-                             
-                                                    
-                                                                                        
-                                                            
-                                                
-                                       
-                                  
-                                          
-                         
 
         if event.type != pygame.KEYDOWN:
             return None
 
         if event.key == pygame.K_RETURN:
             if not self.back_selected:
-                                                                 
+
                 return self.objects[self.selected].get_map()
-                                                                                 
+
             self.selected = 0
             self.back_selected = False
             self.back_button.unselect()
@@ -184,13 +166,17 @@ class MapContainer(SelectContainer):
             super().handle_event(event)
         return None
 
+
 class PopUpContainer(SelectContainer):
-                                                             
 
     def __init__(
-        self, center_x: float, center_y: float,
-        width: float, height: float,
-        rows: int, columns: int,
+        self,
+        center_x: float,
+        center_y: float,
+        width: float,
+        height: float,
+        rows: int,
+        columns: int,
     ) -> None:
         super().__init__(center_x, center_y, width, height, rows, columns)
 
@@ -201,7 +187,7 @@ class PopUpContainer(SelectContainer):
         self.objects[self.selected].handle_event(event)
 
         if event.key == pygame.K_RETURN:
-                                                                   
+
             state = self.objects[self.selected].get_state()
             if state:
                 self.objects[self.selected].unselect()
@@ -216,22 +202,28 @@ class PopUpContainer(SelectContainer):
         super().handle_event(event)
         return None
 
+
 class ArrowContainer(SelectContainer):
-                                                             
 
     def __init__(
-        self, center_x: float, center_y: float,
-        width: float, height: float,
-        options: list[PopUpCard]
+        self,
+        center_x: float,
+        center_y: float,
+        width: float,
+        height: float,
+        options: list[PopUpCard],
     ) -> None:
 
         super().__init__(center_x, center_y, width, height, 1, 3)
 
-                                                     
         self.options = options
-        
+
         self.opt_index = 0
-        self.objects = [Arrow(0, 0, 30, 30, "left"), self.options[self.opt_index], Arrow(0, 0, 30, 30, "right")]
+        self.objects = [
+            Arrow(0, 0, 30, 30, "left"),
+            self.options[self.opt_index],
+            Arrow(0, 0, 30, 30, "right"),
+        ]
         self.select()
 
     def handle_event(self, event):
@@ -239,8 +231,7 @@ class ArrowContainer(SelectContainer):
             return None
 
         if event.key == pygame.K_RETURN:
-            
-                                                                           
+
             if self.selected == 2:
                 self.opt_index = (self.opt_index + 1) % len(self.options)
                 self.objects[1] = self.options[self.opt_index]
@@ -249,7 +240,6 @@ class ArrowContainer(SelectContainer):
                 self.objects[1] = self.options[self.opt_index]
             return None
 
-                                                                                          
         prev = self.selected
         if event.key == K.LEFT and self.selected != 0:
             self.selected -= 2

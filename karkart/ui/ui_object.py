@@ -1,11 +1,12 @@
-                                                                                 
-
 from __future__ import annotations
 from abc import ABC, abstractmethod
 
+
 class UIObject(ABC):
     @abstractmethod
-    def __init__(self, center_x: float, center_y: float, width: float, height: float) -> None:
+    def __init__(
+        self, center_x: float, center_y: float, width: float, height: float
+    ) -> None:
         self.width = width
         self.height = height
 
@@ -19,6 +20,6 @@ class UIObject(ABC):
         return self.height
 
     def set_position(self, x: float, y: float):
-                                               
+
         self.x = x
         self.y = y

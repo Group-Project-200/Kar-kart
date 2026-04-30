@@ -1,5 +1,3 @@
-                                
-
 from __future__ import annotations
 
 import pygame
@@ -11,15 +9,17 @@ from karkart.ui import Button, MapCard, MapContainer, SettingsIcon
 
 
 class MapScreen:
-                                                         
 
     def __init__(self, manager) -> None:
         self.manager = manager
 
         self.container = MapContainer(
-            sp.CENTER_X, sp.CCCBOTTOM,
-            sp.WIDTH / 2, sp.HEIGHT / 16 * 9,
-            rows=2, columns=2,
+            sp.CENTER_X,
+            sp.CCCBOTTOM,
+            sp.WIDTH / 2,
+            sp.HEIGHT / 16 * 9,
+            rows=2,
+            columns=2,
         )
         self.back_button = Button("Back", "car", self.manager)
 
@@ -58,10 +58,11 @@ class MapScreen:
         surface.fill(Colors.BLACK)
         surface.blit(self.background, (0, 0))
 
-                                            
         font_size = 15
         instr_font = pygame.font.Font(str(PIXEL_FONT), font_size)
-        instr_text = instr_font.render("Select the track you want to race on", True, Colors.WHITE)
+        instr_text = instr_font.render(
+            "Select the track you want to race on", True, Colors.WHITE
+        )
         instr_center = instr_text.get_rect(center=(sp.CENTER_X, sp.XTOP))
 
         instr_width = self.container.get_width()
