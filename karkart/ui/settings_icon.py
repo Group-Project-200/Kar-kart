@@ -25,12 +25,11 @@ class SettingsIcon(UIObject):
         self.circle_position: (int, int) = (self.x, self.y)
 
     def handle_event(self, event):
-
         if event.key == pygame.K_ESCAPE:
             self.manager.change_screen("settings")
             self.manager.get_screen().set_return_screen(self.screen)
-
-        # Draw circle and gear image.
+            
+    def draw(self, surface: pygame.Surface) -> None:
         pygame.draw.circle(surface, Colors.DARK_BLUE, self.circle_position, self.circle_radius)
         pygame.draw.circle(surface, Colors.LIGHT_BLUE, self.circle_position, self.circle_radius, 4)
         pygame.draw.circle(surface, Colors.BLACK, self.circle_position, self.circle_radius, 2)
