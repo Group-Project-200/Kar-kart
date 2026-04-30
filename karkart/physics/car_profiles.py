@@ -27,6 +27,7 @@ CAR_HANDLING_PROFILES: dict[str, CarHandling] = {
         plateau_turn_rate=1.6,
         default_slide_factor=0.5,
     ),
+    "car_05": CarHandling(),
 }
 
 

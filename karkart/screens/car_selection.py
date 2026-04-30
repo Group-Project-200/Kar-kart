@@ -29,22 +29,23 @@ class CarScreen:
             (sp.WIDTH, sp.HEIGHT),
         )
 
+        self.car_names = sorted(self.manager.app_data.cars.keys())
+
         self.loaded_statboxes = [
             pygame.transform.scale(
                 pygame.image.load(
-                    str(PICTURES_DIR / "statsboxes" / name)
+                    str(
+                        PICTURES_DIR
+                        / "statsboxes"
+                        / f"{car_name.replace('_', '')}_stats.png"
+                    )
                 ).convert_alpha(),
                 self.STATBOX_SIZE,
             )
-            for name in (
-                "car01_stats.png",
-                "car02_stats.png",
-                "car03_stats.png",
-                "car04_stats.png",
-            )
+            for car_name in self.car_names
         ]
 
-        self.car_slices = [self._load_car_slices(f"car_{i:02d}") for i in range(1, 5)]
+        self.car_slices = [self._load_car_slices(car_name) for car_name in self.car_names]
 
         self.pipelines = [
             build_render_pipeline(
@@ -101,7 +102,7 @@ class CarScreen:
                 self.back_selected = True
                 self.back_btn.select()
             elif event.key == pygame.K_RETURN:
-                car_name = f"car_{self.selected + 1:02d}"
+                car_name = self.car_names[self.selected]
                 self.manager.app_data.set_current_car(car_name)
                 self.manager.change_screen("map")
 
