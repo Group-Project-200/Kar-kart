@@ -31,35 +31,36 @@ import pygame
 from karkart.paths import MAPS_DIR, MAP_DATA_FILE
 
 
-DEFAULT_MAP_NAME = "newmap1"
-
+DEFAULT_MAP_NAME = "map_2"
 WINDOW_SIZE = (1280, 720)
 
-# Sidebar geometry
+
 _SIDEBAR_W = 200
-_MAP_VIEW_W = WINDOW_SIZE[0] - _SIDEBAR_W   # map lives in [0, _MAP_VIEW_W)
-_SB_X = _MAP_VIEW_W                          # sidebar left edge
+_MAP_VIEW_W = WINDOW_SIZE[0] - _SIDEBAR_W
+_SB_X = _MAP_VIEW_W
 _SB_PAD = 8
 _SB_ROW_H = 34
-_SB_TOP = 44                                 # first row y (below sidebar title)
+_SB_TOP = 44
 _BTN_W = 24
 _BTN_H = 20
 
-# Bottom-left map switcher geometry
-_MS_H = 26                                   # switcher button height
-_MS_PAD = 6                                  # outer padding from the window edge
-_MS_GAP = 4                                  # gap between switcher buttons
-_MS_BTN_W = 110                              # width of a single map button
+
+_MS_H = 26
+_MS_PAD = 6
+_MS_GAP = 4
+_MS_BTN_W = 110
 
 
-def _rect_from_corners(a: tuple[int, int], b: tuple[int, int]) -> tuple[int, int, int, int]:
+def _rect_from_corners(
+    a: tuple[int, int], b: tuple[int, int]
+) -> tuple[int, int, int, int]:
     x = min(a[0], b[0])
     y = min(a[1], b[1])
     return x, y, abs(b[0] - a[0]), abs(b[1] - a[1])
 
 
 def _start_pos(x: int, y: int, w: int, h: int) -> tuple[float, int]:
-    """Centre the spawn 3/4 of the way across the start box, at the bottom edge."""
+
     return x + (3 / 4 * w), y + h
 
 
@@ -76,10 +77,12 @@ def _point_in_rect(px: int, py: int, rx: int, ry: int, rw: int, rh: int) -> bool
 
 
 def _row_button_rects(row: int) -> tuple[pygame.Rect, pygame.Rect]:
-    """Return (up_rect, down_rect) for a sidebar row."""
+
     ry = _SB_TOP + row * _SB_ROW_H
     by = ry + (_SB_ROW_H - _BTN_H) // 2
-    up_rect = pygame.Rect(_SB_X + _SIDEBAR_W - 2 * _BTN_W - 2 * _SB_PAD, by, _BTN_W, _BTN_H)
+    up_rect = pygame.Rect(
+        _SB_X + _SIDEBAR_W - 2 * _BTN_W - 2 * _SB_PAD, by, _BTN_W, _BTN_H
+    )
     down_rect = pygame.Rect(_SB_X + _SIDEBAR_W - _BTN_W - _SB_PAD, by, _BTN_W, _BTN_H)
     return up_rect, down_rect
 
@@ -138,17 +141,16 @@ def powerups_sizing(x, y, w, h):
 
 
 def _available_maps() -> list[str]:
-    """Return the sorted list of map folder names that have a ``0.png`` layer."""
+
     if not MAPS_DIR.is_dir():
         return []
     return sorted(
-        p.name for p in MAPS_DIR.iterdir()
-        if p.is_dir() and (p / "0.png").is_file()
+        p.name for p in MAPS_DIR.iterdir() if p.is_dir() and (p / "0.png").is_file()
     )
 
 
 def _map_switch_rects(maps: list[str]) -> list[pygame.Rect]:
-    """Lay out a horizontal row of map-switcher buttons at the bottom-left."""
+
     rects: list[pygame.Rect] = []
     x = _MS_PAD
     y = WINDOW_SIZE[1] - _MS_H - _MS_PAD
@@ -165,7 +167,7 @@ def _draw_map_switcher(
     current: str,
     rects: list[pygame.Rect],
 ) -> None:
-    """Draw each map name as a button; highlight the one currently loaded."""
+
     for name, rect in zip(maps, rects):
         col = (60, 120, 200) if name == current else (55, 55, 65)
         pygame.draw.rect(screen, col, rect, border_radius=4)
@@ -177,7 +179,6 @@ def _draw_map_switcher(
 def _try_delete_at(data: dict, map_name: str, wx: int, wy: int) -> bool:
     entry = data[map_name]
 
-    # Single-placement rects first
     for key in ("start_grid", "finish_line"):
         rect = entry.get(key)
         if _is_valid_rect(rect):
@@ -186,7 +187,6 @@ def _try_delete_at(data: dict, map_name: str, wx: int, wy: int) -> bool:
                 del entry[key]
                 return True
 
-    # Items: delete the top-most one clicked (iterate reversed)
     if "items" in entry:
         items = entry["items"]
         for i in range(len(items) - 1, -1, -1):
@@ -197,14 +197,12 @@ def _try_delete_at(data: dict, map_name: str, wx: int, wy: int) -> bool:
                     items.pop(i)
                     return True
 
-    # Checkpoints: delete the top-most one clicked (iterate reversed)
     checkpoints = entry.get("checkpoints", [])
     for i in range(len(checkpoints) - 1, -1, -1):
         cp = checkpoints[i]
         if _point_in_rect(wx, wy, cp["x"], cp["y"], cp["w"], cp["h"]):
             checkpoints.pop(i)
             return True
-
     return False
 
 
@@ -225,7 +223,10 @@ def _draw_map_overlays(
         label_surf = font.render(f"CP_{i + 1:02d}", True, (255, 240, 80))
         cx = rx + cp["w"] // 2
         cy = ry + cp["h"] // 2
-        backing = pygame.Surface((label_surf.get_width() + 4, label_surf.get_height() + 2), pygame.SRCALPHA)
+        backing = pygame.Surface(
+            (label_surf.get_width() + 4, label_surf.get_height() + 2),
+            pygame.SRCALPHA,
+        )
         backing.fill((0, 0, 0, 140))
         screen.blit(backing, backing.get_rect(center=(cx, cy)))
         screen.blit(label_surf, label_surf.get_rect(center=(cx, cy)))
@@ -235,19 +236,26 @@ def _draw_map_overlays(
         x, y, w, h = start_grid
         pygame.draw.rect(screen, (0, 80, 255), (x - camera_x, y - camera_y, w, h), 2)
         lbl = font.render("START GRID", True, (80, 160, 255))
-        screen.blit(lbl, lbl.get_rect(center=(x - camera_x + w // 2, y - camera_y + h // 2)))
+        screen.blit(
+            lbl, lbl.get_rect(center=(x - camera_x + w // 2, y - camera_y + h // 2))
+        )
 
     finish_line = data[map_name].get("finish_line")
     if _is_valid_rect(finish_line):
         x, y, w, h = finish_line
         pygame.draw.rect(screen, (0, 220, 80), (x - camera_x, y - camera_y, w, h), 2)
         lbl = font.render("FINISH", True, (0, 255, 120))
-        screen.blit(lbl, lbl.get_rect(center=(x - camera_x + w // 2, y - camera_y + h // 2)))
+        screen.blit(
+            lbl, lbl.get_rect(center=(x - camera_x + w // 2, y - camera_y + h // 2))
+        )
 
     for item in data[map_name].get("items", []):
         if _is_valid_rect(item):
             x, y, w, h = item
-            pygame.draw.rect(screen, (180, 0, 200), (x - camera_x, y - camera_y, w, h), 2)
+            pygame.draw.rect(
+                screen, (180, 0, 200), (x - camera_x, y - camera_y, w, h), 2
+            )
+
 
 
 def main() -> None:
@@ -256,12 +264,12 @@ def main() -> None:
 
     data = _load_data()
 
-    # Discover every map folder that has a 0.png base layer. Start on the
-    # default map if it exists, otherwise fall back to the first one found.
     available_maps = _available_maps()
     if not available_maps:
         raise RuntimeError(f"No maps with a 0.png layer found in {MAPS_DIR}")
-    map_name = DEFAULT_MAP_NAME if DEFAULT_MAP_NAME in available_maps else available_maps[0]
+    map_name = (
+        DEFAULT_MAP_NAME if DEFAULT_MAP_NAME in available_maps else available_maps[0]
+    )
     switch_rects = _map_switch_rects(available_maps)
 
     data.setdefault(map_name, {"checkpoints": []})
@@ -286,7 +294,6 @@ def main() -> None:
             if event.type == pygame.QUIT:
                 running = False
 
-            # ---- keyboard ------------------------------------------------- #
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_c:
                     mode, placing = "checkpoints", False
@@ -301,12 +308,9 @@ def main() -> None:
                 elif event.key == pygame.K_ESCAPE:
                     placing = False
 
-            # ---- left-click: map switcher, pan (map only), or sidebar ----- #
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 mx, my = event.pos
 
-                # Map switcher takes priority: clicking a bottom-left button
-                # reloads the background image and swaps the active map key.
                 switched = False
                 for name, rect in zip(available_maps, switch_rects):
                     if rect.collidepoint(mx, my):
@@ -345,7 +349,6 @@ def main() -> None:
                 camera_y -= dy
                 last_mouse_x, last_mouse_y = event.pos
 
-            # ---- right-click: draw rectangle ------------------------------ #
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
                 mx, my = event.pos
                 wx, wy = mx + camera_x, my + camera_y
@@ -373,21 +376,23 @@ def main() -> None:
                         items.append(box3)
                 placing = False
 
-        # ---- clamp camera to map bounds ----------------------------------- #
         camera_x = max(0, min(camera_x, max(0, map_image.get_width() - _MAP_VIEW_W)))
-        camera_y = max(0, min(camera_y, max(0, map_image.get_height() - WINDOW_SIZE[1])))
+        camera_y = max(
+            0, min(camera_y, max(0, map_image.get_height() - WINDOW_SIZE[1]))
+        )
 
-        # ---- draw --------------------------------------------------------- #
         screen.blit(map_image, (-camera_x, -camera_y))
-
         _draw_map_overlays(screen, font, data, map_name, camera_x, camera_y)
 
         if placing:
             mx, my = pygame.mouse.get_pos()
-            px, py, pw, ph = _rect_from_corners(place_start, (mx + camera_x, my + camera_y))
-            pygame.draw.rect(screen, (255, 255, 0), (px - camera_x, py - camera_y, pw, ph), 2)
+            px, py, pw, ph = _rect_from_corners(
+                place_start, (mx + camera_x, my + camera_y)
+            )
+            pygame.draw.rect(
+                screen, (255, 255, 0), (px - camera_x, py - camera_y, pw, ph), 2
+            )
 
-        # Mode label sits just above the bottom-left map-switcher row.
         if mode == "delete":
             mode_text = "DELETE (right-click to remove)"
         else:
@@ -395,14 +400,14 @@ def main() -> None:
 
         mode_lbl = font.render(
             f"MODE: {mode_text}",
-            True, (255, 255, 255),
+            True,
+            (255, 255, 255),
         )
         mode_lbl_y = WINDOW_SIZE[1] - _MS_H - _MS_PAD - mode_lbl.get_height() - 6
         screen.blit(mode_lbl, (10, mode_lbl_y))
 
         _draw_sidebar(screen, font, cps)
         _draw_map_switcher(screen, font, available_maps, map_name, switch_rects)
-
         pygame.display.flip()
 
     with MAP_DATA_FILE.open("w") as f:
