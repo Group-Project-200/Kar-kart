@@ -1,10 +1,9 @@
 # Kar-Kart
 
-A top-down pixel-art kart racer built with `pygame`. Cars are drawn as
-stacks of rotated sprite slices, the camera rotates with the heading and
-tilts on drifts, and collision runs on per-pixel masks of the map. CPU
-opponents race alongside the player using A* pathfinding over a
-wall-padded grid built from the same masks.
+Kar-Kart is a top-down pixel-art kart racer built with `pygame`. The
+player races against CPU opponents on maps loaded from `resources/maps`.
+Collision is handled with per-pixel map masks, and AI uses A* pathfinding
+on a padded wall grid.
 
 ## Getting started
 
@@ -81,17 +80,12 @@ Kar-kart/
 
 1. `main.py` pulls the active screen from `ScreenManager` and dispatches
    events → `update()` → `draw()`.
-2. `GamePlay.update()` alternates work on even / odd frames:
-   * **Even** — mask collisions (player + AI) and car-to-car overlap.
-   * **Odd**  — checkpoint bookkeeping and the A* replan in
-     `AIController.update()`.
-   * **Every frame** steps `Car.step_physics()` for all cars, emits
-     sparks, and moves the camera — motion never stutters.
-3. `draw()` composes a pixelated frame: map (camera-rotated) → cars
-   (rotated sprite stacks) → HUD at full resolution.
-4. If a frame busts the ~16.7 ms budget, `main.py` skips the next
-   `draw()` and holds the last image. Physics keeps running so the
-   simulation stays in sync.
+2. `GamePlay.update()` runs the race countdown and then starts fixed-rate
+   background threads for physics, collision, and AI.
+3. `draw()` reads the latest world snapshot and uses
+   `Renderer.render_frame()` to compose the frame: map → cars → sparks → HUD.
+4. If a frame busts the ~16.7 ms budget, `main.py` skips the next draw and
+   keeps the last image while the simulation continues.
 
 ## Handling
 
@@ -101,10 +95,9 @@ slip / grip blending are isolated fields on that dataclass.
 
 ## Checkpoints
 
-`Checkpoint.check()` tests a 20 × 20 square around the car rather than a
-single point so narrow gates still trigger when only the body of the car
-clips the rect. Every racer owns its own cloned `Checkpoint` list and
-`RacerState` — progression never leaks between cars.
+`Checkpoint.check()` tests whether the car hitbox intersects the checkpoint
+rect. Every racer owns its own cloned `Checkpoint` list and `RacerState`, so
+progression never leaks between cars.
 
 ## Car-to-car collision
 
@@ -156,15 +149,14 @@ forward speed so steering always engages.
    * `cover.png` — thumbnail for the map-selection screen.
    * `0.png` — ground layer.
    * `1.png`, `2.png`, ... — collision / decoration layers.
-2. Run the map editor to place checkpoints and a start box:
+2. Run the map editor:
 
    ```bash
    python3 -m karkart.tools.map_editor
    ```
 
-   Edit `MAP_NAME` in the module first. Keybindings are in its
-docstring. The tool writes the result back to `map_data.json` on
-exit.
+   The editor loads available maps from `resources/maps` and saves the
+   selected map data to `map_data.json` when the window closes.
 
 ## Class diagram
 
@@ -205,14 +197,12 @@ classDiagram
         +dimensions
         +masks
         +checkpoints_list
-        +zoom_fixing(zoom, size)
-        +draw_map_camera()
     }
 
     class Checkpoint {
         +rect
         +passed
-        +check(x, y, half_size) bool
+        +check(car_hitbox) bool
     }
 
     class RacerState {
@@ -239,7 +229,7 @@ classDiagram
     class Renderer {
         +map: Map
         +stacker: Stacker
-        +render_frame(spread, extra_cars)
+        +render_frame()
     }
 
     GamePlay *-- "1..*" Car
