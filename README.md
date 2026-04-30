@@ -165,3 +165,102 @@ forward speed so steering always engages.
    Edit `MAP_NAME` in the module first. Keybindings are in its
 docstring. The tool writes the result back to `map_data.json` on
 exit.
+
+## Class diagram
+
+```mermaid
+classDiagram
+    class GamePlay {
+        +current_car: Car
+        +ai_cars: list~Car~
+        +current_map: Map
+        +current_camera: Camera
+        +current_renderer: Renderer
+        +pathfinder: AStarPathfinder
+        +ai_controllers: list~AIController~
+        +player_checkpoints: list~Checkpoint~
+        +ai_checkpoints: list~list~
+        +update()
+        +draw(surface)
+    }
+
+    class Car {
+        +handling: CarHandling
+        +physics: PhysicsState
+        +controls: ControlState
+        +step_physics_with_controls()
+    }
+
+    class CarHandling {
+        +max_speed
+        +throttle_acceleration
+        +max_turn_rate
+        +drift_charge_short_frames
+        +drift_charge_long_frames
+        +short_boost: BoostTier
+        +long_boost: BoostTier
+    }
+
+    class Map {
+        +dimensions
+        +masks
+        +checkpoints_list
+        +zoom_fixing(zoom, size)
+        +draw_map_camera()
+    }
+
+    class Checkpoint {
+        +rect
+        +passed
+        +check(x, y, half_size) bool
+    }
+
+    class RacerState {
+        +list_counter
+        +current_lap
+        +total_checkpoints
+        +last_pass_order
+    }
+
+    class AIController {
+        +car: Car
+        +pathfinder: AStarPathfinder
+        +checkpoints: list~Checkpoint~
+        +racer_state: RacerState
+        +update()
+    }
+
+    class AStarPathfinder {
+        +cell_size
+        +padding
+        +find_path(start, goal) list
+    }
+
+    class Renderer {
+        +map: Map
+        +stacker: Stacker
+        +render_frame(spread, extra_cars)
+    }
+
+    GamePlay *-- "1..*" Car
+    GamePlay *-- Map
+    GamePlay *-- Renderer
+    GamePlay *-- AStarPathfinder
+    GamePlay *-- "0..*" AIController
+    GamePlay *-- "1..*" RacerState
+
+    Car *-- CarHandling
+    AIController --> Car
+    AIController --> AStarPathfinder
+    AIController --> RacerState
+    AIController --> Checkpoint
+    Map "1" *-- "*" Checkpoint
+    Renderer --> Map
+```
+## Credits
+
+### Music
+"Backup Plan" by Zane Little Music
+From the album "Another Bag of Chips"
+Licensed under CC0 1.0 Universal (Public Domain)
+Source: https://opengameart.org/content/10-more-chiptune-tracks-another-bag-of-chips

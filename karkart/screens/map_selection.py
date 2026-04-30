@@ -3,9 +3,11 @@ from __future__ import annotations
 import pygame
 
 from karkart.constants import Colors, ScreenPositions as sp
+from karkart.ui.help_icon import HelpIcon
 from karkart.paths import PICTURES_DIR, PIXEL_FONT
 from karkart.screens.gameplay import GamePlay
 from karkart.ui import Button, MapCard, MapContainer, SettingsIcon
+from karkart.screens.gameplay import GamePlay
 
 
 class MapScreen:
@@ -37,11 +39,13 @@ class MapScreen:
         self.background.set_alpha(192)
 
         self.settings_icon = SettingsIcon(self.manager, "map")
+        self.help_icon = HelpIcon(self.manager, "map")
 
     def handle_event(self, event) -> None:
         if event.type != pygame.KEYDOWN:
             return None
 
+        self.help_icon.handle_event(event)
         self.settings_icon.handle_event(event)
         selected_track = self.container.handle_event(event)
         if selected_track is not None:
@@ -76,6 +80,7 @@ class MapScreen:
         pygame.draw.rect(surface, Colors.BLACK, instr_rect, 2, border_radius=8)
         surface.blit(instr_text, instr_center)
 
+        self.help_icon.draw(surface)
         self.container.draw(surface)
         self.back_button.draw(surface)
         self.settings_icon.draw(surface)

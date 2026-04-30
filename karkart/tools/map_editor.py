@@ -1,3 +1,27 @@
+"""Offline map editor.
+
+Run this script to place checkpoints, a finish line, a starting grid and an
+item region on a map image, and to save the result back into ``map_data.json``.
+
+Controls
+--------
+* Left-click + drag         -- pan the camera (map area only).
+* Right-click + drag        -- draw a rectangle of the current kind.
+* ``C`` / ``F`` / ``G`` / ``I`` / ``D`` -- switch between:
+    - ``C``: checkpoints (appended to the list)
+    - ``F``: finish line (the last checkpoint; crossing it after all CPs counts a lap)
+    - ``G``: starting grid (spawn box; not a checkpoint)
+    - ``I``: item placement
+    - ``D``: delete checkpoints or rectangles
+* ``ESC``                   -- cancel the current rectangle.
+* Sidebar [▲] / [▼] buttons -- move a checkpoint up or down in race order.
+* Close window              -- save ``map_data.json`` and exit.
+
+Checkpoints are labelled CP_01 … CP_NN on the map and listed in the right-hand
+sidebar in their current race order. Use the arrow buttons to correct the order
+before closing; the final array order is what the game uses.
+"""
+
 from __future__ import annotations
 
 import json
@@ -153,7 +177,6 @@ def _draw_map_switcher(
 
 
 def _try_delete_at(data: dict, map_name: str, wx: int, wy: int) -> bool:
-
     entry = data[map_name]
 
     for key in ("start_grid", "finish_line"):
@@ -234,6 +257,7 @@ def _draw_map_overlays(
             )
 
 
+
 def main() -> None:
     pygame.init()
     pygame.display.set_caption("Map Editor")
@@ -279,10 +303,10 @@ def main() -> None:
                     mode, placing = "start_grid", False
                 elif event.key == pygame.K_i:
                     mode, placing = "item placements", False
-                elif event.key == pygame.K_ESCAPE:
-                    placing = False
                 elif event.key == pygame.K_d:
                     mode, placing = "delete", False
+                elif event.key == pygame.K_ESCAPE:
+                    placing = False
 
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 mx, my = event.pos

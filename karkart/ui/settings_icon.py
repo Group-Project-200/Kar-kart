@@ -16,11 +16,12 @@ class SettingsIcon(UIObject):
         self.y: ScreenPositions = sp.XXTOP
 
         self.radius: int = 30
-        self.diameter: int = self.radius * 2
+        self.circle_radius: int = int(self.radius * 1.5)
+        self.diameter: int = self.circle_radius * 2
         gear = pygame.image.load(PICTURES_DIR / "gearicon.png")
         self.pic = pygame.transform.scale(gear, (self.diameter, self.diameter))
 
-        self.position: (int, int) = (self.x - self.radius, self.y - self.radius)
+        self.position: (int, int) = (self.x - self.circle_radius, self.y - self.circle_radius)
         self.circle_position: (int, int) = (self.x, self.y)
 
     def handle_event(self, event):
@@ -29,7 +30,10 @@ class SettingsIcon(UIObject):
             self.manager.change_screen("settings")
             self.manager.get_screen().set_return_screen(self.screen)
 
-    def draw(self, surface):
+        # Draw circle and gear image.
+        pygame.draw.circle(surface, Colors.DARK_BLUE, self.circle_position, self.circle_radius)
+        pygame.draw.circle(surface, Colors.LIGHT_BLUE, self.circle_position, self.circle_radius, 4)
+        pygame.draw.circle(surface, Colors.BLACK, self.circle_position, self.circle_radius, 2)
 
         pygame.draw.circle(
             surface, Colors.DARK_BLUE, self.circle_position, self.radius * 1.5

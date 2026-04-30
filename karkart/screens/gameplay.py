@@ -316,6 +316,19 @@ class GamePlay:
     _GRID_SIDE: float = 20.0
     _POLE_FORWARD_OFFSET: float = 12.0
 
+
+    def update_map(self):
+        map_name = self.manager.app_data.current_map.name
+        map_record = _MAP_DATA[map_name]
+
+        current_map_data = MapData()
+        current_map_data.checkpoints = map_record["checkpoints"]
+        current_map_data.finish_line = map_record["finish_line"]
+        current_map_data.layers = self.manager.app_data.return_map_layers()
+
+        return current_map_data, map_record
+
+
     def _compute_start_pose(
         self,
         start_world_x: float,
