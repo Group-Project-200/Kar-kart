@@ -5,7 +5,7 @@ import time
 import traceback
 from typing import TYPE_CHECKING
 
-from karkart.helpers import snap_degrees
+from karkart.helpers import forward_vector, snap_degrees
 from karkart.physics.checkpoint import advance_checkpoints
 from karkart.runtime.snapshot import (
     CarSnapshot,
@@ -16,7 +16,6 @@ from karkart.runtime.snapshot import (
 
 if TYPE_CHECKING:
     from karkart.physics.car import Car, PhysicsState
-    from karkart.runtime.pathfinder_worker import PathfinderWorker
     from karkart.runtime.snapshot import SnapshotBuffer
     from karkart.runtime.world import World
 
@@ -69,9 +68,15 @@ class PhysicsScheduler(FixedRateThread):
 
             ph = player.physics
             if ph.drift_active and ph.car_z <= 0.0:
-                anchor_x = player.last_safe_x if player.last_safe_x is not None else ph.car_x
-                anchor_y = player.last_safe_y if player.last_safe_y is not None else ph.car_y
-                world.sparks.emit(anchor_x, anchor_y, ph.rotation, ph.drift_charge_frames)
+                anchor_x = (
+                    player.last_safe_x if player.last_safe_x is not None else ph.car_x
+                )
+                anchor_y = (
+                    player.last_safe_y if player.last_safe_y is not None else ph.car_y
+                )
+                world.sparks.emit(
+                    anchor_x, anchor_y, ph.rotation, ph.drift_charge_frames
+                )
 
             pm = world.powerups_manager
             if pm.current is not None:
@@ -93,11 +98,16 @@ class PhysicsScheduler(FixedRateThread):
                 _apply_min_speed(ai_car)
 
             self._resolve_car_to_car()
+            world.player_car.sync_hitbox()
+            for ai_car in world.ai_cars:
+                ai_car.sync_hitbox()
             self._advance_player_checkpoints()
             self._advance_ai_checkpoints()
 
-            if (not world.race_finished_event.is_set()
-                    and world.player_state.current_lap > self._LAP_TARGET):
+            if (
+                not world.race_finished_event.is_set()
+                and world.player_state.current_lap > self._LAP_TARGET
+            ):
                 world.race_finished_event.set()
 
             snap = self._build_snapshot()
@@ -113,25 +123,32 @@ class PhysicsScheduler(FixedRateThread):
         player_cp = world.player_state.list_counter
         for ai_car, ai_state in zip(world.ai_cars, world.ai_states):
             _resolve_pair(
-                player, ai_car, player_cp, ai_state.list_counter,
-                radius=radius, radius_sq=radius_sq,
+                player,
+                ai_car,
+                player_cp,
+                ai_state.list_counter,
+                radius=radius,
+                radius_sq=radius_sq,
             )
         n = len(world.ai_cars)
         for i in range(n):
             for j in range(i + 1, n):
                 _resolve_pair(
-                    world.ai_cars[i], world.ai_cars[j],
-                    world.ai_states[i].list_counter, world.ai_states[j].list_counter,
-                    radius=radius, radius_sq=radius_sq,
+                    world.ai_cars[i],
+                    world.ai_cars[j],
+                    world.ai_states[i].list_counter,
+                    world.ai_states[j].list_counter,
+                    radius=radius,
+                    radius_sq=radius_sq,
                 )
 
     def _advance_player_checkpoints(self) -> None:
         world = self.world
         old_lap = world.player_state.current_lap
-        ph = world.player_car.physics
         advance_checkpoints(
-            world.player_state, world.current_map.checkpoints_list,
-            ph.car_x, ph.car_y,
+            world.player_state,
+            world.current_map.checkpoints_list,
+            world.player_car.hitbox,
             items_active=world.current_map.active,
             world_objects=world.world_box,
         )
@@ -144,20 +161,26 @@ class PhysicsScheduler(FixedRateThread):
     def _advance_ai_checkpoints(self) -> None:
         world = self.world
         for ai_car, state, controller, checkpoints in zip(
-            world.ai_cars, world.ai_states, world.ai_controllers, world.ai_checkpoints,
+            world.ai_cars,
+            world.ai_states,
+            world.ai_controllers,
+            world.ai_checkpoints,
         ):
             if controller.is_in_recovery():
                 continue
             prev_total = state.total_checkpoints
             advance_checkpoints(
-                state, checkpoints,
-                ai_car.physics.car_x, ai_car.physics.car_y,
+                state,
+                checkpoints,
+                ai_car.hitbox,
             )
             if state.total_checkpoints != prev_total:
                 world.cp_pass_counter += 1
                 state.last_pass_order = world.cp_pass_counter
                 world.cached_position_label = _compute_position_label(
-                    world.player_state, world.ai_states, ai_active=True,
+                    world.player_state,
+                    world.ai_states,
+                    ai_active=True,
                 )
 
     def _build_snapshot(self) -> WorldSnapshot:
@@ -169,8 +192,13 @@ class PhysicsScheduler(FixedRateThread):
             camera_angle=world.camera.angle,
             sparks=[
                 SparkSnapshot(
-                    x=s.x, y=s.y, life=s.life, max_life=s.max_life,
-                    r=s.r, g=s.g, b=s.b,
+                    x=s.x,
+                    y=s.y,
+                    life=s.life,
+                    max_life=s.max_life,
+                    r=s.r,
+                    g=s.g,
+                    b=s.b,
                 )
                 for s in world.sparks.sparks
             ],
@@ -209,7 +237,8 @@ class CollisionScheduler(FixedRateThread):
             player_ph = world.player_car.physics
             camera_angle = world.camera.angle
             player_dir_idx = snap_degrees(
-                player_ph.rotation - camera_angle, dirs=world.car_stacker.dirs,
+                player_ph.rotation - camera_angle,
+                dirs=world.car_stacker.dirs,
             )
             player_offset = (
                 cx + int(player_ph.car_x * zoom),
@@ -224,9 +253,13 @@ class CollisionScheduler(FixedRateThread):
                 )
                 ai_inputs.append((dir_idx, offset))
 
-        player_hit = world.collision_detector.border_check(player_dir_idx, player_offset)
+        player_hit = world.collision_detector.border_check(
+            player_dir_idx, player_offset
+        )
         player_normal = (
-            world.collision_detector.estimate_normal(player_offset) if player_hit else None
+            world.collision_detector.estimate_normal(player_offset)
+            if player_hit
+            else None
         )
         ai_results: list[tuple[bool, tuple[float, float] | None]] = []
         for (dir_idx, offset), detector in zip(ai_inputs, world.ai_collisions):
@@ -243,23 +276,12 @@ class CollisionScheduler(FixedRateThread):
 
 
 class AIScheduler(FixedRateThread):
-    def __init__(
-        self,
-        *,
-        world: "World",
-        snapshot_buffer: "SnapshotBuffer",
-        pathfinder_worker: "PathfinderWorker",
-    ) -> None:
+    def __init__(self, *, world: "World", snapshot_buffer: "SnapshotBuffer") -> None:
         super().__init__(world=world, target_hz=30.0, name="kk-ai")
         self.snapshot_buffer = snapshot_buffer
-        self.pathfinder_worker = pathfinder_worker
 
     def _tick(self) -> None:
-        new_paths = self.pathfinder_worker.collect()
         with self.world.lock:
-            for ai_index, path in new_paths.items():
-                if 0 <= ai_index < len(self.world.ai_controllers):
-                    self.world.ai_controllers[ai_index].receive_path(path)
             for controller in self.world.ai_controllers:
                 controller.update()
 
@@ -290,10 +312,13 @@ def _car_snapshot(physics: "PhysicsState") -> CarSnapshot:
 
 
 def _resolve_pair(
-    a: "Car", b: "Car",
-    a_cp: int, b_cp: int,
+    a: "Car",
+    b: "Car",
+    a_cp: int,
+    b_cp: int,
     *,
-    radius: float, radius_sq: float,
+    radius: float,
+    radius_sq: float,
 ) -> None:
     p, q = a.physics, b.physics
     dx = p.car_x - q.car_x
@@ -301,28 +326,29 @@ def _resolve_pair(
     dist_sq = dx * dx + dy * dy
     if dist_sq >= radius_sq:
         return
-    dist = dist_sq ** 0.5 or 0.001
+    dist = dist_sq**0.5 or 0.001
     nx, ny = dx / dist, dy / dist
     overlap = radius - dist
-    if overlap > 0.0:
-        p.car_x += nx * overlap / 2
-        p.car_y += ny * overlap / 2
-        q.car_x -= nx * overlap / 2
-        q.car_y -= ny * overlap / 2
-    impulse = a.handling.car_restitution
-    p.velocity_x += nx * impulse
-    p.velocity_y += ny * impulse
-    q.velocity_x -= nx * impulse
-    q.velocity_y -= ny * impulse
-    if a_cp > b_cp:
-        p.speed *= 0.85
-        q.speed *= 0.45
-    elif b_cp > a_cp:
-        p.speed *= 0.45
-        q.speed *= 0.85
-    else:
-        p.speed *= 0.6
-        q.speed *= 0.6
+    p.car_x += nx * overlap * 0.5
+    p.car_y += ny * overlap * 0.5
+    q.car_x -= nx * overlap * 0.5
+    q.car_y -= ny * overlap * 0.5
+
+    e = a.handling.car_restitution
+    vrel_n = (p.velocity_x - q.velocity_x) * nx + (p.velocity_y - q.velocity_y) * ny
+    if vrel_n >= 0.0:
+        return
+    j = -(1.0 + e) * vrel_n * 0.5
+    p.velocity_x += j * nx
+    p.velocity_y += j * ny
+    q.velocity_x -= j * nx
+    q.velocity_y -= j * ny
+
+    # sync speed so physics doesn't fight the new velocity
+    fwd_ax, fwd_ay = forward_vector(p.rotation)
+    fwd_bx, fwd_by = forward_vector(q.rotation)
+    p.speed = p.velocity_x * fwd_ax + p.velocity_y * fwd_ay
+    q.speed = q.velocity_x * fwd_bx + q.velocity_y * fwd_by
 
 
 def _compute_position_label(player_state, ai_states, *, ai_active: bool) -> str:

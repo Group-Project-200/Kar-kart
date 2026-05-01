@@ -1,24 +1,27 @@
-"""Map (track) picker screen."""
-
 from __future__ import annotations
 
 import pygame
 
 from karkart.constants import Colors, ScreenPositions as sp
+from karkart.ui.help_icon import HelpIcon
 from karkart.paths import PICTURES_DIR, PIXEL_FONT
+from karkart.screens.gameplay import GamePlay
 from karkart.ui import Button, MapCard, MapContainer, SettingsIcon
+from karkart.screens.gameplay import GamePlay
 
 
 class MapScreen:
-    """3x4 grid of map cards with a Back button below."""
 
     def __init__(self, manager) -> None:
         self.manager = manager
 
         self.container = MapContainer(
-            sp.CENTER_X, sp.CCCBOTTOM,
-            sp.WIDTH / 2, sp.HEIGHT / 16 * 9,
-            rows=2, columns=2,
+            sp.CENTER_X,
+            sp.CCCBOTTOM,
+            sp.WIDTH / 2,
+            sp.HEIGHT / 16 * 9,
+            rows=2,
+            columns=2,
         )
         self.back_button = Button("Back", "car", self.manager)
 
@@ -36,15 +39,18 @@ class MapScreen:
         self.background.set_alpha(192)
 
         self.settings_icon = SettingsIcon(self.manager, "map")
+        self.help_icon = HelpIcon(self.manager, "map")
 
     def handle_event(self, event) -> None:
         if event.type != pygame.KEYDOWN:
             return None
 
+        self.help_icon.handle_event(event)
         self.settings_icon.handle_event(event)
         selected_track = self.container.handle_event(event)
         if selected_track is not None:
             self.manager.get_app_data().set_current_map(selected_track)
+            self.manager.add_screen("game", GamePlay(self.manager))
             self.manager.change_screen("game")
 
     def update(self) -> None:
@@ -56,10 +62,11 @@ class MapScreen:
         surface.fill(Colors.BLACK)
         surface.blit(self.background, (0, 0))
 
-        # Instruction banner above the grid.
         font_size = 15
         instr_font = pygame.font.Font(str(PIXEL_FONT), font_size)
-        instr_text = instr_font.render("Select the track you want to race on", True, Colors.WHITE)
+        instr_text = instr_font.render(
+            "Select the track you want to race on", True, Colors.WHITE
+        )
         instr_center = instr_text.get_rect(center=(sp.CENTER_X, sp.XTOP))
 
         instr_width = self.container.get_width()
@@ -73,6 +80,7 @@ class MapScreen:
         pygame.draw.rect(surface, Colors.BLACK, instr_rect, 2, border_radius=8)
         surface.blit(instr_text, instr_center)
 
+        self.help_icon.draw(surface)
         self.container.draw(surface)
         self.back_button.draw(surface)
         self.settings_icon.draw(surface)

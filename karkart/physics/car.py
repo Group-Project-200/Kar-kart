@@ -1,16 +1,9 @@
-"""Car physics: rotation, throttle, drift, boost and velocity integration.
-
-The model is deliberately arcade-style: heading, speed and velocity evolve
-in three loosely-coupled steps per frame, each driven by a few tunable
-constants on :class:`CarHandling`. The runtime state lives on
-:class:`PhysicsState`; the per-frame input snapshot lives on
-:class:`ControlState`.
-"""
-
 from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
+
+import pygame
 
 from karkart.helpers import (
     blend_toward,
@@ -19,18 +12,15 @@ from karkart.helpers import (
     move_toward,
     snap_angle,
 )
+from karkart.physics.collision import apply_wall_bounce, push_out_of_wall
 
-
-# --------------------------------------------------------------------------- #
-# Tiny pure helpers                                                           #
-# --------------------------------------------------------------------------- #
 
 def _update_steer_hold(
     steer_input: int,
     previous_steer_input: int,
     steer_hold_frames: int,
 ) -> tuple[int, int]:
-    """Track how many frames the same steering direction has been held."""
+
     if steer_input == 0:
         return 0, steer_input
     if steer_input != previous_steer_input:
@@ -43,7 +33,7 @@ def _resolve_drift_direction(
     left_pressed: bool,
     right_pressed: bool,
 ) -> int:
-    """Pick a drift direction from the current steering state (+1 left, -1 right)."""
+
     if left_pressed and not right_pressed:
         return 1
     if right_pressed and not left_pressed:
@@ -56,13 +46,16 @@ def _resolve_drift_direction(
 
 
 def _update_position(
-    car_x: float, car_y: float, velocity_x: float, velocity_y: float,
+    car_x: float,
+    car_y: float,
+    velocity_x: float,
+    velocity_y: float,
 ) -> tuple[float, float]:
     return car_x + velocity_x, car_y + velocity_y
 
 
 def _update_hop(physics: "PhysicsState", handling: "CarHandling") -> None:
-    """Apply one frame of hop physics (gravity + landing clamp)."""
+
     if physics.car_z <= 0.0 and physics.velocity_z <= 0.0:
         return
     physics.velocity_z += handling.hop_gravity
@@ -71,13 +64,8 @@ def _update_hop(physics: "PhysicsState", handling: "CarHandling") -> None:
         physics.velocity_z = 0.0
 
 
-# --------------------------------------------------------------------------- #
-# Immutable tuning bundles                                                    #
-# --------------------------------------------------------------------------- #
-
 @dataclass(frozen=True, slots=True)
 class BoostTier:
-    """A single tier of drift-release boost (duration + acceleration + cap)."""
 
     duration_frames: int
     acceleration: float
@@ -86,9 +74,7 @@ class BoostTier:
 
 @dataclass(frozen=True, slots=True)
 class CarHandling:
-    """All the numeric constants that define how a car handles."""
 
-    # Rotation response (yaw): initial bite -> plateau -> late growth.
     plateau_acceleration: float = 0.4
     turn_damping: float = 0.2
     max_turn_rate: float = 2.3
@@ -100,10 +86,9 @@ class CarHandling:
     plateau_turn_rate: float = 1.6
     turn_direction_change_damping: float = 0.35
 
-    # Speed and steering response.
     throttle_acceleration: float = 0.05
-    coast_deceleration: float = 0.008
-    brake_deceleration: float = 0.14
+    coast_deceleration: float = 0.004
+    brake_deceleration: float = 0.09
     reverse_acceleration: float = 0.04
     max_speed: float = 2.5
     max_reverse_speed: float = 1.0
@@ -111,33 +96,29 @@ class CarHandling:
     turn_speed_penalty: float = 0.01
     min_turn_drag: float = 0.03
 
-    # Coasting "speed hold": keeps momentum at medium speed unless turning sharply.
-    speed_hold_floor_value: float = 1.5       # Held minimum speed while hold is active.
-    speed_hold_activation_min_value: float = 1.3  # Min speed required to activate hold.
-    hold_cancel_turn_rate: float = 2.3         # Turning faster than this disables hold.
+    speed_hold_floor_value: float = 1.5
+    speed_hold_activation_min_value: float = 1.3
+    hold_cancel_turn_rate: float = 1.6
+    turn_top_speed_falloff: float = 0.35
 
-    # Drift hop (visual jump on drift initiation).
-    hop_velocity: float = 0.35      # Initial upward velocity when hop starts.
-    hop_gravity: float = -0.045     # Per-frame downward pull.
-    hop_pixel_scale: float = 12.0   # Screen pixels of lift per car_z unit at render res.
+    hop_velocity: float = 0.35
+    hop_gravity: float = -0.045
+    hop_pixel_scale: float = 12.0
 
-    # Overspeed braking curve (extra deceleration when above max forward speed).
     overspeed_near_threshold: float = 0.75
     overspeed_mid_threshold: float = 1.25
-    overspeed_deceleration_near: float = 0.008
-    overspeed_deceleration_mid: float = 0.015
-    overspeed_deceleration_far: float = 0.07
+    overspeed_deceleration_near: float = 0.006
+    overspeed_deceleration_mid: float = 0.011
+    overspeed_deceleration_far: float = 0.05
 
-    # Velocity blending (slip/grip) and rest thresholds.
     max_slip: float = 0.95
-    speed_slip_weight: float = 0.35   # Slip added from speed ratio.
-    turn_slip_weight: float = 0.2     # Slip added from turn-rate ratio.
+    speed_slip_weight: float = 0.35
+    turn_slip_weight: float = 0.2
     coast_velocity_decay: float = 0.01
     overspeed_coast_velocity_decay: float = 0.8
     stop_speed_epsilon: float = 1e-6
     stop_velocity_epsilon: float = 1e-3
 
-    # Drift lifecycle and release behaviour.
     default_slide_factor: float = 0.4
     drift_charge_short_frames: int = 40
     drift_charge_long_frames: int = 70
@@ -151,21 +132,21 @@ class CarHandling:
     drift_release_countersteer_degrees: float = 10.0
     drift_release_countersteer_turn_rate: float = 0.8
 
-    # Collision elasticity (0 = perfectly inelastic, 1 = perfectly elastic).
-    # Bumped to 0.7 so wall hits preserve a visibly bouncy component of the
-    # incoming speed rather than just killing momentum.
-    wall_restitution: float = 0.7
+    wall_restitution: float = 1.5
     car_restitution: float = 0.65
+    wall_stun_frames: int = 34
+    wall_slide_decay: float = 0.97
 
-    # Drift reward boost tiers.
     short_boost: BoostTier = field(
-        default_factory=lambda: BoostTier(duration_frames=3, acceleration=0.45, max_speed_delta=1.25),
+        default_factory=lambda: BoostTier(
+            duration_frames=3, acceleration=0.45, max_speed_delta=1.25
+        ),
     )
     long_boost: BoostTier = field(
-        default_factory=lambda: BoostTier(duration_frames=5, acceleration=0.9, max_speed_delta=2.5),
+        default_factory=lambda: BoostTier(
+            duration_frames=5, acceleration=0.9, max_speed_delta=2.5
+        ),
     )
-
-    # Derived convenience accessors ----------------------------------------- #
 
     @property
     def plateau_end_frame(self) -> int:
@@ -187,8 +168,10 @@ class CarHandling:
     def drift_min_speed(self) -> float:
         return self.min_steer_speed
 
-    def overspeed_deceleration_step(self, speed: float, max_forward_speed: float) -> float:
-        """Return the deceleration step to apply when above *max_forward_speed*."""
+    def overspeed_deceleration_step(
+        self, speed: float, max_forward_speed: float
+    ) -> float:
+
         overspeed = speed - max_forward_speed
         if overspeed <= 0.0:
             return 0.0
@@ -204,7 +187,7 @@ class CarHandling:
         return self.coast_velocity_decay
 
     def boost_for_charge(self, drift_charge_frames: int) -> BoostTier | None:
-        """Pick a boost tier earned by the length of the drift charge."""
+
         if drift_charge_frames >= self.drift_charge_long_frames:
             return self.long_boost
         if drift_charge_frames >= self.drift_charge_short_frames:
@@ -212,73 +195,23 @@ class CarHandling:
         return None
 
 
-# --------------------------------------------------------------------------- #
-# Per-car-model handling profiles                                             #
-# --------------------------------------------------------------------------- #
-#
-# Each playable sprite stack has its own tuning so the four kart models
-# actually feel different rather than being cosmetic reskins. Keys match the
-# sprite folder name under ``resources/render``.
-#
-# Design: car_01 is the balanced baseline. car_02 trades grip for top speed,
-# car_03 trades top speed for punchy acceleration, and car_04 is the nimble
-# kart with the sharpest turn rate at the cost of reduced max speed.
-
-CAR_HANDLING_PROFILES: dict[str, CarHandling] = {
-    "car_01": CarHandling(),
-    "car_02": CarHandling(
-        max_speed=2.75,
-        throttle_acceleration=0.045,
-        max_turn_rate=2.1,
-        default_slide_factor=0.45,
-    ),
-    "car_03": CarHandling(
-        max_speed=2.3,
-        throttle_acceleration=0.065,
-        reverse_acceleration=0.05,
-        max_turn_rate=2.25,
-    ),
-    "car_04": CarHandling(
-        max_speed=2.35,
-        throttle_acceleration=0.05,
-        max_turn_rate=2.55,
-        plateau_turn_rate=1.8,
-        default_slide_factor=0.35,
-    ),
-}
-
-
-def get_handling_for(car_name: str) -> CarHandling:
-    """Return the tuning profile for *car_name*, falling back to defaults."""
-    return CAR_HANDLING_PROFILES.get(car_name, CarHandling())
-
-
-# --------------------------------------------------------------------------- #
-# Runtime mutable state                                                       #
-# --------------------------------------------------------------------------- #
-
 @dataclass(slots=True)
 class PhysicsState:
-    """Everything that changes frame-to-frame for a single car."""
 
-    # Orientation / steering runtime.
     rotation: float = 0.0
     turn_rate: float = 0.0
     steer_hold_frames: int = 0
     previous_steer_input: int = 0
 
-    # Linear movement runtime.
     speed: float = 0.0
     velocity_x: float = 0.0
     velocity_y: float = 0.0
     car_x: float = 0.0
     car_y: float = 0.0
 
-    # Hop (visual jump on drift start).
-    car_z: float = 0.0       # Height above ground (render units).
-    velocity_z: float = 0.0  # Vertical velocity (positive = up).
+    car_z: float = 0.0
+    velocity_z: float = 0.0
 
-    # Drift / boost runtime.
     drift_direction: int = 0
     drift_skew_degrees: float = 0.0
     drift_charge_frames: int = 0
@@ -287,11 +220,11 @@ class PhysicsState:
     boost_acceleration: float = 0.0
     boost_max_speed: float = 0.0
     drift_active: bool = False
+    wall_stun_frames: int = 0
 
 
 @dataclass(slots=True)
 class ControlState:
-    """One frame of raw input (filled by the input handler before stepping)."""
 
     steer_input: int = 0
     left_pressed: bool = False
@@ -302,38 +235,34 @@ class ControlState:
     min_speed_request: float = 0.0
 
 
-# --------------------------------------------------------------------------- #
-# The Car                                                                     #
-# --------------------------------------------------------------------------- #
-
 class Car:
-    """Bundles handling tuning, runtime physics, and current input for one car."""
 
     def __init__(self, handling: "CarHandling | None" = None) -> None:
-        # CarHandling is frozen, so it's safe to share a single instance
-        # across every car on the grid — and cheaper than copying it. Pass
-        # the player's handling to opponents so they inherit identical tuning.
+
         self.handling = handling if handling is not None else CarHandling()
         self.physics = PhysicsState()
         self.controls = ControlState()
 
-        # Collision rollback state: remember the last two good positions so a
-        # collision can nudge the car back without visible snapping.
         self.last_safe_x: float | None = None
         self.last_safe_y: float | None = None
         self.last_safe_x2: float | None = None
         self.last_safe_y2: float | None = None
         self.collision_results: bool = False
-        # Estimated outward wall normal at the collision point, in map-space.
-        # Filled by the gameplay collision step; cleared on the next clean frame.
+
         self.collision_normal: tuple[float, float] | None = None
 
-    # -- Drift lifecycle ---------------------------------------------------- #
+        self.hitbox: pygame.Rect = pygame.Rect(0, 0, 20, 20)
+
+    def sync_hitbox(self) -> None:
+        self.hitbox.center = (int(self.physics.car_x), int(self.physics.car_y))
 
     def _drift_tuning(
-        self, left_pressed: bool, right_pressed: bool, drift_direction: int,
+        self,
+        left_pressed: bool,
+        right_pressed: bool,
+        drift_direction: int,
     ) -> tuple[float, float]:
-        """Pick (steer_strength, drift_skew_degrees) based on the active drift modifier."""
+
         if drift_direction > 0:
             sharper = left_pressed and not right_pressed
             slower = right_pressed and not left_pressed
@@ -342,10 +271,19 @@ class Car:
             slower = left_pressed and not right_pressed
 
         if sharper:
-            return self.handling.drift_sharp_steer_strength, self.handling.drift_sharp_skew_degrees
+            return (
+                self.handling.drift_sharp_steer_strength,
+                self.handling.drift_sharp_skew_degrees,
+            )
         if slower:
-            return self.handling.drift_slow_steer_strength, self.handling.drift_slow_skew_degrees
-        return self.handling.drift_base_steer_strength, self.handling.drift_base_skew_degrees
+            return (
+                self.handling.drift_slow_steer_strength,
+                self.handling.drift_slow_skew_degrees,
+            )
+        return (
+            self.handling.drift_base_steer_strength,
+            self.handling.drift_base_skew_degrees,
+        )
 
     def _try_start_drift(
         self,
@@ -355,12 +293,18 @@ class Car:
         right_pressed: bool,
         drift_input: bool,
     ) -> None:
-        if (self.physics.drift_active or not drift_input
-                or self.physics.speed < self.handling.drift_min_speed
-                or self.physics.car_z > 0.0 or self.physics.velocity_z > 0.0):
+        if (
+            self.physics.drift_active
+            or not drift_input
+            or self.physics.speed < self.handling.drift_min_speed
+            or self.physics.car_z > 0.0
+            or self.physics.velocity_z > 0.0
+        ):
             return
 
-        drift_direction = _resolve_drift_direction(steer_input, left_pressed, right_pressed)
+        drift_direction = _resolve_drift_direction(
+            steer_input, left_pressed, right_pressed
+        )
         if not drift_direction:
             return
 
@@ -385,18 +329,18 @@ class Car:
         if released:
             self._apply_drift_release_boost()
         if released and self.physics.drift_direction:
-            # Snap the car nose opposite the drift so it visibly counter-steers on release.
+
             self.physics.rotation -= (
-                self.physics.drift_direction * self.handling.drift_release_countersteer_degrees
+                self.physics.drift_direction
+                * self.handling.drift_release_countersteer_degrees
             )
             self.physics.turn_rate = (
-                -self.physics.drift_direction * self.handling.drift_release_countersteer_turn_rate
+                -self.physics.drift_direction
+                * self.handling.drift_release_countersteer_turn_rate
             )
 
         self.physics.drift_active = False
         self.physics.drift_charge_frames = 0
-
-    # -- Per-frame sub-steps ------------------------------------------------ #
 
     def _resolve_steering_and_skew(
         self,
@@ -406,29 +350,33 @@ class Car:
         right_pressed: bool,
         handling: CarHandling,
     ) -> tuple[int, float]:
-        """Compute the steering signal and its strength for this frame."""
+
         if self.physics.drift_active:
             self.physics.drift_charge_frames += 1
             steer_strength, drift_skew = self._drift_tuning(
-                left_pressed, right_pressed, self.physics.drift_direction,
+                left_pressed,
+                right_pressed,
+                self.physics.drift_direction,
             )
             self.physics.drift_skew_degrees = drift_skew
             return self.physics.drift_direction, steer_strength
 
         self.physics.drift_skew_degrees = move_toward(
-            self.physics.drift_skew_degrees, 0.0, self.handling.drift_unskew_step_degrees,
+            self.physics.drift_skew_degrees,
+            0.0,
+            self.handling.drift_unskew_step_degrees,
         )
         if self.physics.drift_skew_degrees == 0.0:
             self.physics.drift_direction = 0
 
         steer_for_physics = self.filter_steer_input(steer_input, self.physics.speed)
-        # Reverse steering is mirrored so A/D feel correct while backing up.
+
         if self.physics.speed < -handling.min_steer_speed:
             steer_for_physics *= -1
         return steer_for_physics, 1.0
 
     def filter_steer_input(self, steer_input: int, speed: float) -> int:
-        """Clamp *steer_input* to {-1, 0, 1} and ignore it at very low speed."""
+
         if abs(speed) < self.handling.min_steer_speed:
             return 0
         steer = int(steer_input)
@@ -448,25 +396,35 @@ class Car:
         steer_strength: float = 1.0,
         snap_step_degrees: float | None = None,
     ) -> tuple[float, float]:
-        """Advance the heading and turn rate by one frame."""
+
         steer = int(steer_input)
         steer_strength = clamp(steer_strength, 0.0, 2.0)
         max_turn_rate = self.handling.max_turn_rate * clamp(steer_strength, 0.35, 1.5)
 
         if steer:
-            # Damp when flipping direction so countersteer doesn't spike.
+
             if turn_rate * steer < 0:
-                turn_rate = move_toward(turn_rate, 0.0, self.handling.turn_direction_change_damping)
+                turn_rate = move_toward(
+                    turn_rate, 0.0, self.handling.turn_direction_change_damping
+                )
 
             if steer_hold_frames <= self.handling.initial_phase_frames:
-                turn_rate += steer * self.handling.initial_turn_acceleration * steer_strength
+                turn_rate += (
+                    steer * self.handling.initial_turn_acceleration * steer_strength
+                )
             elif steer_hold_frames <= self.handling.plateau_end_frame:
-                target_turn_rate = steer * self.handling.plateau_turn_rate * steer_strength
+                target_turn_rate = (
+                    steer * self.handling.plateau_turn_rate * steer_strength
+                )
                 turn_rate = move_toward(
-                    turn_rate, target_turn_rate, self.handling.plateau_acceleration * steer_strength,
+                    turn_rate,
+                    target_turn_rate,
+                    self.handling.plateau_acceleration * steer_strength,
                 )
             else:
-                turn_rate += steer * self.handling.late_turn_acceleration * steer_strength
+                turn_rate += (
+                    steer * self.handling.late_turn_acceleration * steer_strength
+                )
 
             turn_rate = clamp(turn_rate, -max_turn_rate, max_turn_rate)
         else:
@@ -474,7 +432,6 @@ class Car:
 
         rotation += turn_rate
 
-        # At rest, optionally snap to the sprite stack's discrete heading grid.
         if not steer and abs(turn_rate) <= self.handling.turn_stop_epsilon:
             turn_rate = 0.0
             if snap_step_degrees is not None:
@@ -491,7 +448,7 @@ class Car:
         *,
         max_forward_speed: float | None = None,
     ) -> float:
-        """Advance scalar speed by one frame (throttle / brake / coast / hold)."""
+
         if max_forward_speed is None:
             max_forward_speed = self.handling.max_speed
 
@@ -499,40 +456,71 @@ class Car:
         brake = down_input and not up_input
         abs_turn = abs(turn_rate)
         sharp_turn = abs_turn >= self.handling.hold_cancel_turn_rate
+
+        turn_ratio = (
+            min(1.0, abs_turn / self.handling.max_turn_rate)
+            if self.handling.max_turn_rate
+            else 0.0
+        )
+        effective_cap = max_forward_speed * (
+            1.0 - self.handling.turn_top_speed_falloff * turn_ratio
+        )
+        effective_floor = min(self.handling.hold_floor, effective_cap)
+
         hold_enabled = (
             not brake
             and not sharp_turn
-            and (speed >= self.handling.hold_floor or (throttle and speed >= self.handling.hold_activation_min))
+            and (
+                speed >= effective_floor
+                or (throttle and speed >= self.handling.hold_activation_min)
+            )
         )
 
         if throttle:
             if speed < 0.0:
                 speed = min(speed + self.handling.brake_deceleration, 0.0)
-            if speed < max_forward_speed:
-                speed = min(speed + self.handling.throttle_acceleration, max_forward_speed)
-            elif speed > max_forward_speed:
-                overspeed_step = self.handling.overspeed_deceleration_step(speed, max_forward_speed)
-                speed = move_toward(speed, max_forward_speed, max(self.handling.coast_deceleration, overspeed_step))
+            if speed < effective_cap:
+                speed = min(
+                    speed + self.handling.throttle_acceleration, effective_cap
+                )
+            elif speed > effective_cap:
+                overspeed_step = self.handling.overspeed_deceleration_step(
+                    speed, effective_cap
+                )
+                speed = move_toward(
+                    speed,
+                    effective_cap,
+                    max(self.handling.coast_deceleration, overspeed_step),
+                )
         elif brake:
             if speed > 0.0:
                 speed = max(speed - self.handling.brake_deceleration, 0.0)
             else:
-                speed = max(speed - self.handling.reverse_acceleration, -self.handling.max_reverse_speed)
+                speed = max(
+                    speed - self.handling.reverse_acceleration,
+                    -self.handling.max_reverse_speed,
+                )
         else:
-            coast_target = self.handling.hold_floor if hold_enabled else 0.0
+            coast_target = effective_floor if hold_enabled else 0.0
             speed = move_toward(speed, coast_target, self.handling.coast_deceleration)
 
         turn_drag = abs_turn * self.handling.turn_speed_penalty
         if turn_drag > self.handling.min_turn_drag:
-            drag_target = self.handling.hold_floor if hold_enabled else 0.0
+            drag_target = effective_floor if hold_enabled else 0.0
             speed = move_toward(speed, drag_target, turn_drag)
 
-        if not throttle and speed > max_forward_speed:
-            overspeed_step = self.handling.overspeed_deceleration_step(speed, max_forward_speed)
-            speed = move_toward(speed, max_forward_speed, max(self.handling.coast_deceleration, overspeed_step))
+        if not throttle and speed > effective_cap:
+            overspeed_step = self.handling.overspeed_deceleration_step(
+                speed, effective_cap
+            )
+            speed = move_toward(
+                speed,
+                effective_cap,
+                max(self.handling.coast_deceleration, overspeed_step),
+            )
 
         if throttle and not sharp_turn and speed >= self.handling.hold_activation_min:
-            speed = max(speed, self.handling.hold_floor)
+            speed = max(speed, effective_floor)
 
         return speed
 
@@ -548,7 +536,7 @@ class Car:
         drift_direction: int = 0,
         drift_skew_degrees: float = 0.0,
     ) -> tuple[float, float]:
-        """Blend current velocity toward the desired heading with slip-based grip."""
+
         if slide_factor is None:
             slide_factor = self.handling.default_slide_factor
 
@@ -558,6 +546,7 @@ class Car:
         target_vy = forward_y * speed
 
         if drift_direction:
+            slide_factor = max(slide_factor - 0.08, 0.0)
             drift_dir = 1 if drift_direction > 0 else -1
             skew_degrees = clamp(drift_skew_degrees, 0.0, 45.0)
             if skew_degrees:
@@ -565,10 +554,22 @@ class Car:
                 target_vx = drift_x * speed
                 target_vy = drift_y * speed
 
-        speed_ratio = abs_speed / self.handling.max_reference_speed if self.handling.max_reference_speed else 0.0
+        speed_ratio = (
+            abs_speed / self.handling.max_reference_speed
+            if self.handling.max_reference_speed
+            else 0.0
+        )
         speed_ratio = clamp(speed_ratio, 0.0, 1.0)
-        turn_ratio = abs(turn_rate) / self.handling.max_turn_rate if self.handling.max_turn_rate else 0.0
-        slip = slide_factor + (speed_ratio * self.handling.speed_slip_weight) + (turn_ratio * self.handling.turn_slip_weight)
+        turn_ratio = (
+            abs(turn_rate) / self.handling.max_turn_rate
+            if self.handling.max_turn_rate
+            else 0.0
+        )
+        slip = (
+            slide_factor
+            + (speed_ratio * self.handling.speed_slip_weight)
+            + (turn_ratio * self.handling.turn_slip_weight)
+        )
         slip = clamp(slip, 0.0, self.handling.max_slip)
         grip = 1.0 - slip
 
@@ -590,8 +591,6 @@ class Car:
 
         return velocity_x, velocity_y
 
-    # -- Top-level per-frame step ------------------------------------------ #
-
     def step_physics(
         self,
         *,
@@ -604,46 +603,72 @@ class Car:
         snap_step_degrees: float | None = None,
         slide_factor: float | None = None,
     ) -> PhysicsState:
-        """Run one frame's worth of physics and return the updated state."""
-        # On collision, rewind to the second-most-recent safe pose and bounce
-        # off the wall. If the collision step sampled a real outward wall
-        # normal from the map mask, reflect with that — this preserves the
-        # tangential component of velocity, giving a proper angle-of-incidence
-        # = angle-of-reflection glance. Otherwise fall back to negating the
-        # approach vector (pure reversal). Reflection uses v' = v - 2(v·n)n,
-        # scaled by :attr:`wall_restitution`.
-        if self.collision_results and self.last_safe_x2 is not None:
-            self.physics.car_x = self.last_safe_x2
-            self.physics.car_y = self.last_safe_y2
-            vx, vy = self.physics.velocity_x, self.physics.velocity_y
 
+        if self.physics.wall_stun_frames > 0:
+            if self.collision_results and self.collision_normal is not None:
+                # hit another wall mid-slide — re-bounce instead of zeroing speed
+                vx, vy = self.physics.velocity_x, self.physics.velocity_y
+                self.physics.car_x, self.physics.car_y = push_out_of_wall(
+                    self.physics.car_x,
+                    self.physics.car_y,
+                    self.collision_normal,
+                )
+                self.physics.velocity_x, self.physics.velocity_y = apply_wall_bounce(
+                    vx,
+                    vy,
+                    self.collision_normal,
+                    self.handling.wall_restitution,
+                )
+                fwd_x, fwd_y = forward_vector(self.physics.rotation)
+                self.physics.speed = (
+                    self.physics.velocity_x * fwd_x
+                    + self.physics.velocity_y * fwd_y
+                )
+                self.physics.wall_stun_frames = self.handling.wall_stun_frames
+                self.collision_normal = None
+                return self.physics
+            self.physics.wall_stun_frames -= 1
+            self.last_safe_x2 = self.last_safe_x
+            self.last_safe_y2 = self.last_safe_y
+            self.last_safe_x = self.physics.car_x
+            self.last_safe_y = self.physics.car_y
+            self.physics.car_x += self.physics.velocity_x
+            self.physics.car_y += self.physics.velocity_y
+            decay = self.handling.wall_slide_decay
+            self.physics.velocity_x *= decay
+            self.physics.velocity_y *= decay
+            self.physics.speed *= decay
+            _update_hop(self.physics, self.handling)
+            return self.physics
+
+        if self.collision_results:
+            vx, vy = self.physics.velocity_x, self.physics.velocity_y
             if self.collision_normal is not None:
-                nx, ny = self.collision_normal
+                normal = self.collision_normal
             else:
                 mag = math.hypot(vx, vy) or 1.0
-                nx, ny = -vx / mag, -vy / mag
+                normal = (-vx / mag, -vy / mag)
 
-            dot = vx * nx + vy * ny
-            restitution = self.handling.wall_restitution
-            # Only reflect if the car is actually moving *into* the wall
-            # (dot < 0 against an outward normal). If it's already moving
-            # away, leave velocity alone so the car can drive free.
-            if dot < 0.0:
-                self.physics.velocity_x = (vx - 2 * dot * nx) * restitution
-                self.physics.velocity_y = (vy - 2 * dot * ny) * restitution
-            else:
-                self.physics.velocity_x = vx * restitution
-                self.physics.velocity_y = vy * restitution
-
-            # Scalar speed is how fast the car "wants" to go along its heading.
-            # Kill most of it on a wall hit so the driver has to reaccelerate,
-            # but keep a small remainder so reflection velocity isn't
-            # immediately overridden by the grip blend in update_velocity.
-            self.physics.speed *= -restitution * 0.5
+            # push just clear of the wall surface, then slide away with reflected velocity
+            self.physics.car_x, self.physics.car_y = push_out_of_wall(
+                self.physics.car_x,
+                self.physics.car_y,
+                normal,
+            )
+            self.physics.velocity_x, self.physics.velocity_y = apply_wall_bounce(
+                vx,
+                vy,
+                normal,
+                self.handling.wall_restitution,
+            )
+            fwd_x, fwd_y = forward_vector(self.physics.rotation)
+            self.physics.speed = (
+                self.physics.velocity_x * fwd_x + self.physics.velocity_y * fwd_y
+            )
+            self.physics.wall_stun_frames = self.handling.wall_stun_frames
             self.collision_normal = None
             return self.physics
 
-        # Frame order: drift self-check -> steering -> rotation -> speed -> velocity -> position.
         self._try_start_drift(
             steer_input=steer_input,
             left_pressed=left_pressed,
@@ -652,7 +677,10 @@ class Car:
         )
 
         drift_released = self.physics.drift_active and not drift_input
-        drift_canceled = self.physics.drift_active and self.physics.speed < self.handling.drift_min_speed
+        drift_canceled = (
+            self.physics.drift_active
+            and self.physics.speed < self.handling.drift_min_speed
+        )
         if drift_released or drift_canceled:
             self._stop_drift(released=drift_released)
 
@@ -663,8 +691,12 @@ class Car:
             handling=self.handling,
         )
 
-        self.physics.steer_hold_frames, self.physics.previous_steer_input = _update_steer_hold(
-            steer_for_physics, self.physics.previous_steer_input, self.physics.steer_hold_frames,
+        self.physics.steer_hold_frames, self.physics.previous_steer_input = (
+            _update_steer_hold(
+                steer_for_physics,
+                self.physics.previous_steer_input,
+                self.physics.steer_hold_frames,
+            )
         )
 
         self.physics.rotation, self.physics.turn_rate = self.update_rotation(
@@ -677,7 +709,9 @@ class Car:
         )
 
         forward_speed_cap = (
-            self.physics.boost_max_speed if self.physics.boost_frames > 0 else self.handling.max_speed
+            self.physics.boost_max_speed
+            if self.physics.boost_frames > 0
+            else self.handling.max_speed
         )
         self.physics.speed = self.update_speed(
             self.physics.speed,
@@ -689,7 +723,8 @@ class Car:
 
         if self.physics.boost_frames > 0:
             self.physics.speed = min(
-                self.physics.speed + self.physics.boost_acceleration, self.physics.boost_max_speed,
+                self.physics.speed + self.physics.boost_acceleration,
+                self.physics.boost_max_speed,
             )
             self.physics.boost_frames -= 1
             if self.physics.boost_frames == 0:
@@ -711,15 +746,16 @@ class Car:
             drift_skew_degrees=self.physics.drift_skew_degrees,
         )
 
-        # Two-frame rolling "last safe" positions for collision rollback.
         self.last_safe_x2 = self.last_safe_x
         self.last_safe_y2 = self.last_safe_y
         self.last_safe_x = self.physics.car_x
         self.last_safe_y = self.physics.car_y
 
         self.physics.car_x, self.physics.car_y = _update_position(
-            self.physics.car_x, self.physics.car_y,
-            self.physics.velocity_x, self.physics.velocity_y,
+            self.physics.car_x,
+            self.physics.car_y,
+            self.physics.velocity_x,
+            self.physics.velocity_y,
         )
 
         _update_hop(self.physics, self.handling)
@@ -731,7 +767,7 @@ class Car:
         snap_step_degrees: float | None = None,
         slide_factor: float | None = None,
     ) -> PhysicsState:
-        """Step using the currently buffered :class:`ControlState`."""
+
         return self.step_physics(
             steer_input=self.controls.steer_input,
             left_pressed=self.controls.left_pressed,
@@ -742,3 +778,10 @@ class Car:
             snap_step_degrees=snap_step_degrees,
             slide_factor=slide_factor,
         )
+
+
+from karkart.physics.car_profiles import (  # noqa: E402
+    CAR_HANDLING_PROFILES,
+    get_handling_for,
+    randomize_for_ai,
+)

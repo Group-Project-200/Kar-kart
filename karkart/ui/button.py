@@ -1,5 +1,3 @@
-"""Reusable button widgets used across multiple screens."""
-
 from __future__ import annotations
 
 import pygame
@@ -10,7 +8,6 @@ from karkart.ui.ui_object import UIObject
 
 
 class Button(UIObject):
-    """Fixed-position pixel-font button that auto-sizes around its text."""
 
     def __init__(self, text: str, state: str, manager) -> None:
         self.text = text
@@ -50,12 +47,18 @@ class Button(UIObject):
 
 
 class ColorButton(Button):
-    """:class:`Button` variant with custom idle/hover colours and keyboard focus."""
 
     def __init__(
-        self, x: float, y: float, width: float, height: float,
-        text: str, state: str, manager,
-        color_normal: tuple[int, int, int], color_hover: tuple[int, int, int],
+        self,
+        x: float,
+        y: float,
+        width: float,
+        height: float,
+        text: str,
+        state: str,
+        manager,
+        color_normal: tuple[int, int, int],
+        color_hover: tuple[int, int, int],
     ) -> None:
         super().__init__(x, y, width, height, text, state, manager)
         self.color_normal = color_normal
@@ -68,9 +71,9 @@ class ColorButton(Button):
                 self.manager.change_screen(self.state)
 
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_s:          # Toggle keyboard hover.
+            if event.key == pygame.K_s:
                 self.keyboard_hovered = not self.keyboard_hovered
-            elif event.key == pygame.K_RETURN:   # Enter confirms when hovered.
+            elif event.key == pygame.K_RETURN:
                 if self.keyboard_hovered and self.state:
                     self.manager.change_screen(self.state)
 

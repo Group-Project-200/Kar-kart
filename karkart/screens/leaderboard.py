@@ -134,7 +134,11 @@ class LeaderboardScreen:
         rows.append(
             {
                 "name": "Player 1",
-                "score": self._format_time(player_time) if player_time is not None else "FINISHED",
+                "score": (
+                    self._format_time(player_time)
+                    if player_time is not None
+                    else "FINISHED"
+                ),
                 "metric": (
                     player_state.total_checkpoints,
                     -getattr(player_state, "last_pass_order", 0),
@@ -143,7 +147,11 @@ class LeaderboardScreen:
             }
         )
 
-        total_checkpoints = len(game.current_map.checkpoints_list) if hasattr(game, "current_map") else 0
+        total_checkpoints = (
+            len(game.current_map.checkpoints_list)
+            if hasattr(game, "current_map")
+            else 0
+        )
 
         for i, state in enumerate(getattr(game, "ai_states", [])):
             if state.current_lap > 3:
@@ -190,7 +198,12 @@ class LeaderboardScreen:
             return current_race_rows
         return self._build_history_rows()
 
-    def _draw_slot_highlight(self, surface: pygame.Surface, rect: pygame.Rect, color: tuple[int, int, int, int]) -> None:
+    def _draw_slot_highlight(
+        self,
+        surface: pygame.Surface,
+        rect: pygame.Rect,
+        color: tuple[int, int, int, int],
+    ) -> None:
         overlay = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
         overlay.fill(color)
         surface.blit(overlay, rect.topleft)
@@ -209,21 +222,29 @@ class LeaderboardScreen:
 
         rank_text = self.rank_font.render(str(row_index + 1), False, (40, 28, 18))
 
-        name_text_value = self._fit_text(row["name"], self.name_font, boxes["name"].width - 18)
+        name_text_value = self._fit_text(
+            row["name"], self.name_font, boxes["name"].width - 18
+        )
         name_text = self.name_font.render(name_text_value, False, (40, 28, 18))
 
-        score_text_value = self._fit_text(row["score"], self.score_font, boxes["score"].width - 16)
+        score_text_value = self._fit_text(
+            row["score"], self.score_font, boxes["score"].width - 16
+        )
         score_text = self.score_font.render(score_text_value, False, (40, 28, 18))
 
         rank_rect = rank_text.get_rect(center=boxes["rank"].center)
-        name_rect = name_text.get_rect(midleft=(boxes["name"].x + 12, boxes["name"].centery))
+        name_rect = name_text.get_rect(
+            midleft=(boxes["name"].x + 12, boxes["name"].centery)
+        )
         score_rect = score_text.get_rect(center=boxes["score"].center)
 
         surface.blit(rank_text, rank_rect)
         surface.blit(name_text, name_rect)
         surface.blit(score_text, score_rect)
 
-    def _draw_button(self, surface: pygame.Surface, rect: pygame.Rect, text: str, selected: bool) -> None:
+    def _draw_button(
+        self, surface: pygame.Surface, rect: pygame.Rect, text: str, selected: bool
+    ) -> None:
         mouse_over = rect.collidepoint(pygame.mouse.get_pos())
 
         if selected:
@@ -289,7 +310,11 @@ class LeaderboardScreen:
         for i, row in enumerate(rows[:5]):
             self._draw_row(surface, row, i)
 
-        self._draw_button(surface, self.play_again_rect, "PLAY AGAIN", self.selected_button == 0)
-        self._draw_button(surface, self.main_menu_rect, "MAIN MENU", self.selected_button == 1)
+        self._draw_button(
+            surface, self.play_again_rect, "PLAY AGAIN", self.selected_button == 0
+        )
+        self._draw_button(
+            surface, self.main_menu_rect, "MAIN MENU", self.selected_button == 1
+        )
 
         pygame.display.set_caption("Kar Kart - Leaderboard")

@@ -1,12 +1,9 @@
-"""Constants shared across the game: colours, screen geometry, and key bindings."""
-
 from __future__ import annotations
 
 import pygame
 
 
 class Colors:
-    """Named RGB colours used by the UI."""
 
     BLACK = (0, 0, 0)
     WHITE = (255, 255, 255)
@@ -28,11 +25,6 @@ class Colors:
 
 
 class ScreenPositions:
-    """Screen dimensions and a 16x16 grid of named anchor points.
-
-    ``W`` and ``H`` are aliases for ``WIDTH`` and ``HEIGHT``. The horizontal
-    anchors split the screen width into 16 columns, and likewise for height.
-    """
 
     WIDTH = 1280
     HEIGHT = 720
@@ -42,7 +34,6 @@ class ScreenPositions:
 
     AREA = W * H
 
-    # Horizontal anchors (left to right).
     XXXLEFT = W / 16
     XXLEFT = W / 8
     XLEFT = W / 16 * 3
@@ -61,7 +52,6 @@ class ScreenPositions:
     XXRIGHT = W / 8 * 7
     XXXRIGHT = W / 16 * 15
 
-    # Vertical anchors (top to bottom).
     XXXTOP = H / 16
     XXTOP = H / 8
     XTOP = H / 16 * 3
