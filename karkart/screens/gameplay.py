@@ -10,7 +10,7 @@ import pygame
 
 from karkart.ai.ai_controller import AIController
 from karkart.ai.pathfinder import AStarPathfinder
-from karkart.paths import MAP_DATA_FILE
+from karkart.paths import MAP_DATA_FILE, PICTURES_DIR, PIXEL_FONT
 from karkart.physics.camera import Camera
 from karkart.physics.car import Car, get_handling_for, randomize_for_ai
 from karkart.physics.checkpoint import Checkpoint, RacerState
@@ -147,9 +147,9 @@ class GamePlay:
         self._race_finished: bool = False
 
         self._debug_checkpoints: bool = False
-        if not pygame.font.get_init():
-            pygame.font.init()
-        self._hud_font: pygame.font.Font = pygame.font.SysFont("monospace", 16)
+
+        self._hud_font = pygame.font.Font(str(PIXEL_FONT), 17)
+        self.hud_img = pygame.image.load(str(PICTURES_DIR / "hud_bg.png")).convert_alpha()
 
         self.player_state = RacerState()
         self.ai_states: list[RacerState] = []
@@ -581,33 +581,33 @@ class GamePlay:
         return int(fx * screen_w / frame_w), int(fy * screen_h / frame_h)
 
     def draw_hud(self, screen: pygame.Surface, snapshot: WorldSnapshot) -> None:
+        screen.blit(self.hud_img, (8, 8))
+
         total_cps = len(self.current_map.checkpoints_list) or 1
         cp_in_lap = snapshot.player_racer.list_counter
         lap = snapshot.player_racer.current_lap
         speed = snapshot.player.speed
 
+        kph = int(60*speed)
+
         lines = [
-            f"Lap  {lap}",
-            f"CP   {cp_in_lap} / {total_cps}",
-            f"Spd  {speed:+.2f}",
-            f"Pos  {snapshot.position_label}",
+            f"   {snapshot.position_label}",
+            f"{kph}kmh",
+            f" {lap}/3",
+            f" {cp_in_lap}/{total_cps}",
         ]
 
-        padding = 6
+        padding = 3
         rendered = [
             self._hud_font.render(text, True, (255, 255, 255)) for text in lines
         ]
         width = max(s.get_width() for s in rendered) + padding * 2
         height = sum(s.get_height() for s in rendered) + padding * 2
 
-        panel = pygame.Surface((width, height), pygame.SRCALPHA)
-        panel.fill((0, 0, 0, 140))
-        screen.blit(panel, (8, 8))
-
-        y = 8 + padding
+        y = 22 + padding
         for surf in rendered:
-            screen.blit(surf, (8 + padding, y))
-            y += surf.get_height()
+            screen.blit(surf, (150 + padding, y))
+            y += 26 + surf.get_height()
 
         self._draw_minimap(screen, snapshot)
 
