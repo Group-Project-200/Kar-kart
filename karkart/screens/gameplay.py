@@ -142,6 +142,7 @@ class GamePlay:
         self.manager = manager
         self.mode = self.manager.app_data.modes[self.manager.app_data.current_mode]
         self.ai_active = self.mode["Ai"]
+        self.championship = self.mode["loop"]
         self.config = GameConfig()
 
         self._race_finished: bool = False
@@ -733,8 +734,8 @@ class GamePlay:
         except Exception as error:
             print(f"Could not save race result: {error}")
 
-        self.manager.add_screen("placeholder", LeaderboardScreen(self.manager))
-        self.manager.change_screen("placeholder")
+        self.manager.add_screen("leaderboard", LeaderboardScreen(self.manager))
+        self.manager.change_screen("leaderboard")
 
     def draw(self, _surface: pygame.Surface) -> None:
         screen = self.manager.screen_display

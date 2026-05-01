@@ -79,10 +79,10 @@ class LeaderboardScreen:
                 "score": pygame.Rect(785, 569, 182, 36),
             },
         ]
-
+        self.counter = 0
         self.play_again_rect = pygame.Rect(323, 676, 309, 33)
         self.main_menu_rect = pygame.Rect(648, 676, 309, 33)
-
+        self.next_race = pygame.Rect(973, 676, 309, 33)
     def _load_font(self, size: int) -> pygame.font.Font:
         try:
             return pygame.font.Font(str(PIXEL_FONT), size)
@@ -299,6 +299,11 @@ class LeaderboardScreen:
                 self.selected_button = 1
                 self._go_to_screen("start")
 
+            elif self.next_race.collidepoint(event.pos):
+                self.selected_button = 1
+                self.manager.change_screen("map")
+                self.counter += 1
+
     def update(self) -> None:
         pass
 
@@ -316,5 +321,12 @@ class LeaderboardScreen:
         self._draw_button(
             surface, self.main_menu_rect, "MAIN MENU", self.selected_button == 1
         )
+        if self.manager.app_data.modes[self.manager.app_data.current_mode]["loop"]:
+            self._draw_button(
+                surface, self.next_race, "NEXT RACE", self.selected_button == 1
+            )
+
+            if self.counter == 3:
+                self.counter = 0
 
         pygame.display.set_caption("Kar Kart - Leaderboard")

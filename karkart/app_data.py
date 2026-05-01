@@ -50,8 +50,9 @@ class AppData:
         self.tracks: list[Track] = []
         self.cars: dict[str, list[pygame.Surface]] = load_all_car_stacks()
         self.modes = {
-            "Time Trial": {"Ai": False, "Items": False},
-            "Race Mode": {"Ai": True, "Items": True},
+            "Time Trial": {"Ai": False, "Items": False, "loop": False},
+            "Race Mode": {"Ai": True, "Items": True, "loop": False},
+            "Championship": {"Ai": True, "Items": True, "loop": True},
         }
 
         for map_folder in sorted(p for p in MAPS_DIR.iterdir() if p.is_dir()):
@@ -63,13 +64,10 @@ class AppData:
             ):
                 self.add_track(Track(str(cover), map_folder.name, map_folder))
 
-        default = next((t for t in self.tracks if t.name == "newmap1"), None)
-        self.current_map: Track | None = default or (
-            self.tracks[0] if self.tracks else None
-        )
-        self.current_car_name: str = "car_01"
-        self.current_car: list[pygame.Surface] = self.cars[self.current_car_name]
-        self.current_mode = "Race Mode"
+        self.current_map= None
+        self.current_car_name = None
+        self.current_car = None
+        self.current_mode = None
 
     def add_track(self, track: Track) -> None:
         self.tracks.append(track)
