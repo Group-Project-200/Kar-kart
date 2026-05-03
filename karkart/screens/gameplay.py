@@ -734,7 +734,6 @@ class GamePlay:
         except Exception as error:
             print(f"Could not save race result: {error}")
 
-        self.manager.add_screen("leaderboard", LeaderboardScreen(self.manager))
         self.manager.change_screen("leaderboard")
 
     def draw(self, _surface: pygame.Surface) -> None:
