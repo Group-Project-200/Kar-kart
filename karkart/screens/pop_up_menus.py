@@ -3,16 +3,18 @@ from abc import ABC, abstractmethod
 import pygame
 from karkart.constants import Colors
 from karkart.constants import ScreenPositions as sp
-from karkart.ui import Arrow, ArrowContainer, PopUpContainer, PopUpCard, TitleCard
-from karkart.ui.ui_object import UIObject
 from karkart.screens.gameplay import GamePlay
+from karkart.settings import settings
+from karkart.ui import Arrow, ArrowContainer, Button, PopUpButton, PopUpContainer, PopUpCard, TitleCard
+from karkart.ui.ui_object import UISelectObject
 
 
 class PopUpMenu(ABC):
 
     @abstractmethod
-    def __init__(self, manager) -> None:
+    def __init__(self, manager, label) -> None:
         self.manager = manager
+        self.label = label
 
         self.width: int = 300
         self.height: int = 450
@@ -37,7 +39,7 @@ class PopUpMenu(ABC):
 
             if event.key == pygame.K_ESCAPE:
                 self.activate_black_layer = True
-                self.manager.change_screen(self.screen)
+                self.manager.pop_screen()
 
     def update(self):
         pass
@@ -61,26 +63,27 @@ class PopUpMenu(ABC):
             self.black_layer = True
             self.activate_black_layer = False
 
+    def get_label(self):
+        return self.label
+
+    def deactivate_black_layer(self):
+        self.black_layer = False
+
 
 class PauseMenu(PopUpMenu):
 
-    def __init__(self, manager) -> None:
-        super().__init__(manager)
+    def __init__(self, manager, label) -> None:
+        super().__init__(manager, label)
 
-        options: list[PopUpCard] = [
-            PopUpCard("Settings"),
-            PopUpCard("Restart", state="car"),
-            PopUpCard("Quit"),
-        ]
-        self.container = PopUpContainer(
-            self.x, self.y, self.width, self.height, len(options), 1
-        )
+        options : list[PopUpCard] = [PopUpButton("Settings", self.manager, action="settings"), PopUpButton("Restart", self.manager, action="race_selector"), PopUpButton("Quit", self.manager)]
+        self.container = PopUpContainer(self.x, self.y, self.width, self.height, len(options), 1)
 
         for opt in options:
             self.container.add_object(opt)
         self.container.calculate_padding(x_center=True, y_center=True)
 
-        self.title = TitleCard(self.container.get_width(), "Pause Menu")
+        # Creates title.
+        self.title = TitleCard("Pause Menu", self.container.get_width())
 
         self.screen: str = "game"
 
@@ -90,40 +93,58 @@ class PauseMenu(PopUpMenu):
 
             screen = self.container.handle_event(event)
             if screen:
-                if screen == "car":
-                    self.manager.add_screen("game", GamePlay(self.manager))
+                if screen == "race_selector":
+                    self.manager.pop_screen()
+                    self.manager.add_screen(GamePlay(self.manager, "game"))
+                elif screen == "settings":
+                    self.manager.push_screen(self.label)
+                    self.manager.get_screen().deactivate_black_layer()
                 self.manager.change_screen(screen)
 
 
 class SettingsMenu(PopUpMenu):
-    def __init__(self, manager) -> None:
-        super().__init__(manager)
+    def __init__(self, manager, label) -> None:
+        super().__init__(manager, label)
 
-        key_options: list[Any] = [
-            PopUpCard("WASD", width=150),
-            PopUpCard("Arrows", width=150),
-        ]
-        self.keys = ArrowContainer(0, 0, 250, 150, key_options)
+        self.width: int = 300
+        self.height: int = 450
+        self.pause_rect = pygame.Rect(self.x - self.width / 2, self.y - self.height / 2, self.width, self.height)
 
-        options = [self.keys, PopUpCard("Save", width=250)]
-        self.container = PopUpContainer(
-            self.x, self.y, self.width, self.height, len(options), 1
-        )
-        for x in options:
+
+
+        # Container that stores left and right arrows and all the selectable options.
+        title_cards = []
+        main_options = []
+        for obj, opt_list in settings.get_objects().items():
+            title_cards.append(TitleCard(obj, 150))
+            side_options = [TitleCard(x, 150) for x in opt_list]
+            new_container = ArrowContainer(0, 0, 250, 150, side_options)
+            main_options.append(new_container)
+
+        self.container = PopUpContainer(self.x, self.y, self.width, self.height, len(main_options), 1)
+        for x in main_options:
             self.container.add_object(x)
 
         self.container.calculate_padding(x_center=True, y_center=True)
 
-        self.title = TitleCard(self.container.get_width(), "Settings")
+        # Creates title.
+        self.title = TitleCard("Settings", self.container.get_width())
 
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
-            super().handle_event(event)
+            if event.key == pygame.K_ESCAPE:
+                bindings_label = self.container.get_objects()[0].get_text()
+                settings.set_bindings(bindings_label)
 
+                sound = self.container.get_objects()[1].get_text()
+                settings.set_sound(sound)
+
+                settings.save()
+            
+            super().handle_event(event)
+            # Container returns a screen -> update the screen.
             screen = self.container.handle_event(event)
             if screen:
-                if screen == "car":
-                    self.manager.add_screen("game", GamePlay(self.manager))
                 self.manager.change_screen(screen)
 
     def set_return_screen(self, screen):
@@ -135,8 +156,8 @@ class SettingsMenu(PopUpMenu):
 class HelpMenu(PopUpMenu):
     """Controls help menu, opens with H key."""
 
-    def __init__(self, manager) -> None:
-        super().__init__(manager)
+    def __init__(self, manager, label) -> None:
+        super().__init__(manager, label)
 
         self.width = 1000
         self.height = 600
@@ -149,7 +170,7 @@ class HelpMenu(PopUpMenu):
             self.container.add_object(opt)
         self.container.calculate_padding(x_center=True, y_center=True)
 
-        self.title = TitleCard(self.container.get_width(), "Help Menu")
+        self.title = TitleCard("Help Menu", self.container.get_width())
 
         # Returned screen is set by HelpIcon right before opening.
         self.screen = "start"
@@ -167,7 +188,7 @@ class HelpMenu(PopUpMenu):
         self.black_layer = True
 
 
-class HelpTextCard(UIObject):
+class HelpTextCard(UISelectObject):
     """Single card that draws help text block."""
 
     def __init__(self, width: int, height: int) -> None:
@@ -198,7 +219,7 @@ class HelpTextCard(UIObject):
     def unselect(self) -> None:
         self.color = Colors.DARK_BLUE
 
-    def get_state(self):
+    def get_action(self):
         return None
 
     def handle_event(self, event) -> None:

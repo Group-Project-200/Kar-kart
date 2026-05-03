@@ -11,7 +11,7 @@ from karkart.rendering.preview import (
     build_render_pipeline,
     render_preview_debug_frame,
 )
-from karkart.ui import Button, SettingsIcon
+from karkart.ui import BackButton, SettingsIcon
 
 
 class CarScreen:
@@ -19,9 +19,11 @@ class CarScreen:
     PREVIEW_SIZE = (600, 450)
     STATBOX_SIZE = (600, 400)
 
-    def __init__(self, manager) -> None:
+    def __init__(self, manager, label) -> None:
         self.manager = manager
-        self.back_btn = Button("Back", "race_selector", self.manager)
+        self.label = label
+
+        self.back_button = BackButton(self.manager, "race_selector")
         self.back_selected = False
 
         self.background = pygame.transform.scale(
@@ -86,21 +88,21 @@ class CarScreen:
             if event.key == pygame.K_RETURN:
 
                 self.back_selected = False
-                self.back_btn.unselect()
-                self.back_btn.handle_event(event)
+                self.back_button.unselect()
+                self.back_button.handle_event(event)
 
             elif event.key == K.UP:
                 self.back_selected = False
-                self.back_btn.unselect()
+                self.back_button.unselect()
 
         else:
             if event.key == K.RIGHT:
-                self.selected = min(len(self.car_slices) - 1, self.selected + 1)
+                self.selected = (self.selected + 1) % len(self.car_slices)
             elif event.key == K.LEFT:
-                self.selected = max(0, self.selected - 1)
+                self.selected = (self.selected - 1) % len(self.car_slices)
             elif event.key == K.DOWN:
                 self.back_selected = True
-                self.back_btn.select()
+                self.back_button.select()
             elif event.key == pygame.K_RETURN:
                 car_name = self.car_names[self.selected]
                 self.manager.app_data.set_current_car(car_name)
@@ -129,5 +131,8 @@ class CarScreen:
         surface.blit(preview_surface, preview_rect)
 
         self.help_icon.draw(surface)
-        self.back_btn.draw(surface)
+        self.back_button.draw(surface)
         self.settings_icon.draw(surface)
+
+    def get_label(self) -> str:
+        return self.label

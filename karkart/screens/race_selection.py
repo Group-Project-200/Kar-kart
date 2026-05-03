@@ -24,8 +24,10 @@ class RaceSelector:
     CARD_HEIGHT = 220
     CARD_GAP = 40
 
-    def __init__(self, manager) -> None:
+    def __init__(self, manager, label) -> None:
         self.manager = manager
+        self.label = label
+
         self.races = _MODE_LABELS
         self.selected_index = 1
 
@@ -107,3 +109,5 @@ class RaceSelector:
         pygame.display.set_caption("Kar Kart - Race Selector")
         self.settings_icon.draw(surface)
 
+    def get_label(self) -> str:
+        return self.label

@@ -44,5 +44,5 @@ class Track(UIObject):
     def set_dimensions(self, width: int, height: int) -> None:
         self.width, self.height = width, height
 
-    def get_map(self) -> str | None:
+    def get_state(self) -> str | None:
         return self.corr_map

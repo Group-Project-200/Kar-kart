@@ -7,7 +7,6 @@ import time
 from dataclasses import dataclass
 
 import pygame
-from pygame.draw import lines
 
 from karkart.ai.ai_controller import AIController
 from karkart.ai.pathfinder import AStarPathfinder
@@ -139,10 +138,11 @@ class GamePlay:
 
     _AI_COUNT_RACE: int = 4
 
-    def __init__(self, manager) -> None:
+    def __init__(self, manager, label) -> None:
         self.manager = manager
         self.mode_name = self.manager.app_data.current_mode
         self.mode = self.manager.app_data.modes[self.mode_name]
+        self.label = label
         self.ai_active = self.mode["Ai"]
         self.championship = self.mode["loop"]
         self.config = GameConfig()
@@ -569,7 +569,6 @@ class GamePlay:
         return int(fx * screen_w / frame_w), int(fy * screen_h / frame_h)
 
     def draw_hud(self, screen: pygame.Surface, snapshot: WorldSnapshot) -> None:
-
         screen.blit(self.hud_img, (8, 8))
 
         total_cps = len(self.current_map.checkpoints_list) or 1
@@ -728,32 +727,8 @@ class GamePlay:
                 total_laps=self.player_state.current_lap - 1,
             )
             GAME_LEADERBOARD.add(result)
-
         except Exception as error:
             print(f"Could not save race result: {error}")
-        if self.mode == "Championship":
-            racers = [{
-                "name": "Player 1",
-                "metric": (
-                    self.player_state.total_checkpoints,
-                    -getattr(self.player_state, "last_pass_order", 0),
-                ),
-            }]
-            for car, state in zip(self.ai_cars, self.ai_states):
-                racers.append({
-                    "name": car.name,
-                    "metric": (
-                        state.total_checkpoints,
-                        -getattr(state, "last_pass_order", 0),
-                    ),
-                })
-
-            racers.sort(key=lambda r: r["metric"], reverse=True)
-
-            points = [5, 4, 3, 2, 1]
-            for i, player in enumerate(racers):
-                self.manager.app_data.championship_results[player["name"]] += points[i]
-
 
         self.manager.change_screen("leaderboard")
 
@@ -787,3 +762,6 @@ class GamePlay:
         self.draw_hud(screen, snapshot)
 
         pygame.display.flip()
+
+    def get_label(self) -> str:
+        return self.label

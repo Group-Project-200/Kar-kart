@@ -10,8 +10,10 @@ from karkart.ui.settings_icon import SettingsIcon
 
 class StartScreen:
 
-    def __init__(self, manager) -> None:
+    def __init__(self, manager, label) -> None:
         self.manager = manager
+        self.label = label
+
         self.font = pygame.font.Font(None, 36)
 
         self.fps: float = 60.0
@@ -70,3 +72,6 @@ class StartScreen:
         except (FileNotFoundError, pygame.error):
             return None
         return image.convert_alpha() if convert_alpha else image.convert()
+
+    def get_label(self):
+        return self.label

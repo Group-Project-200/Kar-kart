@@ -4,16 +4,14 @@ import pygame
 
 from karkart.constants import Colors, ScreenPositions as sp
 from karkart.paths import PICTURES_DIR
-from karkart.ui.ui_object import UIObject
+from karkart.ui.ui_object import UISelectObject
 
-
-class SettingsIcon(UIObject):
+class SettingsIcon(UISelectObject):
     def __init__(self, manager, screen: str) -> None:
         self.manager = manager
         self.screen: str = screen
 
-        self.x: ScreenPositions = sp.XXRIGHT
-        self.y: ScreenPositions = sp.XXTOP
+        super().__init__(sp.XXRIGHT, sp.XXTOP, 0, 0)
 
         self.radius: int = 30
         self.circle_radius: int = int(self.radius * 1.5)
@@ -26,22 +24,14 @@ class SettingsIcon(UIObject):
 
     def handle_event(self, event):
         if event.key == pygame.K_ESCAPE:
+            self.manager.push_screen(self.manager.get_screen().get_label())
             self.manager.change_screen("settings")
-            self.manager.get_screen().set_return_screen(self.screen)
-            
-    def draw(self, surface: pygame.Surface) -> None:
-        pygame.draw.circle(surface, Colors.DARK_BLUE, self.circle_position, self.circle_radius)
-        pygame.draw.circle(surface, Colors.LIGHT_BLUE, self.circle_position, self.circle_radius, 4)
-        pygame.draw.circle(surface, Colors.BLACK, self.circle_position, self.circle_radius, 2)
+    
+    def draw(self, surface):
 
-        pygame.draw.circle(
-            surface, Colors.DARK_BLUE, self.circle_position, self.radius * 1.5
-        )
-        pygame.draw.circle(
-            surface, Colors.LIGHT_BLUE, self.circle_position, self.radius * 1.5, 4
-        )
-        pygame.draw.circle(
-            surface, Colors.BLACK, self.circle_position, self.radius * 1.5, 2
-        )
+        # Draw circle and gear image.
+        pygame.draw.circle(surface, self.color, self.circle_position, self.radius*1.5)
+        pygame.draw.circle(surface, self.bord_2_color, self.circle_position, self.radius*1.5, self.bord_2_thick)
+        pygame.draw.circle(surface, self.bord_color, self.circle_position, self.radius*1.5, self.bord_thick)
 
         surface.blit(self.pic, self.position)
