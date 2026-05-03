@@ -39,6 +39,10 @@ class World:
         snap_step_degrees: float,
     ) -> None:
         self.player_car = player_car
+        self.current_car = player_car
+        self.ai_active = bool(ai_cars)
+        self.player_invincible = False
+
         self.ai_cars = ai_cars
         self.camera = camera
         self.sparks = sparks
@@ -73,3 +77,26 @@ class World:
     def begin_race(self, now: float) -> None:
         self.race_start_time = now
         self.last_lap_start_time = now
+
+    def collect_powerup_if_needed(self) -> None:
+        if self.powerups_manager.current is not None:
+            return
+
+        player = self.player_car.physics
+
+        for item_box in self.world_box:
+            picked_up = item_box.check(player.car_x, player.car_y)
+
+            if picked_up:
+                self.powerups_manager.current = self.powerups_manager.choose_random_powerup()
+                self.powerups_manager.current.activate(self)
+                break
+
+    def update_powerup(self) -> None:
+        if self.powerups_manager.current is None:
+            return
+
+        finished = self.powerups_manager.current.tick(self)
+
+        if finished:
+            self.powerups_manager.current = None
