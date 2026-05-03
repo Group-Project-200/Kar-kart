@@ -1,5 +1,3 @@
-"""arrow.py - arrow object for preference selections."""
-
 from __future__ import annotations
 
 import pygame
@@ -24,7 +22,19 @@ class Arrow(UISelectObject):
         """Place the arrow and identify all points."""
         super().set_position(x, y)
 
+        self.x = x
+        self.y = y
+
         if self.direction == "left":
-            self.points = ((self.x + self.width, self.y), (self.x, self.y + self.height / 2), (self.x + self.width, self.y + self.height))
+
+            self.points = (
+                (self.x + self.width, self.y),
+                (self.x, self.y + self.height / 2),
+                (self.x + self.width, self.y + self.height),
+            )
         elif self.direction == "right":
-            self.points = ((self.x, self.y), (self.x + self.width, self.y + self.height / 2), (self.x, self.y + self.height))
+            self.points = (
+                (self.x, self.y),
+                (self.x + self.width, self.y + self.height / 2),
+                (self.x, self.y + self.height),
+            )

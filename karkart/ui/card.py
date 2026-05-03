@@ -1,5 +1,3 @@
-"""Cards: decorated rectangles used as clickable/selectable UI primitives."""
-
 from __future__ import annotations
 from abc import ABC, abstractmethod
 
@@ -14,7 +12,9 @@ from karkart.ui.ui_object import UISelectObject
 class Card(UISelectObject, ABC):
     """A bordered rectangular card. ``(x, y)`` is the *centre*."""
     @abstractmethod
-    def __init__(self, center_x: float, center_y: float, width: float, height: float) -> None:
+    def __init__(
+        self, center_x: float, center_y: float, width: float, height: float
+    ) -> None:
         super().__init__(center_x, center_y, width, height)
         self.text = None
 
@@ -28,7 +28,6 @@ class Card(UISelectObject, ABC):
 
 
 class MapCard(Card):
-    """Selectable card showing a map preview plus the track name."""
 
     def __init__(self, track, manager) -> None:
         self.width, self.height = 120, 120
@@ -50,7 +49,7 @@ class MapCard(Card):
         surface.blit(name_text, name_text.get_rect(center=name_rect.center))
 
     def set_position(self, x: float, y: float) -> None:
-        """Place the card and re-position its track preview inside it."""
+
         self.x = x
         self.y = y
         self.track.set_position(
@@ -65,7 +64,13 @@ class MapCard(Card):
 class PopUpCard(Card):
     """Selectable card showing an option in the pause menu."""
     
-    def __init__(self, text: str, action: Screen | None =None, width: int | None =200, height: int | None =50) -> None:
+    def __init__(
+        self,
+        text: str,
+        action: Screen | None =None,
+        width: int | None =200,
+        height: int | None =50
+    ) -> None:
         super().__init__(0, 0, width, height)
         self.text = text
         self.action = action
@@ -96,30 +101,30 @@ class PopUpCard(Card):
 class TitleCard(Card):
     """
     Title card of selection screens.
-    NOT CHILD OF CARD.
     """
 
     def __init__(self, text: str, width: int, height=None, font_size=15) -> None:
         super().__init__(0, 0, 0, 0)
+        self.text = text
 
         instr_font = pygame.font.Font(str(PIXEL_FONT), font_size)
-        self.text = instr_font.render(text, True, Colors.WHITE)
-        self.center = self.text.get_rect(center=(sp.CENTER_X, sp.XTOP))
+        self.render_text = instr_font.render(text, True, Colors.WHITE)
+        self.center = self.render_text.get_rect(center=(sp.CENTER_X, sp.XTOP))
 
         self.width = width
-        self.height = self.text.get_height() + font_size * 1.5
-        self.x = self.center.x - (self.width - self.text.get_width()) / 2
-        self.y = self.center.y - (self.height - self.text.get_height()) / 2
+        self.height = self.render_text.get_height() + font_size * 1.5
+        self.x = self.center.x - (self.width - self.render_text.get_width()) / 2
+        self.y = self.center.y - (self.height - self.render_text.get_height()) / 2
         self.instr_rect = pygame.Rect(self.x, self.y, self.width, self.height)
 
     def draw(self, surface: pygame.Surface) -> None:
         pygame.draw.rect(surface, self.color, self.instr_rect, border_radius=8)
         pygame.draw.rect(surface, self.bord_2_color, self.instr_rect, self.bord_2_thick, border_radius=8)
         pygame.draw.rect(surface, self.bord_color, self.instr_rect, self.bord_thick, border_radius=8)
-        surface.blit(self.text, self.center)
+        surface.blit(self.render_text, self.center)
 
     def set_position(self, x, y):
         super().set_position(x, y)
-        self.center.x = self.x + (self.width - self.text.get_width()) / 2
-        self.center.y = self.y + (self.height - self.text.get_height()) / 2
+        self.center.x = self.x + (self.width - self.render_text.get_width()) / 2
+        self.center.y = self.y + (self.height - self.render_text.get_height()) / 2
         self.instr_rect = pygame.Rect(self.x, self.y, self.width, self.height)

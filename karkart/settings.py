@@ -1,8 +1,7 @@
-"""settings.py - these are the saved modifiable settings"""
-
 from __future__ import annotations
 
 import pygame, json
+from karkart.audio import AudioManager
 from karkart.paths import SETTINGS_FILE
 
 KEY_BINDINGS : {str :{str:pygame.key}} = {
@@ -22,8 +21,6 @@ KEY_BINDINGS : {str :{str:pygame.key}} = {
 
 class _Settings:
 
-    """Contains all the settings that can be modified."""
-
     def __init__(self) -> None:
 
         with open(SETTINGS_FILE, 'r') as f:
@@ -40,10 +37,10 @@ class _Settings:
         
     def get_objects(self):
         bind_idx = self.all_bindings.index(self.bindings_label)
-        self.all_bindings = self.all_bindings[:bind_idx] + self.all_bindings[bind_idx:]
+        self.all_bindings = self.all_bindings[bind_idx:] + self.all_bindings[:bind_idx]
 
         sound_idx = self.all_sound.index(self.sound)
-        self.all_sound = self.all_sound[:sound_idx] + self.all_sound[sound_idx:]
+        self.all_sound = self.all_sound[sound_idx:] + self.all_sound[:sound_idx]
 
         return {
             "Controls" : self.all_bindings,
@@ -64,17 +61,28 @@ class _Settings:
 
     def set_bindings(self, label):
         self.bindings_label = label
-        self.bindings = self.key_bindings[self.bindings_label]
+        self.bindings = KEY_BINDINGS[self.bindings_label]
 
     def _get_key(self, key: str) -> pygame.key:
         return self.bindings[key]
 
 
     # ---------- Sound -----------
+    
+    def set_sound(self, label):
+        if self.sound != label:
+            self.sound = label
+            
+            if self.is_sound_active():
+                AudioManager.start_background_music()
+            else:
+                AudioManager.stop_background_music()
+
+    def is_sound_active(self) -> bool:
+        return True if self.sound == "On" else False
 
 
 class _Keys:
-    """Keybindings. Change these to remap movement controls."""
 
     @property
     def UP(self):

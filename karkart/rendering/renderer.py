@@ -1,29 +1,33 @@
-"""The in-game renderer that composes map + car into the final frame."""
-
 from __future__ import annotations
 
 import math
+from typing import TYPE_CHECKING
 
 import pygame
 
 from karkart.helpers import clamp_scale, clamp_zoom, snap_degrees
-from karkart.physics.car import Car
 from karkart.rendering.map import Map
 from karkart.rendering.sparks import SparkManager
 from karkart.rendering.stacker import Stacker
 
+if TYPE_CHECKING:
+    from karkart.runtime.snapshot import CarSnapshot, SparkSnapshot
+
 
 class Renderer:
-    """Draws one frame per ``render_frame`` call: pixelated map + rotated car stack."""
 
     _MAP_ZOOM: float = 3.0
     _CAR_ZOOM: float = 3.0
     _PIXELATION_SCALE: float = 0.35
-    _DRIFT_VISUAL_SKEW: float = 30.0  # Degrees the car sprite rotates sideways during drift.
-    _HOP_PIXEL_SCALE: float = 12.0    # Screen pixels of lift per car_z unit at render res.
+    _DRIFT_VISUAL_SKEW: float = 30.0
+    _HOP_PIXEL_SCALE: float = 12.0
 
     def __init__(
-        self, current_map: Map, stacker: Stacker, screen: pygame.Surface, sparks: SparkManager,
+        self,
+        current_map: Map,
+        stacker: Stacker,
+        screen: pygame.Surface,
+        sparks: SparkManager,
     ) -> None:
         self.screen = screen
         self.render_size = self._build_pixel_surface_size(self._PIXELATION_SCALE)
@@ -51,77 +55,118 @@ class Renderer:
         return pixel_width, pixel_height
 
     def _present_frame(self) -> None:
-        """Blit (or scale-blit) the composed frame to the real display surface."""
+
         if not self.needs_present_scale:
             self.screen.blit(self.frame_surface, (0, 0))
             return
         pygame.transform.scale(self.frame_surface, self.screen.get_size(), self.screen)
 
-    def _world_to_screen(self, wx: float, wy: float) -> tuple[int, int]:
-        """Project a world-space point onto the camera-rotated screen buffer."""
-        player = self.map.camera.car.physics
-        dx = (wx - player.car_x) * self.map_zoom
-        dy = (wy - player.car_y) * self.map_zoom
-        angle_rad = math.radians(self.map.camera.angle)
+    def _world_to_screen(
+        self,
+        wx: float,
+        wy: float,
+        *,
+        player_x: float,
+        player_y: float,
+        camera_angle: float,
+    ) -> tuple[int, int]:
+
+        dx = (wx - player_x) * self.map_zoom
+        dy = (wy - player_y) * self.map_zoom
+        angle_rad = math.radians(camera_angle)
         cos_a = math.cos(angle_rad)
         sin_a = math.sin(angle_rad)
-        # Pygame rotates the map by -camera.angle (CW); points rotate the opposite way.
+
         rx = dx * cos_a - dy * sin_a
         ry = dx * sin_a + dy * cos_a
         return int(self.center[0] + rx), int(self.center[1] + ry)
 
-    def _draw_extra_car(self, car: Car, stacker: Stacker, stack_spread: float) -> None:
-        """Blit an auxiliary car (e.g. the AI opponent) at its world position."""
-        sx, sy = self._world_to_screen(car.physics.car_x, car.physics.car_y)
+    def _draw_extra_car(
+        self,
+        car: "CarSnapshot",
+        stacker: Stacker,
+        stack_spread: float,
+        *,
+        player_x: float,
+        player_y: float,
+        camera_angle: float,
+    ) -> None:
+
+        sx, sy = self._world_to_screen(
+            car.car_x,
+            car.car_y,
+            player_x=player_x,
+            player_y=player_y,
+            camera_angle=camera_angle,
+        )
         width, height = self.render_size
-        margin = 64  # Pixels of slack so partially-visible cars still draw.
+        margin = 64
         if sx < -margin or sx > width + margin or sy < -margin or sy > height + margin:
             return
-        dir_idx = snap_degrees(car.physics.rotation - self.map.camera.angle, dirs=stacker.dirs)
-        hop_px = int(car.physics.car_z * self._HOP_PIXEL_SCALE)
-        stacker.render_stack(self.frame_surface, dir_idx, (sx, sy), stack_spread, hop_px)
+        dir_idx = snap_degrees(car.rotation - camera_angle, dirs=stacker.dirs)
+        hop_px = int(car.car_z * self._HOP_PIXEL_SCALE)
+        stacker.render_stack(
+            self.frame_surface, dir_idx, (sx, sy), stack_spread, hop_px
+        )
 
     def render_frame(
         self,
         stack_spread: float,
-        extra_cars: list[tuple[Car, Stacker]] | None = None,
+        *,
+        player: "CarSnapshot",
+        camera_angle: float,
+        sparks: "list[SparkSnapshot] | None" = None,
+        extra_cars: "list[tuple[CarSnapshot, Stacker]] | None" = None,
     ) -> None:
-        """Compose one frame: map in camera space, then car at screen centre.
 
-        *extra_cars* is an optional list of (car, stacker) pairs drawn at their
-        world-relative screen positions (used for the AI opponent).
-        """
         frame_surface = self.frame_surface
         frame_surface.fill((0, 0, 0))
 
-        self.map.draw_map_camera(display=frame_surface, center=self.center, render_size=self.render_size)
+        self.map.draw_map_camera(
+            display=frame_surface,
+            center=self.center,
+            render_size=self.render_size,
+            car_x=player.car_x,
+            car_y=player.car_y,
+            camera_angle=camera_angle,
+        )
 
-        physics = self.map.camera.car.physics
-        camera_angle = self.map.camera.angle
-        car_relative_rotation = physics.rotation - camera_angle
+        car_relative_rotation = player.rotation - camera_angle
 
-        # Apply a visual sideways tilt while drifting (purely cosmetic, no physics change).
-        if physics.drift_active:
-            visual_rotation = car_relative_rotation + physics.drift_direction * self._DRIFT_VISUAL_SKEW
+        if player.drift_active:
+            visual_rotation = (
+                car_relative_rotation + player.drift_direction * self._DRIFT_VISUAL_SKEW
+            )
         else:
             visual_rotation = car_relative_rotation
 
         dir_idx = snap_degrees(visual_rotation, dirs=self.stacker.dirs)
 
-        # Sparks drawn before the car so they appear behind it.
-        self.sparks.draw(
-            frame_surface,
-            physics.car_x, physics.car_y,
-            camera_angle,
-            self.map_zoom,
-            self.center,
-        )
+        if sparks:
+            self.sparks.draw_from_list(
+                frame_surface,
+                sparks,
+                player.car_x,
+                player.car_y,
+                camera_angle,
+                self.map_zoom,
+                self.center,
+            )
 
         if extra_cars:
             for other_car, other_stacker in extra_cars:
-                self._draw_extra_car(other_car, other_stacker, stack_spread)
+                self._draw_extra_car(
+                    other_car,
+                    other_stacker,
+                    stack_spread,
+                    player_x=player.car_x,
+                    player_y=player.car_y,
+                    camera_angle=camera_angle,
+                )
 
-        hop_px = int(physics.car_z * self._HOP_PIXEL_SCALE)
-        self.stacker.render_stack(self.frame_surface, dir_idx, self.center, stack_spread, hop_px)
+        hop_px = int(player.car_z * self._HOP_PIXEL_SCALE)
+        self.stacker.render_stack(
+            self.frame_surface, dir_idx, self.center, stack_spread, hop_px
+        )
 
         self._present_frame()

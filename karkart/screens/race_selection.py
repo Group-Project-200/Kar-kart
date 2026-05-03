@@ -1,12 +1,13 @@
-"""Race mode picker: Time Trial / Race / Championship."""
-
 from __future__ import annotations
 
 import pygame
 
 from karkart.constants import ScreenPositions as sp
+from karkart.ui.help_icon import HelpIcon
 from karkart.paths import PICTURES_DIR
 from karkart.settings import Keys as K
+from karkart.ui import Button, SettingsIcon
+
 
 
 _MODE_IMAGE_NAMES: tuple[str, ...] = (
@@ -18,7 +19,6 @@ _MODE_LABELS: tuple[str, ...] = ("Time Trial", "Race Mode", "Championship")
 
 
 class RaceSelector:
-    """Horizontal card picker for race modes."""
 
     CARD_WIDTH = 280
     CARD_HEIGHT = 220
@@ -34,10 +34,16 @@ class RaceSelector:
         self.bg = self._try_load_background(PICTURES_DIR / "race_selection_bg.png")
 
         self.card_y = sp.HEIGHT - self.CARD_HEIGHT - 100
-        total_cards_width = self.CARD_WIDTH * len(self.races) + self.CARD_GAP * (len(self.races) - 1)
+        total_cards_width = self.CARD_WIDTH * len(self.races) + self.CARD_GAP * (
+            len(self.races) - 1
+        )
         self.card_start_x = (sp.WIDTH - total_cards_width) // 2
 
         self.mode_images = [self._try_load_card(PICTURES_DIR / name) for name in _MODE_IMAGE_NAMES]
+        
+        self.settings_icon = SettingsIcon(self.manager, "car")
+        self.help_icon = HelpIcon(self.manager, "race_selector")
+
 
     @staticmethod
     def _try_load_background(path) -> pygame.Surface | None:
@@ -59,6 +65,10 @@ class RaceSelector:
         if event.type != pygame.KEYDOWN:
             return
 
+        self.help_icon.handle_event(event)
+        self.settings_icon.handle_event(event)
+
+        
         if event.key == K.LEFT:
             self.selected_index = (self.selected_index - 1) % len(self.races)
         elif event.key == K.RIGHT:
@@ -88,12 +98,16 @@ class RaceSelector:
                 pygame.draw.rect(surface, (220, 200, 160), card_rect, border_radius=8)
 
             if i == self.selected_index:
-                # White outer glow + black inner outline make the selection pop.
+
                 glow_rect = card_rect.inflate(8, 8)
-                pygame.draw.rect(surface, (255, 255, 255), glow_rect, 4, border_radius=10)
+                pygame.draw.rect(
+                    surface, (255, 255, 255), glow_rect, 4, border_radius=10
+                )
                 pygame.draw.rect(surface, (0, 0, 0), card_rect, 4, border_radius=8)
 
+        self.help_icon.draw(surface)
         pygame.display.set_caption("Kar Kart - Race Selector")
+        self.settings_icon.draw(surface)
 
-    def get_label(self):
+    def get_label(self) -> str:
         return self.label

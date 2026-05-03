@@ -1,17 +1,15 @@
-"""pause_menu.py - when game is paused, it appears"""
-
 from __future__ import annotations
 from abc import ABC, abstractmethod
-
 import pygame
 from karkart.constants import Colors
 from karkart.constants import ScreenPositions as sp
 from karkart.screens.gameplay import GamePlay
 from karkart.settings import settings
 from karkart.ui import Arrow, ArrowContainer, Button, PopUpButton, PopUpContainer, PopUpCard, TitleCard
+from karkart.ui.ui_object import UISelectObject
+
 
 class PopUpMenu(ABC):
-    """Abstract class for all pop-up menus""" 
 
     @abstractmethod
     def __init__(self, manager, label) -> None:
@@ -27,10 +25,10 @@ class PopUpMenu(ABC):
         self.container = None
         self.title = None
 
-        # Creates outer rectangle.
-        self.pause_rect = pygame.Rect(self.x - self.width / 2, self.y - self.height / 2, self.width, self.height)
+        self.pause_rect = pygame.Rect(
+            self.x - self.width / 2, self.y - self.height / 2, self.width, self.height
+        )
 
-        # Activated when pressing ESC to draw a black layer next time pop-up is open.
         self.activate_black_layer: bool = False
 
         self.black_layer: bool = True
@@ -39,7 +37,6 @@ class PopUpMenu(ABC):
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
 
-            # Press ESC -> brings back to original screen.
             if event.key == pygame.K_ESCAPE:
                 self.activate_black_layer = True
                 self.manager.pop_screen()
@@ -47,9 +44,8 @@ class PopUpMenu(ABC):
     def update(self):
         pass
 
-    def draw(self, surface : pygame.Surface):
+    def draw(self, surface: pygame.Surface):
 
-        # First time calling draw() -> create a semi-transparent black layer.
         if self.black_layer:
             black_layer = pygame.Surface((sp.WIDTH, sp.HEIGHT))
             black_layer.fill(Colors.BLACK)
@@ -58,7 +54,6 @@ class PopUpMenu(ABC):
 
             self.black_layer = False
 
-        # Draw title, container and outer rectangle.
         pygame.draw.rect(surface, Colors.LIGHT_BLUE, self.pause_rect, border_radius=8)
         pygame.draw.rect(surface, Colors.BLACK, self.pause_rect, 2, border_radius=8)
         self.container.draw(surface)
@@ -76,17 +71,11 @@ class PopUpMenu(ABC):
 
 
 class PauseMenu(PopUpMenu):
-    """
-    List of options to select in the pause menu.
-    They call different screens.
-    """
-
-    # TODO: add all the features
 
     def __init__(self, manager, label) -> None:
         super().__init__(manager, label)
 
-        options : list[PopUpCard] = [PopUpButton("Settings", self.manager, state="settings"), PopUpButton("Restart", self.manager, state="race_selector"), PopUpButton("Quit", self.manager)]
+        options : list[PopUpCard] = [PopUpButton("Settings", self.manager, action="settings"), PopUpButton("Restart", self.manager, action="race_selector"), PopUpButton("Quit", self.manager)]
         self.container = PopUpContainer(self.x, self.y, self.width, self.height, len(options), 1)
 
         for opt in options:
@@ -96,15 +85,12 @@ class PauseMenu(PopUpMenu):
         # Creates title.
         self.title = TitleCard("Pause Menu", self.container.get_width())
 
-        # Clicking ESC brings back to game.
         self.screen: str = "game"
-        
 
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
             super().handle_event(event)
-            
-            # Container returns a screen -> update the screen.
+
             screen = self.container.handle_event(event)
             if screen:
                 if screen == "race_selector":
@@ -146,21 +132,107 @@ class SettingsMenu(PopUpMenu):
 
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
-            super().handle_event(event)
+            if event.key == pygame.K_ESCAPE:
+                bindings_label = self.container.get_objects()[0].get_text()
+                settings.set_bindings(bindings_label)
 
-            # if self.save_button.is_selected():
-            #     if event.key == pygame.K_RETURN:
-            #         screen = self.manager.pop_screen()
-            #         if screen == "pause":
-            #             self.manager.get_screen().deactivate_black_layer()
+                sound = self.container.get_objects()[1].get_text()
+                settings.set_sound(sound)
+
+                settings.save()
             
+            super().handle_event(event)
             # Container returns a screen -> update the screen.
-            self.container.handle_event(event)
-            # if screen:
-            #     self.manager.change_screen(screen)
+            screen = self.container.handle_event(event)
+            if screen:
+                self.manager.change_screen(screen)
 
     def set_return_screen(self, screen):
 
-        # Clicking ESC brings back to that screen.
         self.screen = screen
         self.black_layer = True
+
+
+class HelpMenu(PopUpMenu):
+    """Controls help menu, opens with H key."""
+
+    def __init__(self, manager, label) -> None:
+        super().__init__(manager, label)
+
+        self.width = 1000
+        self.height = 600
+        self.pause_rect = pygame.Rect(self.x - self.width / 2, self.y - self.height / 2, self.width, self.height)
+
+        # Keep PopUpContainer while rendering all help text in one inner box.
+        options = [HelpTextCard(920, 490)]
+        self.container = PopUpContainer(self.x, self.y, self.width, self.height, len(options), 1)
+        for opt in options:
+            self.container.add_object(opt)
+        self.container.calculate_padding(x_center=True, y_center=True)
+
+        self.title = TitleCard("Help Menu", self.container.get_width())
+
+        # Returned screen is set by HelpIcon right before opening.
+        self.screen = "start"
+
+    def handle_event(self, event) -> None:
+        if event.type == pygame.KEYDOWN:
+            super().handle_event(event)
+            self.container.handle_event(event)
+            if event.key == pygame.K_h:
+                self.activate_black_layer = True
+                self.manager.change_screen(self.screen)
+
+    def set_return_screen(self, screen: str) -> None:
+        self.screen = screen
+        self.black_layer = True
+
+
+class HelpTextCard(UISelectObject):
+    """Single card that draws help text block."""
+
+    def __init__(self, width: int, height: int) -> None:
+        super().__init__(0, 0, width, height)
+        self.color = Colors.DARK_BLUE
+        self.bord_color = Colors.BLACK
+        self.border = 2
+        self.font = pygame.font.Font(None, 30)
+        self.lines = [
+            "Navigation Buttons:",
+            "WASD/Arrow Keys: Selection",
+            "RETURN: Confirm selection/Next screen",
+            "ESC: Settings Menu",
+            "H: Help Menu",
+            "",
+            "Game Play Buttons:",
+            "W/S: Accelerate / Brake & Reverse  ",
+            "A/D: Steer Left / Right ",
+            "SPACE: Hold to Drift, Release for Boost  ",
+            "ESC: Pause Menu",
+            "",
+            "Press H or ESC to close Help Menu",
+        ]
+
+    def select(self) -> None:
+        self.color = Colors.DARK_BLUE
+
+    def unselect(self) -> None:
+        self.color = Colors.DARK_BLUE
+
+    def get_action(self):
+        return None
+
+    def handle_event(self, event) -> None:
+        return None
+
+    def draw(self, surface: pygame.Surface) -> None:
+        rect = pygame.Rect(self.x, self.y, self.width, self.height)
+        pygame.draw.rect(surface, self.color, rect, border_radius=8)
+        pygame.draw.rect(surface, self.bord_color, rect, self.border, border_radius=8)
+
+        line_y = self.y + 20
+        line_x = self.x + 24
+        for line in self.lines:
+            line_surface = self.font.render(line, True, Colors.WHITE)
+            surface.blit(line_surface, (line_x, line_y))
+            line_y += 32

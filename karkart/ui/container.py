@@ -1,5 +1,3 @@
-"""Grid-style containers that lay out child widgets with automatic padding."""
-
 from __future__ import annotations
 
 import pygame
@@ -30,16 +28,10 @@ class Container(UIObject):
 
 
     def draw(self, surface: pygame.Surface) -> None:
-        """Draw every child at the positions derived from calculated padding.
 
-        .. note:: Always call :meth:`calculate_padding` after adding all objects.
-        """
         n = len(self.objects)
         rows, columns = self.rows, self.columns
         curr_x, curr_y = self.x, self.y
-
-        # NOTE: USED FOR DEBUGGING
-        # pygame.draw.rect(surface, Colors.YELLOW, (self.x, self.y, self.width, self.height), 5)
 
         i = 0
         obj = None
@@ -63,23 +55,34 @@ class Container(UIObject):
         self.objects.append(obj)
         self.calculate_padding()
 
+    def get_objects(self):
+        return self.objects
+
     def calculate_padding(self, x_center: bool = False, y_center: bool = False) -> None:
         first_row = self.objects[: self.columns]
         first_column = self.objects[:: self.columns]
 
         if x_center:
-            self.padding_x = (self.width - sum(obj.get_width() for obj in first_row)) / (self.columns + 1)
+            self.padding_x = (
+                self.width - sum(obj.get_width() for obj in first_row)
+            ) / (self.columns + 1)
             self.x += self.padding_x
         elif self.columns > 1:
-            self.padding_x = (self.width - sum(obj.get_width() for obj in first_row)) / (self.columns - 1)
+            self.padding_x = (
+                self.width - sum(obj.get_width() for obj in first_row)
+            ) / (self.columns - 1)
         else:
             self.padding_x = 0
 
         if y_center:
-            self.padding_y = (self.height - sum(obj.get_height() for obj in first_column)) / (self.rows + 1)
+            self.padding_y = (
+                self.height - sum(obj.get_height() for obj in first_column)
+            ) / (self.rows + 1)
             self.y += self.padding_y
         elif self.rows > 1:
-            self.padding_y = (self.height - sum(obj.get_height() for obj in first_column)) / (self.rows - 1)
+            self.padding_y = (
+                self.height - sum(obj.get_height() for obj in first_column)
+            ) / (self.rows - 1)
         else:
             self.padding_y = 0
 
@@ -127,12 +130,15 @@ class SelectContainer(Container):
 
 
 class MapContainer(SelectContainer):
-    """:class:`SelectContainer` with an extra keyboard-focusable Back button."""
 
     def __init__(
-        self, center_x: float, center_y: float,
-        width: float, height: float,
-        rows: int, columns: int,
+        self,
+        center_x: float,
+        center_y: float,
+        width: float,
+        height: float,
+        rows: int,
+        columns: int,
     ) -> None:
         super().__init__(center_x, center_y, width, height, rows, columns)
         self.back_button = None
@@ -179,13 +185,17 @@ class MapContainer(SelectContainer):
             super().handle_event(event)
         return None
 
+
 class PopUpContainer(SelectContainer):
-    """:class:`SelectContainer` adapted to the pause menu."""
 
     def __init__(
-        self, center_x: float, center_y: float,
-        width: float, height: float,
-        rows: int, columns: int,
+        self,
+        center_x: float,
+        center_y: float,
+        width: float,
+        height: float,
+        rows: int,
+        columns: int,
     ) -> None:
         super().__init__(center_x, center_y, width, height, rows, columns)
 
@@ -211,8 +221,8 @@ class PopUpContainer(SelectContainer):
         super().handle_event(event)
         return None
 
+
 class ArrowContainer(SelectContainer):
-    """:class:`SelectContainer` adapted to arrow selector."""
 
     def __init__(
         self, center_x: float, center_y: float,
@@ -222,15 +232,11 @@ class ArrowContainer(SelectContainer):
 
         super().__init__(center_x, center_y, width, height, 1, 3)
 
-        # List containing all the selectable options.
         self.options = options
         
         self.opt_index = opt_index
-        print(self.options[self.opt_index].get_text())
         self.objects = [Arrow(0, 0, 30, 30, "left"), self.options[self.opt_index], Arrow(0, 0, 30, 30, "right")]
 
-        print("objects: ", [x.is_selected() for x in self.objects])
-        print("options: ", [x.is_selected() for x in self.options])
         # self.select()
 
     def handle_event(self, event):
@@ -253,8 +259,6 @@ class ArrowContainer(SelectContainer):
         for x in self.objects:
             x.select()
 
-        # print("Select objects: ", [x.is_selected() for x in self.objects])
-        # print("options: ", [x.is_selected() for x in self.options])
 
     def unselect(self):
         for x in self.objects:
@@ -263,8 +267,6 @@ class ArrowContainer(SelectContainer):
         for x in self.options:
             x.unselect()
 
-        # print("Unselect objects: ", [x.is_selected() for x in self.objects])
-        # print("options: ", [x.is_selected() for x in self.options])
 
     def set_position(self, x, y):
         super().set_position(x, y)

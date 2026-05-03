@@ -1,5 +1,3 @@
-"""The ``ScreenManager`` swaps the currently active screen and owns shared state."""
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
@@ -11,7 +9,6 @@ if TYPE_CHECKING:
 
 
 class ScreenManager:
-    """Registers screens by label and routes frame ticks to the active one."""
 
     def __init__(self, app_data: "AppData", screen_display: pygame.Surface) -> None:
         self.running: bool = True
@@ -28,7 +25,10 @@ class ScreenManager:
         self.screens[screen.get_label()] = screen
 
     def change_screen(self, label: str) -> None:
-        """Activate a previously registered screen."""
+
+        outgoing = self.current
+        if outgoing is not None and hasattr(outgoing, "on_deactivate"):
+            outgoing.on_deactivate()
         self.current = self.screens[label]
         if hasattr(self.current, "update_resources"):
             self.current.update_resources()
@@ -41,7 +41,7 @@ class ScreenManager:
         return self.current.get_label()
 
     def get_screen(self):
-        """Return the currently active screen."""
+
         return self.current
 
     def get_app_data(self) -> "AppData":
@@ -51,5 +51,5 @@ class ScreenManager:
         return self.running
 
     def toggle_running(self) -> None:
-        """Flip the running flag (used to request a clean shutdown)."""
+
         self.running = not self.running

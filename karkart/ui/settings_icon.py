@@ -1,5 +1,3 @@
-"""settings_icon.py - includes all the features of the settings icon"""
-
 from __future__ import annotations
 
 import pygame
@@ -15,17 +13,16 @@ class SettingsIcon(UISelectObject):
 
         super().__init__(sp.XXRIGHT, sp.XXTOP, 0, 0)
 
-
         self.radius: int = 30
-        self.diameter: int = self.radius * 2
+        self.circle_radius: int = int(self.radius * 1.5)
+        self.diameter: int = self.circle_radius * 2
         gear = pygame.image.load(PICTURES_DIR / "gearicon.png")
         self.pic = pygame.transform.scale(gear, (self.diameter, self.diameter))
 
-        self.position: (int, int) = (self.x - self.radius, self.y - self.radius)
+        self.position: (int, int) = (self.x - self.circle_radius, self.y - self.circle_radius)
         self.circle_position: (int, int) = (self.x, self.y)
 
     def handle_event(self, event):
-        # Press ESC -> open settings and if closed goes back to same string.
         if event.key == pygame.K_ESCAPE:
             self.manager.push_screen(self.manager.get_screen().get_label())
             self.manager.change_screen("settings")

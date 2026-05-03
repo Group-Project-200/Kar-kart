@@ -1,10 +1,9 @@
-"""Car picker with a spinning sprite-stack preview."""
-
 from __future__ import annotations
 
 import pygame
 
 from karkart.constants import ScreenPositions as sp
+from karkart.ui.help_icon import HelpIcon
 from karkart.settings import Keys as K
 from karkart.paths import CAR_RENDER_DIR, PICTURES_DIR
 from karkart.rendering.preview import (
@@ -16,7 +15,6 @@ from karkart.ui import BackButton, SettingsIcon
 
 
 class CarScreen:
-    """Press LEFT/RIGHT to cycle cars, RETURN to confirm, DOWN + RETURN for back button."""
 
     PREVIEW_SIZE = (600, 450)
     STATBOX_SIZE = (600, 400)
@@ -33,17 +31,23 @@ class CarScreen:
             (sp.WIDTH, sp.HEIGHT),
         )
 
+        self.car_names = sorted(self.manager.app_data.cars.keys())
+
         self.loaded_statboxes = [
             pygame.transform.scale(
-                pygame.image.load(str(PICTURES_DIR / "statsboxes" / name)).convert_alpha(),
+                pygame.image.load(
+                    str(
+                        PICTURES_DIR
+                        / "statsboxes"
+                        / f"{car_name.replace('_', '')}_stats.png"
+                    )
+                ).convert_alpha(),
                 self.STATBOX_SIZE,
             )
-            for name in (
-                "car01_stats.png", "car02_stats.png", "car03_stats.png", "car04_stats.png",
-            )
+            for car_name in self.car_names
         ]
 
-        self.car_slices = [self._load_car_slices(f"car_{i:02d}") for i in range(1, 5)]
+        self.car_slices = [self._load_car_slices(car_name) for car_name in self.car_names]
 
         self.pipelines = [
             build_render_pipeline(
@@ -60,6 +64,8 @@ class CarScreen:
         self.selected: int = 0
 
         self.settings_icon = SettingsIcon(self.manager, "car")
+        self.help_icon = HelpIcon(self.manager, "car")
+
 
     @staticmethod
     def _load_car_slices(folder_name: str) -> list[pygame.Surface]:
@@ -75,12 +81,12 @@ class CarScreen:
         if event.type != pygame.KEYDOWN:
             return
 
+        self.help_icon.handle_event(event)
         self.settings_icon.handle_event(event)
 
-        # Back button selected -> RETURN brings to map & UP brings back to selection.
         if self.back_selected:
             if event.key == pygame.K_RETURN:
-                # Enter on Back returns to the previous screen via the button itself.
+
                 self.back_selected = False
                 self.back_button.unselect()
                 self.back_button.handle_event(event)
@@ -89,7 +95,6 @@ class CarScreen:
                 self.back_selected = False
                 self.back_button.unselect()
 
-        # Not selected -> selection is on & DOWN brings to BACK button
         else:
             if event.key == K.RIGHT:
                 self.selected = (self.selected + 1) % len(self.car_slices)
@@ -99,7 +104,7 @@ class CarScreen:
                 self.back_selected = True
                 self.back_button.select()
             elif event.key == pygame.K_RETURN:
-                car_name = f"car_{self.selected + 1:02d}"
+                car_name = self.car_names[self.selected]
                 self.manager.app_data.set_current_car(car_name)
                 self.manager.change_screen("map")
 
@@ -113,21 +118,21 @@ class CarScreen:
         surface.blit(self.loaded_statboxes[self.selected], (770, 400))
         pipeline = self.pipelines[self.selected]
 
-        # Slowly rotate the preview.
         self.preview_angle = (self.preview_angle + 1) % 360
 
-        # Render onto a transparent surface sized to the pipeline, then centre it.
         preview_surface = pygame.Surface(self.PREVIEW_SIZE, pygame.SRCALPHA)
         render_preview_debug_frame(
-            preview_surface, pipeline,
+            preview_surface,
+            pipeline,
             car_rotation=self.preview_angle,
-            stack_spread=-8,  # Controls the apparent "thickness" of the stack.
+            stack_spread=-8,
         )
         preview_rect = preview_surface.get_rect(center=(sp.WIDTH // 2, sp.HEIGHT // 2))
         surface.blit(preview_surface, preview_rect)
 
+        self.help_icon.draw(surface)
         self.back_button.draw(surface)
         self.settings_icon.draw(surface)
 
-    def get_label(self):
+    def get_label(self) -> str:
         return self.label
