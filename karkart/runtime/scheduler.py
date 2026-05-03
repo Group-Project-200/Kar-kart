@@ -80,13 +80,14 @@ class PhysicsScheduler(FixedRateThread):
 
             pm = world.powerups_manager
             if pm.current is not None:
-                if pm.current.tick(player.physics):
+                if pm.current.tick(world):
                     pm.current = None
 
             for items_box in world.world_box:
                 if items_box.check(ph.car_x, ph.car_y) and pm.current is None:
                     pm.current = pm.choose_random_powerup()
-                    pm.current.activate(player.physics)
+                    pm.current.activate(world)
+                    break
 
             world.sparks.update()
             world.camera.update_camera_angle()
@@ -129,6 +130,7 @@ class PhysicsScheduler(FixedRateThread):
                 ai_state.list_counter,
                 radius=radius,
                 radius_sq=radius_sq,
+                world=world,
             )
         n = len(world.ai_cars)
         for i in range(n):
@@ -140,6 +142,7 @@ class PhysicsScheduler(FixedRateThread):
                     world.ai_states[j].list_counter,
                     radius=radius,
                     radius_sq=radius_sq,
+                    world=world,
                 )
 
     def _advance_player_checkpoints(self) -> None:
@@ -256,6 +259,8 @@ class CollisionScheduler(FixedRateThread):
         player_hit = world.collision_detector.border_check(
             player_dir_idx, player_offset
         )
+        if world.player_invincible:
+            player_hit = False
         player_normal = (
             world.collision_detector.estimate_normal(player_offset)
             if player_hit
@@ -319,6 +324,7 @@ def _resolve_pair(
     *,
     radius: float,
     radius_sq: float,
+    world: "World",
 ) -> None:
     p, q = a.physics, b.physics
     dx = p.car_x - q.car_x
@@ -334,7 +340,20 @@ def _resolve_pair(
     q.car_x -= nx * overlap * 0.5
     q.car_y -= ny * overlap * 0.5
 
-    e = a.handling.car_restitution
+    e = max(a.handling.car_restitution, b.handling.car_restitution)
+
+    if world.player_invincible and a is world.player_car:
+        q.velocity_x -= nx * e * 2.0
+        q.velocity_y -= ny * e * 2.0
+        q.speed *= 0.35
+        return
+
+    if world.player_invincible and b is world.player_car:
+        p.velocity_x += nx * e * 2.0
+        p.velocity_y += ny * e * 2.0
+        p.speed *= 0.35
+        return
+
     vrel_n = (p.velocity_x - q.velocity_x) * nx + (p.velocity_y - q.velocity_y) * ny
     if vrel_n >= 0.0:
         return
