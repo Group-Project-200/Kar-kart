@@ -260,10 +260,12 @@ class GamePlay:
 
             ai_stacks = self._pick_ai_car_stacks(ai_count)
             ai_rng = random.Random()
+            ai_names = ["Osyra", "Driftaroo","Zippa", "Khepra"]
             for i in range(ai_count):
                 ai_name, ai_stack = ai_stacks[i]
                 ai_car = Car(
-                    handling=randomize_for_ai(get_handling_for(ai_name), ai_rng)
+                    handling=randomize_for_ai(get_handling_for(ai_name), ai_rng),
+                    name = ai_names[i]
                 )
                 ai_car.physics.car_x, ai_car.physics.car_y = ai_positions[i]
                 ai_car.physics.rotation = start_rotation
@@ -525,27 +527,6 @@ class GamePlay:
             )
         )
 
-    def update_resources(self) -> None:
-        self.car_stacker.set_images(self.manager.app_data.current_car)
-        self.mode = self.manager.app_data.modes[self.manager.app_data.current_mode]
-        self.ai_active = self.mode["Ai"] and bool(self.ai_cars)
-        for items_box in self.world_box:
-            items_box.active = self.mode["Items"]
-        self.current_map.active = self.mode["Items"]
-
-        from karkart.runtime.scheduler import _compute_position_label
-
-        with self.world.lock:
-            self.world.cached_position_label = _compute_position_label(
-                self.player_state,
-                self.ai_states,
-                ai_active=self.ai_active,
-            )
-
-        if not self.countdown.complete:
-            self.countdown.resume()
-
-        self.world.pause_event.clear()
 
     def update(self) -> None:
         if not self.countdown.complete:
@@ -747,8 +728,32 @@ class GamePlay:
                 total_laps=self.player_state.current_lap - 1,
             )
             GAME_LEADERBOARD.add(result)
+
         except Exception as error:
             print(f"Could not save race result: {error}")
+        if self.mode == "Championship":
+            racers = [{
+                "name": "Player 1",
+                "metric": (
+                    self.player_state.total_checkpoints,
+                    -getattr(self.player_state, "last_pass_order", 0),
+                ),
+            }]
+            for car, state in zip(self.ai_cars, self.ai_states):
+                racers.append({
+                    "name": car.name,
+                    "metric": (
+                        state.total_checkpoints,
+                        -getattr(state, "last_pass_order", 0),
+                    ),
+                })
+
+            racers.sort(key=lambda r: r["metric"], reverse=True)
+
+            points = [5, 4, 3, 2, 1]
+            for i, player in enumerate(racers):
+                self.manager.app_data.championship_results[player["name"]] += points[i]
+
 
         self.manager.change_screen("leaderboard")
 

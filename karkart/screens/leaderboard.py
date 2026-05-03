@@ -159,8 +159,10 @@ class LeaderboardScreen:
             else 0
         )
 
+        ai_cars = getattr(game, "ai_cars", [])
+
         for i, state in enumerate(getattr(game, "ai_states", [])):
-            if state.current_lap > 3:
+            if state.current_lap > 1:
                 score_text = "FINISHED"
             else:
                 if total_checkpoints > 0:
@@ -170,7 +172,7 @@ class LeaderboardScreen:
 
             rows.append(
                 {
-                    "name": f"AI {i + 1}",
+                    "name": ai_cars[i].name,
                     "score": score_text,
                     "metric": (
                         state.total_checkpoints,
@@ -324,7 +326,9 @@ class LeaderboardScreen:
                 self.selected_button = 1
                 self._go_to_screen("start")
 
-
+    def restart_championship(self):
+        for i in range(5):
+            self.manager.app_data.championship_results[i]= 0
 
     def update(self) -> None:
         pass
@@ -345,6 +349,9 @@ class LeaderboardScreen:
             if self.counter == 3:
                 self.counter = 0
                 self.manager.app_data.modes[self.manager.app_data.current_mode]["loop"]= False
+                self.restart_championship()
+
+
 
         else:
             self._draw_button(

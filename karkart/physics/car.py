@@ -237,8 +237,8 @@ class ControlState:
 
 class Car:
 
-    def __init__(self, handling: "CarHandling | None" = None) -> None:
-
+    def __init__(self, handling: "CarHandling | None" = None, name : str | None = None) -> None:
+        self.name = name
         self.handling = handling if handling is not None else CarHandling()
         self.physics = PhysicsState()
         self.controls = ControlState()
