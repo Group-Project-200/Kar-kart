@@ -2,28 +2,75 @@
 
 from __future__ import annotations
 
-import pygame
+import pygame, json
+from karkart.paths import SETTINGS_FILE
 
-class Settings:
+KEY_BINDINGS : {str :{str:pygame.key}} = {
+            "WASD" : {
+                "up" : pygame.K_w,
+                "down" : pygame.K_s,
+                "left" : pygame.K_a,
+                "right" : pygame.K_d
+            },
+            "ARROWS" : {
+                "up" : pygame.K_UP,
+                "down" : pygame.K_DOWN,
+                "left" : pygame.K_LEFT,
+                "right" : pygame.K_RIGHT
+            }
+        }
+
+class _Settings:
 
     """Contains all the settings that can be modified."""
 
     def __init__(self) -> None:
-        self.key_bindings: {str:pygame.key} = {
-            "up" : pygame.K_w,
-            "down" : pygame.K_s,
-            "left" : pygame.K_a,
-            "right" : pygame.K_d
+
+        with open(SETTINGS_FILE, 'r') as f:
+            data = json.load(f)
+
+        # 1. Preference on keys
+        self.bindings_label = data["bindings_label"]
+        self.sound = data["sound"]
+
+        self.bindings = KEY_BINDINGS[self.bindings_label]
+
+        self.all_bindings = list(KEY_BINDINGS.keys())
+        self.all_sound = ["On", "Off"]
+        
+    def get_objects(self):
+        bind_idx = self.all_bindings.index(self.bindings_label)
+        self.all_bindings = self.all_bindings[:bind_idx] + self.all_bindings[bind_idx:]
+
+        sound_idx = self.all_sound.index(self.sound)
+        self.all_sound = self.all_sound[:sound_idx] + self.all_sound[sound_idx:]
+
+        return {
+            "Controls" : self.all_bindings,
+            "Sound" : self.all_sound}
+        
+
+    def save(self):
+        data = {
+            "bindings_label" : self.bindings_label,
+            "sound" : self.sound
         }
 
-    def get_key(self, key: str) -> pygame.key:
-        return self.key_bindings[key]
+        with open(SETTINGS_FILE, 'w') as f:
+            json.dump(data, f)
 
-    def set_arrows(self) -> None:
-        self.key_bindings["up"] = pygame.K_UP
-        self.key_bindings["down"] = pygame.K_DOWN
-        self.key_bindings["left"] = pygame.K_LEFT
-        self.key_bindings["right"] = pygame.K_RIGHT
+
+    # --------- Bindings ---------
+
+    def set_bindings(self, label):
+        self.bindings_label = label
+        self.bindings = self.key_bindings[self.bindings_label]
+
+    def _get_key(self, key: str) -> pygame.key:
+        return self.bindings[key]
+
+
+    # ---------- Sound -----------
 
 
 class _Keys:
@@ -31,20 +78,19 @@ class _Keys:
 
     @property
     def UP(self):
-        return settings.get_key("up")
+        return settings._get_key("up")
 
     @property
     def DOWN(self):
-        return settings.get_key("down")
+        return settings._get_key("down")
 
     @property
     def LEFT(self):
-        return settings.get_key("left")
+        return settings._get_key("left")
 
     @property
     def RIGHT(self):
-        return settings.get_key("right")
+        return settings._get_key("right")
 
-settings = Settings()
-# settings.set_arrows()
+settings = _Settings()
 Keys = _Keys()

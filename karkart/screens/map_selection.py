@@ -6,21 +6,22 @@ import pygame
 
 from karkart.constants import Colors, ScreenPositions as sp
 from karkart.paths import PICTURES_DIR, PIXEL_FONT
-from karkart.ui import Button, MapCard, MapContainer, SettingsIcon
+from karkart.ui import BackButton, MapCard, MapContainer, SettingsIcon
 
 
 class MapScreen:
     """3x4 grid of map cards with a Back button below."""
 
-    def __init__(self, manager) -> None:
+    def __init__(self, manager, label) -> None:
         self.manager = manager
+        self.label = label
 
         self.container = MapContainer(
             sp.CENTER_X, sp.CCCBOTTOM,
             sp.WIDTH / 2, sp.HEIGHT / 16 * 9,
-            rows=2, columns=2,
+            rows=1, columns=4,
         )
-        self.back_button = Button("Back", "car", self.manager)
+        self.back_button = BackButton(self.manager, "car")
 
         for track in self.manager.get_app_data().get_tracks():
             track.set_dimensions(100, 80)
@@ -76,3 +77,6 @@ class MapScreen:
         self.container.draw(surface)
         self.back_button.draw(surface)
         self.settings_icon.draw(surface)
+
+    def get_label(self):
+        return self.label

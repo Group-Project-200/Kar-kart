@@ -32,8 +32,9 @@ GAME_LEADERBOARD = Leaderboard()
 
 
 class LeaderboardScreen:
-    def __init__(self, manager) -> None:
+    def __init__(self, manager, label) -> None:
         self.manager = manager
+        self.label = label
 
         if not pygame.font.get_init():
             pygame.font.init()
@@ -293,3 +294,6 @@ class LeaderboardScreen:
         self._draw_button(surface, self.main_menu_rect, "MAIN MENU", self.selected_button == 1)
 
         pygame.display.set_caption("Kar Kart - Leaderboard")
+
+    def get_label(self):
+        return self.label

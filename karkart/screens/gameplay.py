@@ -102,8 +102,10 @@ class GamePlay:
     # How many AI opponents spawn in Race Mode. Time Trial always has zero.
     _AI_COUNT_RACE: int = 4
 
-    def __init__(self, manager) -> None:
+    def __init__(self, manager, label) -> None:
         self.manager = manager
+        self.label = label
+
         self.mode = self.manager.app_data.modes[self.manager.app_data.current_mode]
         self.ai_active = self.mode["Ai"]
         self.config = GameConfig()
@@ -361,6 +363,7 @@ class GamePlay:
                     # Capture frozen game frame, then open pause menu. Works
                     # during the countdown too — the backdrop is just
                     # whatever was last drawn (map + cars + countdown digit).
+                    self.manager.push_screen(self.label)
                     self.manager.change_screen("pause")
                     self.manager.get_screen().backdrop = self.manager.screen_display.copy()
 
@@ -782,7 +785,7 @@ class GamePlay:
         except Exception as error:
             print(f"Could not save race result: {error}")
 
-        self.manager.add_screen("placeholder", LeaderboardScreen(self.manager))
+        self.manager.add_screen(LeaderboardScreen(self.manager, "placeholder"))
         self.manager.change_screen("placeholder")
 
     def draw(self, _surface: pygame.Surface) -> None:
@@ -801,3 +804,6 @@ class GamePlay:
         self.draw_hud(screen)
 
         pygame.display.flip()
+
+    def get_label(self):
+        return self.label

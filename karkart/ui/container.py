@@ -10,48 +10,24 @@ from karkart.ui.arrow import Arrow
 from karkart.ui.card import PopUpCard
 from karkart.ui.ui_object import UIObject
 
-
-class SelectContainer(UIObject):
-    """Grid container with a keyboard-driven selection cursor."""
-
+class Container(UIObject):
     def __init__(
         self, center_x: float, center_y: float,
         width: float, height: float,
-        rows: int, columns: int,
+        rows: int, columns: int
     ) -> None:
         super().__init__(center_x, center_y, width, height)
         self.rows = rows
         self.columns = columns
         self.objects: list = []
-        self.selected = 0
         self.padding_x: float = 0.0
         self.padding_y: float = 0.0
         self.max_width: float = 0.0
         self.max_height: float = 0.0
 
-    def add_object(self, obj) -> None:
-        self.objects.append(obj)
-        self.objects[self.selected].select()
-        self.calculate_padding()
+    def handle_event(self, event):
+        pass
 
-    def handle_event(self, event) -> None:
-        if event.type != pygame.KEYDOWN:
-            return
-
-        prev = self.selected
-        if event.key == K.LEFT and self.selected % self.columns != 0:
-            self.selected -= 1
-        elif event.key == K.RIGHT and self.selected % self.columns != self.columns - 1:
-            self.selected += 1
-        elif event.key == K.UP and self.selected // self.columns != 0:
-            self.selected -= self.columns
-        elif event.key == K.DOWN and self.selected // self.columns != self.rows - 1:
-            self.selected += self.columns
-        else:
-            return
-
-        self.objects[prev].unselect()
-        self.objects[self.selected].select()
 
     def draw(self, surface: pygame.Surface) -> None:
         """Draw every child at the positions derived from calculated padding.
@@ -83,6 +59,10 @@ class SelectContainer(UIObject):
                 curr_y += obj.get_height() + self.padding_y
             curr_x = self.x
 
+    def add_object(self, obj) -> None:
+        self.objects.append(obj)
+        self.calculate_padding()
+
     def calculate_padding(self, x_center: bool = False, y_center: bool = False) -> None:
         first_row = self.objects[: self.columns]
         first_column = self.objects[:: self.columns]
@@ -106,6 +86,45 @@ class SelectContainer(UIObject):
         self.max_width = max(obj.get_width() for obj in self.objects)
         self.max_height = max(obj.get_height() for obj in self.objects)
 
+    def get_action(self):
+        pass
+
+
+class SelectContainer(Container):
+    """Grid container with a keyboard-driven selection cursor."""
+
+    def __init__(
+        self, center_x: float, center_y: float,
+        width: float, height: float,
+        rows: int, columns: int
+    ) -> None:
+        super().__init__(center_x, center_y, width, height, rows, columns)
+        self.selected = 0
+
+    def add_object(self, obj) -> None:
+        super().add_object(obj)
+        self.objects[self.selected].select()
+
+    def handle_event(self, event) -> None:
+        if event.type != pygame.KEYDOWN:
+            return
+
+        prev = self.selected
+        if event.key == K.LEFT and self.selected % self.columns != 0:
+            self.selected -= 1
+        elif event.key == K.RIGHT and self.selected % self.columns != self.columns - 1:
+            self.selected += 1
+        elif event.key == K.UP and self.selected // self.columns != 0:
+            self.selected -= self.columns
+        elif event.key == K.DOWN and self.selected // self.columns != self.rows - 1:
+            self.selected += self.columns
+        
+        else:
+            return
+
+        self.objects[prev].unselect()
+        self.objects[self.selected].select()
+
 
 class MapContainer(SelectContainer):
     """:class:`SelectContainer` with an extra keyboard-focusable Back button."""
@@ -123,30 +142,6 @@ class MapContainer(SelectContainer):
         self.back_button = button
 
     def handle_event(self, event):
-        # if event.type == pygame.MOUSEMOTION:
-        #     pos = event.pos
-        #     for i, obj in enumerate(self.objects):
-        #         if pygame.Rect(obj.x, obj.y, obj.width, obj.height).collidepoint(pos):
-        #             if i != self.selected:
-        #                 self.objects[self.selected].unselect()
-        #                 self.back_selected = False
-        #                 if self.back_button:
-        #                     self.back_button.unselect()
-        #                 self.selected = i
-        #                 obj.select()
-        #             return None
-        #     return None
-
-        # if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-        #     pos = event.pos
-        #     for i, obj in enumerate(self.objects):
-        #         if pygame.Rect(obj.x, obj.y, obj.width, obj.height).collidepoint(pos):
-        #             self.objects[self.selected].unselect()
-        #             self.back_selected = False
-        #             self.selected = i
-        #             obj.select()
-        #             return obj.get_map()
-        #     return None
 
         if event.type != pygame.KEYDOWN:
             return None
@@ -154,7 +149,7 @@ class MapContainer(SelectContainer):
         if event.key == pygame.K_RETURN:
             if not self.back_selected:
                 # Enter on a map card confirms the map selection.
-                return self.objects[self.selected].get_map()
+                return self.objects[self.selected].get_action()
             # Enter on Back returns to the previous screen via the button itself.
             self.selected = 0
             self.back_selected = False
@@ -202,12 +197,12 @@ class PopUpContainer(SelectContainer):
 
         if event.key == pygame.K_RETURN:
             # Enter on a pop-up card confirms the option selection.
-            state = self.objects[self.selected].get_state()
-            if state:
+            action = self.objects[self.selected].get_action()
+            if action:
                 self.objects[self.selected].unselect()
                 self.selected = 0
                 self.objects[self.selected].select()
-                return state
+                return action
         elif event.key == pygame.K_ESCAPE:
             self.objects[self.selected].unselect()
             self.selected = 0
@@ -222,7 +217,7 @@ class ArrowContainer(SelectContainer):
     def __init__(
         self, center_x: float, center_y: float,
         width: float, height: float,
-        options: list[PopUpCard]
+        options: list[PopUpCard], opt_index: int = 0
     ) -> None:
 
         super().__init__(center_x, center_y, width, height, 1, 3)
@@ -230,45 +225,50 @@ class ArrowContainer(SelectContainer):
         # List containing all the selectable options.
         self.options = options
         
-        self.opt_index = 0
+        self.opt_index = opt_index
+        print(self.options[self.opt_index].get_text())
         self.objects = [Arrow(0, 0, 30, 30, "left"), self.options[self.opt_index], Arrow(0, 0, 30, 30, "right")]
-        self.select()
+
+        print("objects: ", [x.is_selected() for x in self.objects])
+        print("options: ", [x.is_selected() for x in self.options])
+        # self.select()
 
     def handle_event(self, event):
         if event.type != pygame.KEYDOWN:
             return None
 
-        if event.key == pygame.K_RETURN:
-            
-            # RETURN changes the selected option based on the arrow pressed
-            if self.selected == 2:
-                self.opt_index = (self.opt_index + 1) % len(self.options)
-                self.objects[1] = self.options[self.opt_index]
-            elif self.selected == 0:
-                self.opt_index = (self.opt_index - 1) % len(self.options)
-                self.objects[1] = self.options[self.opt_index]
-            return None
-
         # LEFT and RIGHT move from an arrow to the other, skipping the card in the middle.
-        prev = self.selected
-        if event.key == K.LEFT and self.selected != 0:
-            self.selected -= 2
-        elif event.key == K.RIGHT and self.selected != 2:
-            self.selected += 2
+        prev = self.opt_index
+        if event.key == K.LEFT:
+            self.opt_index = (self.opt_index - 1) % len(self.options)
+            self.objects[1] = self.options[self.opt_index]
+        elif event.key == K.RIGHT:
+            self.opt_index = (self.opt_index + 1) % len(self.options)
+            self.objects[1] = self.options[self.opt_index]
 
-        self.objects[prev].unselect()
-        self.objects[self.selected].select()
+        self.options[prev].unselect()
+        self.options[self.opt_index].select()
 
     def select(self):
-        self.selected = 2
-        self.objects[self.selected].select()
+        for x in self.objects:
+            x.select()
+
+        # print("Select objects: ", [x.is_selected() for x in self.objects])
+        # print("options: ", [x.is_selected() for x in self.options])
 
     def unselect(self):
-        self.objects[self.selected].unselect()
+        for x in self.objects:
+            x.unselect()
+
+        for x in self.options:
+            x.unselect()
+
+        # print("Unselect objects: ", [x.is_selected() for x in self.objects])
+        # print("options: ", [x.is_selected() for x in self.options])
 
     def set_position(self, x, y):
         super().set_position(x, y)
         self.calculate_padding(x_center=True, y_center=True)
 
-    def get_state(self):
-        pass
+    def get_text(self):
+        return self.options[self.opt_index].get_text()

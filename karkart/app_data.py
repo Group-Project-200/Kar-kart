@@ -71,8 +71,6 @@ class AppData:
         self.current_car_name: str = "car_01"
         self.current_car: list[pygame.Surface] = self.cars[self.current_car_name]
         self.current_mode = "Race Mode"
-        # NOTE: LEFT FOR TESTS:
-        # self.current_mode = "Time Trial"
 
 
 

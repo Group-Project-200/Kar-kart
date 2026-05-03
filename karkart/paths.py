@@ -27,3 +27,5 @@ CAR_RENDER_DIR: Path = RESOURCES_DIR / "render"
 MAP_DATA_FILE: Path = PROJECT_ROOT / "map_data.json"
 
 PIXEL_FONT: Path = ASSETS_DIR / "pixel_font.ttf"
+
+SETTINGS_FILE: Path = PROJECT_ROOT / "karkart" / "settings.json"

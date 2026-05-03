@@ -1,7 +1,8 @@
 import pygame
 class Placeholder:
-    def __init__(self, manager):
+    def __init__(self, manager, label):
         self.manager = manager
+        self.label = label
 
     def handle_event(self, event) -> None:
         if event.type != pygame.KEYDOWN:
@@ -21,3 +22,6 @@ class Placeholder:
         surface.fill((50, 100, 200))
 
         return
+
+    def get_label(self):
+        return self.label

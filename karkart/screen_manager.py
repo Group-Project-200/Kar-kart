@@ -18,17 +18,27 @@ class ScreenManager:
         self.current: Any = None
         self.app_data = app_data
         self.screen_display = screen_display
-        self.screens: dict[str, object] = {}
 
-    def add_screen(self, label: str, screen: object) -> None:
+        self.screens: dict[str, object] = {}
+        self.stack = []
+
+    def add_screen(self, screen: object) -> None:
         """Register *screen* under *label* so it can later be activated."""
-        self.screens[label] = screen
+
+        self.screens[screen.get_label()] = screen
 
     def change_screen(self, label: str) -> None:
         """Activate a previously registered screen."""
         self.current = self.screens[label]
         if hasattr(self.current, "update_resources"):
             self.current.update_resources()
+
+    def push_screen(self, label: str) -> None:
+        self.stack.append(label)
+
+    def pop_screen(self) -> str:
+        self.current = self.screens[self.stack.pop()]
+        return self.current.get_label()
 
     def get_screen(self):
         """Return the currently active screen."""
