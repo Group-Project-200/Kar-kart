@@ -19,8 +19,9 @@ from karkart.screens.car_selection import CarScreen
 from karkart.screens.map_selection import MapScreen
 from karkart.screens.race_selection import RaceSelector
 from karkart.screens.start import StartScreen
-from karkart.screens.placeholer_leaderboard import Placeholder
+from karkart.screens.leaderboard import LeaderboardScreen
 from karkart.audio import AudioManager
+from karkart.screens.gameplay import GamePlay
 
 
 TARGET_FPS = 60
@@ -44,7 +45,8 @@ def main() -> None:
     manager.add_screen("car", CarScreen(manager))
     manager.add_screen("map", MapScreen(manager))
     manager.add_screen("pause", PauseMenu(manager))
-    manager.add_screen("placeholder", Placeholder(manager))
+    manager.add_screen("leaderboard", LeaderboardScreen(manager))
+    manager.add_screen("game", GamePlay(manager))
 
     manager.change_screen("start")
 

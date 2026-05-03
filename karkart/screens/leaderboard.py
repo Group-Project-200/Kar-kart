@@ -125,20 +125,28 @@ class LeaderboardScreen:
         rows = []
 
         player_time = None
-        if hasattr(game, "_lap_times") and game._lap_times:
+
+        if getattr(game, "_race_finished", False) and GAME_LEADERBOARD.results:
+            latest_result = GAME_LEADERBOARD.results[-1]
+            player_time = latest_result.total_time
+
+        elif hasattr(game, "_lap_times") and game._lap_times:
             player_time = sum(game._lap_times)
+
         elif hasattr(game, "_race_start_time") and game._race_start_time > 0.0:
             player_time = time.perf_counter() - game._race_start_time
 
         player_state = game.player_state
+
+        if player_time is not None:
+            player_score = self._format_time(player_time)
+        else:
+            player_score = "FINISHED"
+
         rows.append(
             {
                 "name": "Player 1",
-                "score": (
-                    self._format_time(player_time)
-                    if player_time is not None
-                    else "FINISHED"
-                ),
+                "score": player_score,
                 "metric": (
                     player_state.total_checkpoints,
                     -getattr(player_state, "last_pass_order", 0),
