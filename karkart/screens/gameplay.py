@@ -7,6 +7,7 @@ import time
 from dataclasses import dataclass
 
 import pygame
+from pygame.draw import lines
 
 from karkart.ai.ai_controller import AIController
 from karkart.ai.pathfinder import AStarPathfinder
@@ -140,7 +141,8 @@ class GamePlay:
 
     def __init__(self, manager) -> None:
         self.manager = manager
-        self.mode = self.manager.app_data.modes[self.manager.app_data.current_mode]
+        self.mode_name = self.manager.app_data.current_mode
+        self.mode = self.manager.app_data.modes[self.mode_name]
         self.ai_active = self.mode["Ai"]
         self.championship = self.mode["loop"]
         self.config = GameConfig()
@@ -150,7 +152,11 @@ class GamePlay:
         self._debug_checkpoints: bool = False
 
         self._hud_font = pygame.font.Font(str(PIXEL_FONT), 17)
-        self.hud_img = pygame.image.load(str(PICTURES_DIR / "hud_bg.png")).convert_alpha()
+
+        if self.mode_name == "Time Trial":
+            self.hud_img = pygame.image.load(str(PICTURES_DIR / "time_trial_HUD.png")).convert_alpha()
+        else:
+            self.hud_img = pygame.image.load(str(PICTURES_DIR / "other_HUD.png")).convert_alpha()
 
         self.player_state = RacerState()
         self.ai_states: list[RacerState] = []
@@ -582,30 +588,40 @@ class GamePlay:
         return int(fx * screen_w / frame_w), int(fy * screen_h / frame_h)
 
     def draw_hud(self, screen: pygame.Surface, snapshot: WorldSnapshot) -> None:
+
         screen.blit(self.hud_img, (8, 8))
 
         total_cps = len(self.current_map.checkpoints_list) or 1
         cp_in_lap = snapshot.player_racer.list_counter
         lap = snapshot.player_racer.current_lap
         speed = snapshot.player.speed
-
+        powerup = self.world.powerups_manager.current.name if self.world.powerups_manager.current is not None else "NONE"
         kph = int(60*speed)
 
-        lines = [
+        if self.mode_name == "Time Trial":
+            HUD_lines =[
             f"   {snapshot.position_label}",
+            f" {powerup}",
+            f"{kph}kmh",
+            f" {lap}/3",
+            f" {cp_in_lap}/{total_cps}",]
+
+        else:
+            HUD_lines = [
+            f"   {snapshot.position_label}",
+            f" {powerup}",
             f"{kph}kmh",
             f" {lap}/3",
             f" {cp_in_lap}/{total_cps}",
         ]
 
-        padding = 3
+        padding = 2.5
         rendered = [
-            self._hud_font.render(text, True, (255, 255, 255)) for text in lines
+            self._hud_font.render(text, True, (255, 255, 255)) for text in HUD_lines
         ]
-        width = max(s.get_width() for s in rendered) + padding * 2
-        height = sum(s.get_height() for s in rendered) + padding * 2
 
-        y = 22 + padding
+
+        y = 28 + padding
         for surf in rendered:
             screen.blit(surf, (150 + padding, y))
             y += 26 + surf.get_height()

@@ -51,7 +51,7 @@ class FixedRateThread(threading.Thread):
 
 
 class PhysicsScheduler(FixedRateThread):
-    _LAP_TARGET: int = 0
+    _LAP_TARGET: int = 1
 
     def __init__(self, *, world: "World", snapshot_buffer: "SnapshotBuffer") -> None:
         super().__init__(world=world, target_hz=60.0, name="kk-physics")
@@ -86,6 +86,7 @@ class PhysicsScheduler(FixedRateThread):
             for items_box in world.world_box:
                 if items_box.check(ph.car_x, ph.car_y) and pm.current is None:
                     pm.current = pm.choose_random_powerup()
+                    print(pm.current.name)
                     pm.current.activate(world)
                     break
 
