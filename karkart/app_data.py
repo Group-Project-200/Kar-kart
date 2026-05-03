@@ -14,10 +14,10 @@ with MAP_DATA_FILE.open() as _f:
 
 _ALLOWED_TRACKS: frozenset[str] = frozenset(
     {
-        "newmap1",
-        "newmap2",
-        "newmap3",
-        "newmap4",
+        "Hells Blaze",
+        "Candy Land",
+        "Meadow Drift",
+        "Lunar Loop",
     }
 )
 
@@ -56,12 +56,14 @@ class AppData:
         }
 
         for map_folder in sorted(p for p in MAPS_DIR.iterdir() if p.is_dir()):
+
             cover = map_folder / "cover.png"
             if (
                 cover.is_file()
                 and map_folder.name in _MAP_DATA_KEYS
                 and map_folder.name in _ALLOWED_TRACKS
             ):
+
                 self.add_track(Track(str(cover), map_folder.name, map_folder))
 
         self.current_map= None

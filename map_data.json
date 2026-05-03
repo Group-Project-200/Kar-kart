@@ -1,5 +1,5 @@
 {
-  "newmap1": {
+  "Hells Blaze": {
     "checkpoints": [
       {
         "x": 787,
@@ -83,7 +83,7 @@
       ]
     ]
   },
-  "newmap2": {
+  "Candy Land": {
     "checkpoints": [
       {
         "x": 323,
@@ -130,7 +130,7 @@
     ],
     "items": []
   },
-  "newmap3": {
+  "Meadow Drift": {
     "checkpoints": [
       {
         "x": 45,
@@ -171,7 +171,7 @@
     ],
     "items": []
   },
-  "newmap4": {
+  "Lunar Loop": {
     "checkpoints": [
       {
         "x": 696,
@@ -217,11 +217,5 @@
       240,
       179
     ]
-  },
-  "map_2": {
-    "checkpoints": [],
-    "start_grid": [],
-    "finish_line": [],
-    "items": []
   }
 }
