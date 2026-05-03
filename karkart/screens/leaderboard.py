@@ -294,7 +294,9 @@ class LeaderboardScreen:
                 self.selected_button = (self.selected_button + 1) % len(self.buttons)
 
             elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
-                _, target = self.buttons[self.selected_button]
+                name, target = self.buttons[self.selected_button]
+                if name == "NEXT RACE":
+                    self.counter += 1
                 self._go_to_screen(target)
 
             elif event.key == pygame.K_ESCAPE:
