@@ -47,10 +47,7 @@ class LeaderboardScreen:
 
         self.background = self._load_background()
 
-        self.buttons = [
-            ("PLAY AGAIN", "race_selector"),
-            ("MAIN MENU", "start"),
-        ]
+        self.buttons = []
 
         self.row_boxes = [
             {
@@ -82,7 +79,8 @@ class LeaderboardScreen:
         self.counter = 0
         self.play_again_rect = pygame.Rect(323, 676, 309, 33)
         self.main_menu_rect = pygame.Rect(648, 676, 309, 33)
-        self.next_race = pygame.Rect(973, 676, 309, 33)
+        self.next_race = pygame.Rect(323, 676, 309, 33)
+
     def _load_font(self, size: int) -> pygame.font.Font:
         try:
             return pygame.font.Font(str(PIXEL_FONT), size)
@@ -272,12 +270,22 @@ class LeaderboardScreen:
         surface.blit(label, label_rect)
 
     def _go_to_screen(self, target: str) -> None:
-        from karkart.screens.gameplay import GamePlay
-
-        self.manager.add_screen("game", GamePlay(self.manager))
         self.manager.change_screen(target)
 
+
     def handle_event(self, event) -> None:
+        is_championships = self.manager.app_data.modes[self.manager.app_data.current_mode]["loop"]
+        if is_championships:
+            self.buttons = [
+                ("NEXT RACE", "map"),
+                ("MAIN MENU", "start"),
+            ]
+        else:
+            self.buttons = [
+                ("PLAY AGAIN", "race_selector"),
+                ("MAIN MENU", "start"),
+            ]
+
         if event.type == pygame.KEYDOWN:
             if event.key in (pygame.K_LEFT, pygame.K_a):
                 self.selected_button = (self.selected_button - 1) % len(self.buttons)
@@ -293,13 +301,20 @@ class LeaderboardScreen:
                 self._go_to_screen("start")
 
         elif event.type == pygame.MOUSEMOTION:
-            if self.play_again_rect.collidepoint(event.pos):
+            left_rect = self.next_race if is_championships else self.play_again_rect
+            if left_rect.collidepoint(event.pos):
                 self.selected_button = 0
             elif self.main_menu_rect.collidepoint(event.pos):
                 self.selected_button = 1
 
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            if self.play_again_rect.collidepoint(event.pos):
+
+            if is_championships and self.next_race.collidepoint(event.pos):
+                self.selected_button = 0
+                self._go_to_screen("map")
+                self.counter += 1
+
+            elif not is_championships and self.play_again_rect.collidepoint(event.pos):
                 self.selected_button = 0
                 self._go_to_screen("race_selector")
 
@@ -307,10 +322,7 @@ class LeaderboardScreen:
                 self.selected_button = 1
                 self._go_to_screen("start")
 
-            elif self.next_race.collidepoint(event.pos):
-                self.selected_button = 1
-                self.manager.change_screen("map")
-                self.counter += 1
+
 
     def update(self) -> None:
         pass
@@ -323,18 +335,22 @@ class LeaderboardScreen:
         for i, row in enumerate(rows[:5]):
             self._draw_row(surface, row, i)
 
-        self._draw_button(
-            surface, self.play_again_rect, "PLAY AGAIN", self.selected_button == 0
-        )
-        self._draw_button(
-            surface, self.main_menu_rect, "MAIN MENU", self.selected_button == 1
-        )
         if self.manager.app_data.modes[self.manager.app_data.current_mode]["loop"]:
             self._draw_button(
-                surface, self.next_race, "NEXT RACE", self.selected_button == 1
+                surface, self.next_race, "NEXT RACE", self.selected_button == 0
             )
 
             if self.counter == 3:
                 self.counter = 0
+                self.manager.app_data.modes[self.manager.app_data.current_mode]["loop"]= False
+
+        else:
+            self._draw_button(
+            surface, self.play_again_rect, "PLAY AGAIN", self.selected_button == 0
+            )
+
+        self._draw_button(
+            surface, self.main_menu_rect, "MAIN MENU", self.selected_button == 1
+        )
 
         pygame.display.set_caption("Kar Kart - Leaderboard")
