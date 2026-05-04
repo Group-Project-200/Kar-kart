@@ -163,7 +163,7 @@ class LeaderboardScreen:
         ai_cars = getattr(game, "ai_cars", [])
 
         for i, state in enumerate(getattr(game, "ai_states", [])):
-            if state.current_lap > 1:
+            if state.current_lap > 3:
                 score_text = "FINISHED"
             else:
                 if total_checkpoints > 0:
