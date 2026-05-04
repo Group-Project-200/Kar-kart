@@ -582,9 +582,17 @@ class GamePlay:
         powerup = self.world.powerups_manager.current.name if self.world.powerups_manager.current is not None else "NONE"
         kph = int(60*speed)
 
+        if self.countdown.complete and self.world.race_start_time is not None:
+            time_passed = time.perf_counter() - self.world.race_start_time
+        else:
+            time_passed = 0
+
+        minutes = int(time_passed //60)
+        seconds = time_passed % 60
+
         if self.mode_name == "Time Trial":
             HUD_lines =[
-            f"   {snapshot.position_label}",
+            f"{minutes}:{seconds:06.3f}",
             f"{kph}kmh",
             f" {lap}/3",
             f" {cp_in_lap}/{total_cps}",]
