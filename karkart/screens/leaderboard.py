@@ -332,8 +332,12 @@ class LeaderboardScreen:
             self.manager.app_data.modes[self.manager.app_data.current_mode]["loop"] = False
 
     def restart_championship(self):
+        x=1
+        counter = 0
         for player in self.manager.app_data.championship_results.values():
             player[0] = 0
+            player[1] = x+counter
+            counter += 1
 
     def update(self) -> None:
         pass

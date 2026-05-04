@@ -771,9 +771,11 @@ class GamePlay:
 
             racers.sort(key=lambda r: r["metric"], reverse=True)
 
-            points = [5, 4, 3, 2, 1]
+            points = [5,4,3,2,1]
+            positions= [1,2,3,4,5]
             for i, player in enumerate(racers):
                 self.manager.app_data.championship_results[player["name"]][0] += points[i]
+                self.manager.app_data.championship_results[player["name"]][1] = positions[i]
 
         print(self.manager.app_data.championship_results)
         self.manager.change_screen("leaderboard")
