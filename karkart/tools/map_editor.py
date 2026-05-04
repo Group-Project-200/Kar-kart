@@ -59,28 +59,28 @@ def _rect_from_corners(
     y = min(a[1], b[1])
     return x, y, abs(b[0] - a[0]), abs(b[1] - a[1])
 
-def lerp(a, b, t):
+def find_coordinate(a, b, t):
     return a + (b - a) * t
 
 def _start_pos(cp):
     coordinates = []
 
-    x_near = lerp(cp[0][0], cp[1][0], 3 / 4)
-    y_near = lerp(cp[0][1], cp[1][1], 3 / 4)
-    x_far = lerp(cp[3][0], cp[2][0], 3 / 4)
-    y_far = lerp(cp[3][1], cp[2][1], 3 / 4)
+    x_near = find_coordinate(cp[0][0], cp[1][0], 3 / 4)
+    y_near = find_coordinate(cp[0][1], cp[1][1], 3 / 4)
+    x_far = find_coordinate(cp[3][0], cp[2][0], 3 / 4)
+    y_far = find_coordinate(cp[3][1], cp[2][1], 3 / 4)
 
 
-    x_first = lerp(cp[0][0], cp[1][0], 0.25)
-    y_first = lerp(cp[0][1], cp[1][1], 0.25)
-    x_second = lerp(x_near, x_far, 2 / 5)
-    y_second = lerp(y_near, y_far, 2 / 5)
-    x_fifth = lerp(cp[3][0], cp[2][0], 0.25)
-    y_fifth = lerp(cp[3][1], cp[2][1], 0.25)
-    x_third = lerp(x_first, x_fifth, 3 / 5)
-    y_third = lerp(y_first, y_fifth, 3 / 5)
-    x_fourth = lerp(x_near, x_far, 4 / 5)
-    y_fourth = lerp(y_near, y_far, 4 / 5)
+    x_first = find_coordinate(cp[0][0], cp[1][0], 0.25)
+    y_first = find_coordinate(cp[0][1], cp[1][1], 0.25)
+    x_second = find_coordinate(x_near, x_far, 2 / 5)
+    y_second = find_coordinate(y_near, y_far, 2 / 5)
+    x_fifth = find_coordinate(cp[3][0], cp[2][0], 0.25)
+    y_fifth = find_coordinate(cp[3][1], cp[2][1], 0.25)
+    x_third = find_coordinate(x_first, x_fifth, 3 / 5)
+    y_third = find_coordinate(y_first, y_fifth, 3 / 5)
+    x_fourth = find_coordinate(x_near, x_far, 4 / 5)
+    y_fourth = find_coordinate(y_near, y_far, 4 / 5)
 
     coordinates.append((x_first, y_first))
     coordinates.append((x_second, y_second))
