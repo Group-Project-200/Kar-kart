@@ -16,14 +16,17 @@ class MapScreen:
         self.label = label
 
         self.container = MapContainer(
-            sp.CENTER_X, sp.CCCBOTTOM,
-            sp.WIDTH / 2, sp.HEIGHT / 16 * 9,
-            rows=1, columns=4,
+            sp.CENTER_X,
+            sp.CCCBOTTOM,
+            sp.WIDTH *10/25,
+            sp.HEIGHT *17/25,
+            rows=2,
+            columns=2,
         )
         self.back_button = BackButton(self.manager, "car")
 
         for track in self.manager.get_app_data().get_tracks():
-            track.set_dimensions(100, 80)
+            track.set_dimensions(210, 210)
             self.container.add_object(MapCard(track, manager))
 
         self.container.calculate_padding()
@@ -64,9 +67,9 @@ class MapScreen:
         instr_text = instr_font.render(
             "Select the track you want to race on", True, Colors.WHITE
         )
-        instr_center = instr_text.get_rect(center=(sp.CENTER_X, sp.XTOP))
+        instr_center = instr_text.get_rect(center=(sp.CENTER_X, 100))
 
-        instr_width = self.container.get_width()
+        instr_width = self.container.get_width() + 50
         instr_height = instr_text.get_height() + font_size * 1.5
         instr_x = instr_center.x - (instr_width - instr_text.get_width()) / 2
         instr_y = instr_center.y - (instr_height - instr_text.get_height()) / 2

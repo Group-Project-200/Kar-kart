@@ -139,6 +139,9 @@ class SettingsMenu(PopUpMenu):
                 sound = self.container.get_objects()[1].get_text()
                 settings.set_sound(sound)
 
+                music = self.container.get_objects()[2].get_text()
+                settings.set_music(music)
+
                 settings.save()
             
             super().handle_event(event)
@@ -201,7 +204,7 @@ class HelpTextCard(UISelectObject):
             "Navigation Buttons:",
             "WASD/Arrow Keys: Selection",
             "RETURN: Confirm selection/Next screen",
-            "ESC: Settings Menu",
+            "ESC: Open Settings Menu/Save and close",
             "H: Help Menu",
             "",
             "Game Play Buttons:",

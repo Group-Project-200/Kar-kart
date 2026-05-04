@@ -3,11 +3,13 @@
 import pygame
 import os
 
-# get path to Kar-Kart folder (one level up from 'audio.py') to get resources/music/backup_plan.wav
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# build path starting in Kar-Kart directory
-MUSIC_FILE = os.path.join(BASE_DIR, "resources", "music", "backup_plan.wav")
+MUSIC_PATHS = {
+    "Music 1": os.path.join(BASE_DIR, "resources", "music", "backup_plan.wav"),
+    "Music 2": os.path.join(BASE_DIR, "resources", "music", "asphalt.mp3"),
+    "Music 3": os.path.join(BASE_DIR, "resources", "music", "10 - buffy - old fashion - outro party.mp3"),
+}
 
 class AudioManager:
 
@@ -17,20 +19,14 @@ class AudioManager:
             pygame.mixer.init()
 
     @staticmethod
-    def start_background_music():
-        """Plays the global background music."""
-        
+    def start_background_music(music_label: str = "Music 1"):
+        AudioManager.initiate_music()
         try:
-            pygame.mixer.music.load(MUSIC_FILE)
-            pygame.mixer.music.play(-1) # -1 loops forever
-        except pygame.error as e:
-            print(f"Error: Music file not found")
+            pygame.mixer.music.load(MUSIC_PATHS[music_label])
+            pygame.mixer.music.play(-1)
+        except (pygame.error, KeyError):
+            print(f"Error: Music '{music_label}' file not found")
 
     @staticmethod
     def stop_background_music():
         pygame.mixer.music.stop()        
-
-    @staticmethod
-    # can be used to control volume (0.0 to 1.0) from settings later
-    def set_volume(volume):
-        pygame.mixer.music.set_volume(volume)

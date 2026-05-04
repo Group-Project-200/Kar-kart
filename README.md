@@ -254,3 +254,13 @@ classDiagram
 From the album "Another Bag of Chips"
 Licensed under CC0 1.0 Universal (Public Domain)
 Source: https://opengameart.org/content/10-more-chiptune-tracks-another-bag-of-chips
+
+"Old Fashion" by Buffy Music 
+From the album "Outro Party" 
+Licensed under CC0 1.0 Universal (Public Domain). 
+Source: https://opengameart.org/content/outro-party-music
+
+"Asphalt" by Remix_Killa Music 
+From the track "Asphalt" 
+Licensed under GNU GPL 3.0 . 
+Source: https://opengameart.org/content/asphalt-0

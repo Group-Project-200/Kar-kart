@@ -29,11 +29,14 @@ class _Settings:
         # 1. Preference on keys
         self.bindings_label = data["bindings_label"]
         self.sound = data["sound"]
+        self.music = data["music"]
 
         self.bindings = KEY_BINDINGS[self.bindings_label]
 
         self.all_bindings = list(KEY_BINDINGS.keys())
         self.all_sound = ["On", "Off"]
+        self.all_music = ["Music 1", "Music 2", "Music 3"]
+
         
     def get_objects(self):
         bind_idx = self.all_bindings.index(self.bindings_label)
@@ -42,15 +45,21 @@ class _Settings:
         sound_idx = self.all_sound.index(self.sound)
         self.all_sound = self.all_sound[sound_idx:] + self.all_sound[:sound_idx]
 
+        music_idx = self.all_music.index(self.music)
+        self.all_music = self.all_music[music_idx:] + self.all_music[:music_idx]
+
+
         return {
             "Controls" : self.all_bindings,
-            "Sound" : self.all_sound}
+            "Sound" : self.all_sound,
+            "Music" : self.all_music}
         
 
     def save(self):
         data = {
             "bindings_label" : self.bindings_label,
-            "sound" : self.sound
+            "sound" : self.sound,
+            "music" : self.music
         }
 
         with open(SETTINGS_FILE, 'w') as f:
@@ -74,12 +83,22 @@ class _Settings:
             self.sound = label
             
             if self.is_sound_active():
-                AudioManager.start_background_music()
+                AudioManager.start_background_music(self.music)
             else:
                 AudioManager.stop_background_music()
 
     def is_sound_active(self) -> bool:
         return True if self.sound == "On" else False
+    
+    # ---------- Music -----------
+    def set_music(self, label):
+        if self.music != label:
+            self.music = label
+            if self.is_sound_active():
+                AudioManager.start_background_music(self.music)
+    
+    def is_sound_active(self) -> bool:
+        return self.sound == "On"
 
 
 class _Keys:

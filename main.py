@@ -51,7 +51,7 @@ def main() -> None:
 
     manager.change_screen("start")
 
-    AudioManager.start_background_music()
+    AudioManager.start_background_music(settings.music)
 
     # When a frame blows the 16.7 ms budget, the next tick holds the prior
     # image on screen instead of rendering again. Physics still updates, so
