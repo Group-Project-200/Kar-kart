@@ -275,19 +275,15 @@ class LeaderboardScreen:
     def _go_to_screen(self, target: str) -> None:
         self.manager.change_screen(target)
 
-
     def handle_event(self, event) -> None:
         is_championships = self.manager.app_data.modes[self.manager.app_data.current_mode]["loop"]
         if is_championships:
-            self.buttons = [
-                ("NEXT RACE", "map"),
-                ("MAIN MENU", "start"),
-            ]
+            if self.counter >= 2:  # this leaderboard is after race 3
+                self.buttons = [("PLAY AGAIN", "race_selector"), ("MAIN MENU", "start")]
+            else:
+                self.buttons = [("NEXT RACE", "map"), ("MAIN MENU", "start")]
         else:
-            self.buttons = [
-                ("PLAY AGAIN", "race_selector"),
-                ("MAIN MENU", "start"),
-            ]
+            self.buttons = [("PLAY AGAIN", "race_selector"), ("MAIN MENU", "start")]
 
         if event.type == pygame.KEYDOWN:
             if event.key in (pygame.K_LEFT, pygame.K_a):
@@ -299,7 +295,9 @@ class LeaderboardScreen:
             elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
                 name, target = self.buttons[self.selected_button]
                 if name == "NEXT RACE":
-                    self.counter += 1
+                    self._next_check()
+                elif name == "PLAY AGAIN":
+                    self.restart_championship()
                 self._go_to_screen(target)
 
             elif event.key == pygame.K_ESCAPE:
@@ -313,22 +311,28 @@ class LeaderboardScreen:
                 self.selected_button = 1
 
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-
             if is_championships and self.next_race.collidepoint(event.pos):
                 self.selected_button = 0
+                self._next_check()
                 self._go_to_screen("map")
-                self.counter += 1
 
             elif not is_championships and self.play_again_rect.collidepoint(event.pos):
                 self.selected_button = 0
+                self.restart_championship()
                 self._go_to_screen("race_selector")
 
             elif self.main_menu_rect.collidepoint(event.pos):
                 self.selected_button = 1
                 self._go_to_screen("start")
 
+    def _next_check(self) -> None:
+        self.counter += 1
+        if self.counter >= 3:
+            self.counter = 0
+            self.manager.app_data.modes[self.manager.app_data.current_mode]["loop"] = False
+
     def restart_championship(self):
-        for player in self.manager.app_data.championship_results:
+        for player in self.manager.app_data.championship_results.values():
             player[0] = 0
 
     def update(self) -> None:
@@ -347,10 +351,10 @@ class LeaderboardScreen:
                 surface, self.next_race, "NEXT RACE", self.selected_button == 0
             )
 
-            if self.counter == 3:
+            if self.counter >= 3:
                 self.counter = 0
                 self.manager.app_data.modes[self.manager.app_data.current_mode]["loop"]= False
-                self.restart_championship()
+
 
 
 

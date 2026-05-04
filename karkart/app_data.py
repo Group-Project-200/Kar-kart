@@ -72,7 +72,7 @@ class AppData:
         self.current_car = None
         self.current_mode = None
 
-        self.championship_results = {"Osyra": (0,1), "Driftaroo": (0,2), "Zippa": (0,3), "Khepra": (0,4), "Player 1": (0,5)}
+        self.championship_results = {"Osyra": [0,1], "Driftaroo": [0,2], "Zippa": [0,3], "Khepra": [0,4], "Player 1": [0,5]}
 
     def add_track(self, track: Track) -> None:
         self.tracks.append(track)

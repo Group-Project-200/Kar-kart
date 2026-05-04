@@ -752,6 +752,30 @@ class GamePlay:
         except Exception as error:
             print(f"Could not save race result: {error}")
 
+        if self.mode_name == "Championship":
+            racers = [{
+                "name": "Player 1",
+                "metric": (
+                    self.player_state.total_checkpoints,
+                    -getattr(self.player_state, "last_pass_order", 0),
+                ),
+            }]
+            for car, state in zip(self.ai_cars, self.ai_states):
+                racers.append({
+                    "name": car.name,
+                    "metric": (
+                        state.total_checkpoints,
+                        -getattr(state, "last_pass_order", 0),
+                    ),
+                })
+
+            racers.sort(key=lambda r: r["metric"], reverse=True)
+
+            points = [5, 4, 3, 2, 1]
+            for i, player in enumerate(racers):
+                self.manager.app_data.championship_results[player["name"]][0] += points[i]
+
+        print(self.manager.app_data.championship_results)
         self.manager.change_screen("leaderboard")
 
     def draw(self, _surface: pygame.Surface) -> None:
