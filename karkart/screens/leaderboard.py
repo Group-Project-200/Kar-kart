@@ -328,8 +328,8 @@ class LeaderboardScreen:
                 self._go_to_screen("start")
 
     def restart_championship(self):
-        for i in range(5):
-            self.manager.app_data.championship_results[i]= 0
+        for player in self.manager.app_data.championship_results:
+            player[0] = 0
 
     def update(self) -> None:
         pass
