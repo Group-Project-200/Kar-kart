@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import pygame
 
-from karkart.constants import ScreenPositions as sp
+from karkart.constants import Colors, ScreenPositions as sp
 from karkart.ui.help_icon import HelpIcon
 from karkart.settings import Keys as K
-from karkart.paths import CAR_RENDER_DIR, PICTURES_DIR
+from karkart.paths import CAR_RENDER_DIR, PICTURES_DIR, PIXEL_FONT
 from karkart.rendering.preview import (
     RenderSetup,
     build_render_pipeline,
@@ -22,7 +22,6 @@ class CarScreen:
     def __init__(self, manager, label) -> None:
         self.manager = manager
         self.label = label
-
         self.back_button = BackButton(self.manager, "race_selector")
         self.back_selected = False
 
@@ -65,7 +64,6 @@ class CarScreen:
 
         self.settings_icon = SettingsIcon(self.manager, "car")
         self.help_icon = HelpIcon(self.manager, "car")
-
 
     @staticmethod
     def _load_car_slices(folder_name: str) -> list[pygame.Surface]:
@@ -129,6 +127,24 @@ class CarScreen:
         )
         preview_rect = preview_surface.get_rect(center=(sp.WIDTH // 2, sp.HEIGHT // 2))
         surface.blit(preview_surface, preview_rect)
+
+        font_size = 15
+        instr_font = pygame.font.Font(str(PIXEL_FONT), font_size)
+        instr_text = instr_font.render(
+            "Select your car", True, Colors.WHITE
+        )
+        instr_center = instr_text.get_rect(center=(sp.CENTER_X, 100))
+
+        instr_width = 400
+        instr_height = instr_text.get_height() + font_size * 1.5
+        instr_x = instr_center.x - (instr_width - instr_text.get_width()) / 2
+        instr_y = instr_center.y - (instr_height - instr_text.get_height()) / 2
+        instr_rect = pygame.Rect(instr_x, instr_y, instr_width, instr_height)
+
+        pygame.draw.rect(surface, Colors.DARK_BLUE, instr_rect, border_radius=8)
+        pygame.draw.rect(surface, Colors.LIGHT_BLUE, instr_rect, 4, border_radius=8)
+        pygame.draw.rect(surface, Colors.BLACK, instr_rect, 2, border_radius=8)
+        surface.blit(instr_text, instr_center)
 
         self.help_icon.draw(surface)
         self.back_button.draw(surface)
