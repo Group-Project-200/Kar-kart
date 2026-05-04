@@ -210,9 +210,9 @@ class GamePlay:
             self.car_stacker.mask_cache,
         )
 
-        sg = map_record["start_grid"]
-        grid_cx = sg[0] + sg[2] / 2
-        grid_cy = sg[1] + sg[3] / 2
+        self.sp = map_record["spawn_points"]
+
+        grid_cx, grid_cy = self.sp[self.manager.app_data.championship_results["Player 1"][1] - 1]
         start_world_x, start_world_y = _car_pos_scaling(
             grid_cx,
             grid_cy,
@@ -260,12 +260,12 @@ class GamePlay:
 
             ai_stacks = self._pick_ai_car_stacks(ai_count)
             ai_rng = random.Random()
-            ai_names = ["Osyra", "Driftaroo","Zippa", "Khepra"]
+            self.ai_names = ["Osyra", "Driftaroo","Zippa", "Khepra"]
             for i in range(ai_count):
                 ai_name, ai_stack = ai_stacks[i]
                 ai_car = Car(
                     handling=randomize_for_ai(get_handling_for(ai_name), ai_rng),
-                    name = ai_names[i]
+                    name = self.ai_names[i]
                 )
                 ai_car.physics.car_x, ai_car.physics.car_y = ai_positions[i]
                 ai_car.physics.rotation = start_rotation
@@ -376,16 +376,20 @@ class GamePlay:
             start_world_y + fy * self._POLE_FORWARD_OFFSET - ry * self._GRID_SIDE,
         )
 
+        ai_names = ["Osyra", "Driftaroo", "Zippa", "Khepra"]
         ai_positions: list[tuple[float, float]] = []
         for i in range(ai_count):
-            row = (i + 1) // 2
-            side = 1 if (i % 2 == 0) else -1
-            fwd = -self._GRID_ROW_GAP * row - self._POLE_FORWARD_OFFSET
-            lat = side * self._GRID_SIDE
+
+            current_x, current_y =self.sp[self.manager.app_data.championship_results[ai_names[i]][1] - 1]
+            start_x, start_y = _car_pos_scaling(
+                current_x,
+                current_y,
+                self.current_map.dimensions,
+            )
             ai_positions.append(
                 (
-                    start_world_x + fx * fwd + rx * lat,
-                    start_world_y + fy * fwd + ry * lat,
+                    start_x + fx * self._POLE_FORWARD_OFFSET - rx * self._GRID_SIDE,
+                    start_y + fy * self._POLE_FORWARD_OFFSET - ry * self._GRID_SIDE,
                 )
             )
         return player, ai_positions

@@ -7,13 +7,14 @@ Controls
 --------
 * Left-click + drag         -- pan the camera (map area only).
 * Right-click + drag        -- draw a rectangle of the current kind.
+* Right-click x4            -- place the four corners of the start grid (G mode).
 * ``C`` / ``F`` / ``G`` / ``I`` / ``D`` -- switch between:
     - ``C``: checkpoints (appended to the list)
     - ``F``: finish line (the last checkpoint; crossing it after all CPs counts a lap)
-    - ``G``: starting grid (spawn box; not a checkpoint)
+    - ``G``: starting grid (click 4 corners to define a polygon)
     - ``I``: item placement
     - ``D``: delete checkpoints or rectangles
-* ``ESC``                   -- cancel the current rectangle.
+* ``ESC``                   -- cancel the current rectangle / pending corners.
 * Sidebar [▲] / [▼] buttons -- move a checkpoint up or down in race order.
 * Close window              -- save ``map_data.json`` and exit.
 
@@ -25,7 +26,7 @@ before closing; the final array order is what the game uses.
 from __future__ import annotations
 
 import json
-
+import math
 import pygame
 
 from karkart.paths import MAPS_DIR, MAP_DATA_FILE
@@ -58,10 +59,37 @@ def _rect_from_corners(
     y = min(a[1], b[1])
     return x, y, abs(b[0] - a[0]), abs(b[1] - a[1])
 
+def lerp(a, b, t):
+    return a + (b - a) * t
 
-def _start_pos(x: int, y: int, w: int, h: int) -> tuple[float, int]:
+def _start_pos(cp):
+    coordinates = []
 
-    return x + (3 / 4 * w), y + h
+    x_near = lerp(cp[0][0], cp[1][0], 3 / 4)
+    y_near = lerp(cp[0][1], cp[1][1], 3 / 4)
+    x_far = lerp(cp[3][0], cp[2][0], 3 / 4)
+    y_far = lerp(cp[3][1], cp[2][1], 3 / 4)
+
+
+    x_first = lerp(cp[0][0], cp[1][0], 0.25)
+    y_first = lerp(cp[0][1], cp[1][1], 0.25)
+    x_second = lerp(x_near, x_far, 2 / 5)
+    y_second = lerp(y_near, y_far, 2 / 5)
+    x_fifth = lerp(cp[3][0], cp[2][0], 0.25)
+    y_fifth = lerp(cp[3][1], cp[2][1], 0.25)
+    x_third = lerp(x_first, x_fifth, 3 / 5)
+    y_third = lerp(y_first, y_fifth, 3 / 5)
+    x_fourth = lerp(x_near, x_far, 4 / 5)
+    y_fourth = lerp(y_near, y_far, 4 / 5)
+
+    coordinates.append((x_first, y_first))
+    coordinates.append((x_second, y_second))
+    coordinates.append((x_third, y_third))
+    coordinates.append((x_fourth, y_fourth))
+    coordinates.append((x_fifth, y_fifth))
+
+
+    return coordinates
 
 
 def _load_data() -> dict:
@@ -76,8 +104,24 @@ def _point_in_rect(px: int, py: int, rx: int, ry: int, rw: int, rh: int) -> bool
     return rx <= px <= rx + rw and ry <= py <= ry + rh
 
 
-def _row_button_rects(row: int) -> tuple[pygame.Rect, pygame.Rect]:
+def _point_in_polygon(px: float, py: float, points: list) -> bool:
+    """Ray-casting test: True if (px, py) is inside the polygon."""
+    n = len(points)
+    if n < 3:
+        return False
+    inside = False
+    j = n - 1
+    for i in range(n):
+        xi, yi = points[i]
+        xj, yj = points[j]
+        if ((yi > py) != (yj > py)) and \
+           (px < (xj - xi) * (py - yi) / (yj - yi + 1e-12) + xi):
+            inside = not inside
+        j = i
+    return inside
 
+
+def _row_button_rects(row: int) -> tuple[pygame.Rect, pygame.Rect]:
     ry = _SB_TOP + row * _SB_ROW_H
     by = ry + (_SB_ROW_H - _BTN_H) // 2
     up_rect = pygame.Rect(
@@ -141,7 +185,6 @@ def powerups_sizing(x, y, w, h):
 
 
 def _available_maps() -> list[str]:
-
     if not MAPS_DIR.is_dir():
         return []
     return sorted(
@@ -150,7 +193,6 @@ def _available_maps() -> list[str]:
 
 
 def _map_switch_rects(maps: list[str]) -> list[pygame.Rect]:
-
     rects: list[pygame.Rect] = []
     x = _MS_PAD
     y = WINDOW_SIZE[1] - _MS_H - _MS_PAD
@@ -167,7 +209,6 @@ def _draw_map_switcher(
     current: str,
     rects: list[pygame.Rect],
 ) -> None:
-
     for name, rect in zip(maps, rects):
         col = (60, 120, 200) if name == current else (55, 55, 65)
         pygame.draw.rect(screen, col, rect, border_radius=4)
@@ -179,13 +220,20 @@ def _draw_map_switcher(
 def _try_delete_at(data: dict, map_name: str, wx: int, wy: int) -> bool:
     entry = data[map_name]
 
-    for key in ("start_grid", "finish_line"):
-        rect = entry.get(key)
-        if _is_valid_rect(rect):
-            x, y, w, h = rect
-            if _point_in_rect(wx, wy, x, y, w, h):
-                del entry[key]
-                return True
+    # finish_line is still a rect
+    fl = entry.get("finish_line")
+    if _is_valid_rect(fl):
+        x, y, w, h = fl
+        if _point_in_rect(wx, wy, x, y, w, h):
+            del entry["finish_line"]
+            return True
+
+    # start_grid is now a polygon (4 points)
+    sg = entry.get("start_grid")
+    if sg and len(sg) >= 3:
+        if _point_in_polygon(wx, wy, sg):
+            del entry["start_grid"]
+            return True
 
     if "items" in entry:
         items = entry["items"]
@@ -232,13 +280,32 @@ def _draw_map_overlays(
         screen.blit(label_surf, label_surf.get_rect(center=(cx, cy)))
 
     start_grid = data[map_name].get("start_grid")
-    if _is_valid_rect(start_grid):
-        x, y, w, h = start_grid
-        pygame.draw.rect(screen, (0, 80, 255), (x - camera_x, y - camera_y, w, h), 2)
+    if start_grid:
+        points = [(p[0] - camera_x, p[1] - camera_y) for p in start_grid]
+        pygame.draw.lines(screen, (0, 80, 255), True, points, 2)
+
+        cx = sum(p[0] for p in points) // len(points)
+        cy = sum(p[1] for p in points) // len(points)
         lbl = font.render("START GRID", True, (80, 160, 255))
-        screen.blit(
-            lbl, lbl.get_rect(center=(x - camera_x + w // 2, y - camera_y + h // 2))
-        )
+        screen.blit(lbl, lbl.get_rect(center=(cx, cy)))
+
+        if len(start_grid) == 4:  # ← inside the if start_grid: block
+            spawn_points = _start_pos(start_grid)
+            colors = [
+                (255, 80, 80),
+                (255, 200, 80),
+                (80, 255, 80),
+                (80, 200, 255),
+                (220, 80, 255),
+            ]
+            for i, (px, py) in enumerate(spawn_points):
+                sx = int(px - camera_x)
+                sy = int(py - camera_y)
+                color = colors[i % len(colors)]
+                pygame.draw.circle(screen, color, (sx, sy), 6)
+                label = font.render(str(i + 1), True, (255, 255, 255))
+                screen.blit(label, (sx + 8, sy - 8))
+
 
     finish_line = data[map_name].get("finish_line")
     if _is_valid_rect(finish_line):
@@ -255,7 +322,6 @@ def _draw_map_overlays(
             pygame.draw.rect(
                 screen, (180, 0, 200), (x - camera_x, y - camera_y, w, h), 2
             )
-
 
 
 def main() -> None:
@@ -285,6 +351,7 @@ def main() -> None:
     placing = False
     place_start = (0, 0)
     mode = ""
+    pending_points: list[list[int]] = []
 
     running = True
     while running:
@@ -297,16 +364,21 @@ def main() -> None:
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_c:
                     mode, placing = "checkpoints", False
+                    pending_points = []
                 elif event.key == pygame.K_f:
                     mode, placing = "finish_line", False
+                    pending_points = []
                 elif event.key == pygame.K_g:
                     mode, placing = "start_grid", False
                 elif event.key == pygame.K_i:
                     mode, placing = "item placements", False
+                    pending_points = []
                 elif event.key == pygame.K_d:
                     mode, placing = "delete", False
+                    pending_points = []
                 elif event.key == pygame.K_ESCAPE:
                     placing = False
+                    pending_points = []
 
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 mx, my = event.pos
@@ -323,6 +395,7 @@ def main() -> None:
                             pygame.display.set_caption(f"Map Editor - {map_name}")
                             camera_x = camera_y = 0
                             placing = False
+                            pending_points = []
                         switched = True
                         break
                 if switched:
@@ -354,9 +427,17 @@ def main() -> None:
                 wx, wy = mx + camera_x, my + camera_y
                 if mode == "delete":
                     _try_delete_at(data, map_name, wx, wy)
+                elif mode == "start_grid" and mx < _MAP_VIEW_W:
+                    pending_points.append([wx, wy])
+                    if len(pending_points) == 4:
+                        data[map_name]["start_grid"] = pending_points
+                        spawn_points = _start_pos(pending_points)
+                        data[map_name]["spawn_points"] = [list(p) for p in spawn_points]
+                        pending_points = []
                 elif mx < _MAP_VIEW_W:
                     place_start = (mx + camera_x, my + camera_y)
                     placing = True
+
             elif event.type == pygame.MOUSEBUTTONUP and event.button == 3 and placing:
                 mx, my = event.pos
                 end = (mx + camera_x, my + camera_y)
@@ -366,8 +447,6 @@ def main() -> None:
                         cps.append({"x": x, "y": y, "w": w, "h": h})
                     elif mode == "finish_line":
                         data[map_name]["finish_line"] = (x, y, w, h)
-                    elif mode == "start_grid":
-                        data[map_name]["start_grid"] = (x, y, w, h)
                     elif mode == "item placements":
                         box1, box2, box3 = powerups_sizing(x, y, w, h)
                         items = data[map_name].setdefault("items", [])
@@ -393,8 +472,17 @@ def main() -> None:
                 screen, (255, 255, 0), (px - camera_x, py - camera_y, pw, ph), 2
             )
 
+        if pending_points:
+            screen_pts = [(p[0] - camera_x, p[1] - camera_y) for p in pending_points]
+            for pt in screen_pts:
+                pygame.draw.circle(screen, (255, 255, 0), pt, 4)
+            if len(screen_pts) >= 2:
+                pygame.draw.lines(screen, (255, 255, 0), False, screen_pts, 1)
+
         if mode == "delete":
             mode_text = "DELETE (right-click to remove)"
+        elif mode == "start_grid":
+            mode_text = f"start_grid ({len(pending_points)}/4 corners placed)"
         else:
             mode_text = mode if mode else "(press C / F / G / I / D)"
 

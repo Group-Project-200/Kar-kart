@@ -66,12 +66,13 @@ class AppData:
 
                 self.add_track(Track(str(cover), map_folder.name, map_folder))
 
+        self.car_start_pos = 5
         self.current_map= None
         self.current_car_name = None
         self.current_car = None
         self.current_mode = None
 
-        self.championship_results = {"Osyra": 0, "Driftaroo": 0, "Zippa": 0, "Khepra": 0, "Player 1": 0}
+        self.championship_results = {"Osyra": (0,1), "Driftaroo": (0,2), "Zippa": (0,3), "Khepra": (0,4), "Player 1": (0,5)}
 
     def add_track(self, track: Track) -> None:
         self.tracks.append(track)
