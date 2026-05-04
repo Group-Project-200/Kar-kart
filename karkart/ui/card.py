@@ -30,7 +30,7 @@ class Card(UISelectObject, ABC):
 class MapCard(Card):
 
     def __init__(self, track, manager) -> None:
-        self.width, self.height = 120, 120
+        self.width, self.height = 245, 245
         super().__init__(0, 0, self.width, self.height)
 
         self.track = track
@@ -41,8 +41,8 @@ class MapCard(Card):
         self.track.draw(surface)
 
         name_rect = pygame.Rect(self.x + 10, self.y + 5, self.track.get_width(), 20)
-        pygame.draw.rect(surface, self.color, name_rect, border_radius=8)
-        pygame.draw.rect(surface, self.bord_color, name_rect, self.bord_thick, border_radius=8)
+        pygame.draw.rect(surface, self.color, name_rect, border_radius=4)
+        pygame.draw.rect(surface, self.bord_color, name_rect, self.bord_thick, border_radius=4)
 
         name_font = pygame.font.Font(str(PIXEL_FONT), 9)
         name_text = name_font.render(self.track.get_name(), True, Colors.WHITE)
