@@ -573,7 +573,7 @@ class GamePlay:
         return int(fx * screen_w / frame_w), int(fy * screen_h / frame_h)
 
     def draw_hud(self, screen: pygame.Surface, snapshot: WorldSnapshot) -> None:
-        screen.blit(self.hud_img, (8, 8))
+        screen.blit(self.hud_img, (4, 4))
 
         total_cps = len(self.current_map.checkpoints_list) or 1
         cp_in_lap = snapshot.player_racer.list_counter
@@ -585,7 +585,6 @@ class GamePlay:
         if self.mode_name == "Time Trial":
             HUD_lines =[
             f"   {snapshot.position_label}",
-            f" {powerup}",
             f"{kph}kmh",
             f" {lap}/3",
             f" {cp_in_lap}/{total_cps}",]
@@ -598,17 +597,28 @@ class GamePlay:
             f" {lap}/3",
             f" {cp_in_lap}/{total_cps}",
         ]
-
-        padding = 2.5
-        rendered = [
+        
+        if self.mode_name == "Time Trial":
+            padding = 2.5
+            rendered = [
             self._hud_font.render(text, True, (255, 255, 255)) for text in HUD_lines
-        ]
+            ]
 
+            y = 30 + padding
+            for surf in rendered:
+                screen.blit(surf, (200 + padding, y))
+                y += 28 + surf.get_height()
 
-        y = 28 + padding
-        for surf in rendered:
-            screen.blit(surf, (150 + padding, y))
-            y += 26 + surf.get_height()
+        else:
+            padding = 2.5
+            rendered = [
+                self._hud_font.render(text, True, (255, 255, 255)) for text in HUD_lines
+            ]
+
+            y = 20 + padding
+            for surf in rendered:
+                screen.blit(surf, (150 + padding, y))
+                y += 23 + surf.get_height()
 
         self._draw_minimap(screen, snapshot)
 
