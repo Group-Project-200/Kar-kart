@@ -56,8 +56,8 @@ class PopUpMenu(ABC):
 
         pygame.draw.rect(surface, Colors.LIGHT_BLUE, self.pause_rect, border_radius=8)
         pygame.draw.rect(surface, Colors.BLACK, self.pause_rect, 2, border_radius=8)
-        self.container.draw(surface)
         self.title.draw(surface)
+        self.container.draw(surface)
 
         if self.activate_black_layer:
             self.black_layer = True
@@ -75,7 +75,7 @@ class PauseMenu(PopUpMenu):
     def __init__(self, manager, label) -> None:
         super().__init__(manager, label)
 
-        options : list[PopUpCard] = [PopUpButton("Settings", self.manager, action="settings"), PopUpButton("Restart", self.manager, action="race_selector"), PopUpButton("Quit", self.manager)]
+        options : list[PopUpCard] = [PopUpButton("Settings", self.manager, action="settings"), PopUpButton("Restart", self.manager, action="race_selector"), PopUpButton("Quit", self.manager, action="end")]
         self.container = PopUpContainer(self.x, self.y, self.width, self.height, len(options), 1)
 
         for opt in options:
@@ -99,6 +99,9 @@ class PauseMenu(PopUpMenu):
                 elif screen == "settings":
                     self.manager.push_screen(self.label)
                     self.manager.get_screen().deactivate_black_layer()
+                elif screen == "end":
+                    self.manager.toggle_running()
+                    return
                 self.manager.change_screen(screen)
 
 
@@ -113,12 +116,11 @@ class SettingsMenu(PopUpMenu):
 
 
         # Container that stores left and right arrows and all the selectable options.
-        title_cards = []
         main_options = []
         for obj, opt_list in settings.get_objects().items():
-            title_cards.append(TitleCard(obj, 150))
+            title_card = (TitleCard(obj, 150, font_size=10))
             side_options = [TitleCard(x, 150) for x in opt_list]
-            new_container = ArrowContainer(0, 0, 250, 150, side_options)
+            new_container = ArrowContainer(0, 0, 250, 150, side_options, title_card)
             main_options.append(new_container)
 
         self.container = PopUpContainer(self.x, self.y, self.width, self.height, len(main_options), 1)

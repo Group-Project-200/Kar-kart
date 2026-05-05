@@ -227,12 +227,14 @@ class ArrowContainer(SelectContainer):
     def __init__(
         self, center_x: float, center_y: float,
         width: float, height: float,
-        options: list[PopUpCard], opt_index: int = 0
+        options: list[PopUpCard], title_card,
+        opt_index: int = 0
     ) -> None:
 
         super().__init__(center_x, center_y, width, height, 1, 3)
 
         self.options = options
+        self.title_card = title_card
         
         self.opt_index = opt_index
         self.objects = [Arrow(0, 0, 30, 30, "left"), self.options[self.opt_index], Arrow(0, 0, 30, 30, "right")]
@@ -255,9 +257,15 @@ class ArrowContainer(SelectContainer):
         self.options[prev].unselect()
         self.options[self.opt_index].select()
 
+    def draw(self, surface):
+        super().draw(surface)
+        self.title_card.draw(surface)
+
+
     def select(self):
         for x in self.objects:
             x.select()
+        self.title_card.select()
 
 
     def unselect(self):
@@ -267,10 +275,14 @@ class ArrowContainer(SelectContainer):
         for x in self.options:
             x.unselect()
 
+        self.title_card.unselect()
+
 
     def set_position(self, x, y):
         super().set_position(x, y)
         self.calculate_padding(x_center=True, y_center=True)
+        x_option, y_option = self.objects[1].get_position()
+        self.title_card.set_position(x_option, y_option-self.title_card.get_height()-2)
 
     def get_text(self):
         return self.options[self.opt_index].get_text()

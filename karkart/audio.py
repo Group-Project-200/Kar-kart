@@ -20,7 +20,7 @@ class AudioManager:
 
     @staticmethod
     def start_background_music(music_label: str = "Music 1"):
-        AudioManager.initiate_music()
+
         try:
             pygame.mixer.music.load(MUSIC_PATHS[music_label])
             pygame.mixer.music.play(-1)

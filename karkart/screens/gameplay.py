@@ -430,7 +430,7 @@ class GamePlay:
                         controls.drift_input = True
 
                 case pygame.K_ESCAPE:
-
+                    self.manager.push_screen(self.label)
                     self.manager.change_screen("pause")
                     self.manager.get_screen().backdrop = (
                         self.manager.screen_display.copy()

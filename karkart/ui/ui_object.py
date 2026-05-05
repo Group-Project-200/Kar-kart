@@ -21,9 +21,11 @@ class UIObject(ABC):
         return self.height
 
     def set_position(self, x: float, y: float):
-
         self.x = x
         self.y = y
+
+    def get_position(self) -> (float, float):
+        return(self.x, self.y)
 
 class UISelectObject(UIObject, ABC):
     @abstractmethod
