@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import math
-
 import pygame
 
-from karkart.constants import Colors, ScreenPositions as sp
-from karkart.paths import PICTURES_DIR, PIXEL_FONT
+from karkart.constants import Colors
+from karkart.paths import PICTURES_DIR
 from karkart.ui.help_icon import HelpIcon
 from karkart.ui.settings_icon import SettingsIcon
 
@@ -21,17 +20,26 @@ class StartScreen:
         self.settings_icon = SettingsIcon(self.manager, "start")
         self.help_icon = HelpIcon(self.manager, "start")
 
-        self.start_font = self._load_font(22)
-        self.small_font = self._load_font(11)
+        self.start_frames = self._load_start_frames()
+        self.current_frame = 0
+        self.frame_delay = 140
+        self.last_frame_time = pygame.time.get_ticks()
 
-        self.start_rect = pygame.Rect(0, 0, 470, 62)
-        self.start_rect.center = (sp.CENTER_X, sp.HEIGHT - 95)
+        self.base_y = 590
+        self.float_amplitude = 6
 
-    def _load_font(self, size: int) -> pygame.font.Font:
-        try:
-            return pygame.font.Font(str(PIXEL_FONT), size)
-        except (FileNotFoundError, OSError, pygame.error):
-            return pygame.font.SysFont("arial", size, bold=True)
+    def _load_start_frames(self) -> list[pygame.Surface]:
+        frames = []
+
+        for i in range(1, 5):
+            image = self._try_load_image(
+                PICTURES_DIR / f"start_{i}.png",
+                convert_alpha=True,
+            )
+            if image is not None:
+                frames.append(image)
+
+        return frames
 
     def handle_event(self, event) -> None:
         if event.type != pygame.KEYDOWN:
@@ -44,95 +52,11 @@ class StartScreen:
             self.manager.change_screen("race_selector")
 
     def update(self) -> None:
-        pass
+        now = pygame.time.get_ticks()
 
-    def _draw_alpha_rect(
-        self,
-        surface: pygame.Surface,
-        rect: pygame.Rect,
-        color: tuple[int, int, int, int],
-        border_radius: int = 0,
-    ) -> None:
-        temp = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
-        pygame.draw.rect(temp, color, temp.get_rect(), border_radius=border_radius)
-        surface.blit(temp, rect.topleft)
-
-    def _draw_start_button(self, surface: pygame.Surface) -> None:
-        ticks = pygame.time.get_ticks()
-        mouse_over = self.start_rect.collidepoint(pygame.mouse.get_pos())
-
-        pulse = int(35 + 25 * math.sin(ticks * 0.006))
-        shine_x = int((ticks * 0.18) % (self.start_rect.width + 120)) - 60
-
-        draw_rect = self.start_rect.copy()
-
-        if mouse_over:
-            draw_rect.y -= 4
-            glow_alpha = 125 + pulse
-            fill = (45, 145, 225, 205)
-            border = (210, 245, 255)
-            inner_border = (25, 70, 140)
-            text_color = (245, 255, 255)
-        else:
-            glow_alpha = 75 + pulse
-            fill = (35, 95, 170, 185)
-            border = (145, 220, 255)
-            inner_border = (20, 45, 95)
-            text_color = (230, 245, 255)
-
-        shadow_rect = draw_rect.move(0, 6)
-        self._draw_alpha_rect(surface, shadow_rect, (0, 0, 0, 105), 12)
-
-        glow_rect = draw_rect.inflate(22, 16)
-        self._draw_alpha_rect(surface, glow_rect, (80, 190, 255, glow_alpha), 16)
-
-        self._draw_alpha_rect(surface, draw_rect, fill, 12)
-
-        top_half = pygame.Rect(
-            draw_rect.x + 5,
-            draw_rect.y + 5,
-            draw_rect.width - 10,
-            draw_rect.height // 2,
-        )
-        self._draw_alpha_rect(surface, top_half, (160, 230, 255, 45), 10)
-
-        shine = pygame.Surface((70, draw_rect.height), pygame.SRCALPHA)
-        pygame.draw.polygon(
-            shine,
-            (255, 255, 255, 65),
-            [
-                (20, 0),
-                (70, 0),
-                (50, draw_rect.height),
-                (0, draw_rect.height),
-            ],
-        )
-        surface.blit(shine, (draw_rect.x + shine_x, draw_rect.y))
-
-        pygame.draw.rect(surface, border, draw_rect, 4, border_radius=12)
-        pygame.draw.rect(
-            surface,
-            inner_border,
-            draw_rect.inflate(-8, -8),
-            2,
-            border_radius=8,
-        )
-        pygame.draw.rect(surface, (10, 20, 45), draw_rect, 2, border_radius=12)
-
-        text = "PRESS ENTER TO START"
-        shadow = self.start_font.render(text, False, (10, 25, 60))
-        label = self.start_font.render(text, False, text_color)
-
-        label_rect = label.get_rect(center=draw_rect.center)
-        surface.blit(shadow, label_rect.move(3, 3))
-        surface.blit(label, label_rect)
-
-        hint = self.small_font.render("ENTER THE RACE", False, (210, 240, 255))
-        hint_shadow = self.small_font.render("ENTER THE RACE", False, (10, 25, 60))
-        hint_rect = hint.get_rect(center=(draw_rect.centerx, draw_rect.bottom + 22))
-
-        surface.blit(hint_shadow, hint_rect.move(2, 2))
-        surface.blit(hint, hint_rect)
+        if self.start_frames and now - self.last_frame_time >= self.frame_delay:
+            self.last_frame_time = now
+            self.current_frame = (self.current_frame + 1) % len(self.start_frames)
 
     def draw(self, surface: pygame.Surface) -> None:
         pygame.display.set_caption("Kar Kart")
@@ -142,10 +66,55 @@ class StartScreen:
         else:
             surface.fill(Colors.BLACK)
 
-        self._draw_start_button(surface)
+        self._draw_start_prompt(surface)
 
         self.help_icon.draw(surface)
         self.settings_icon.draw(surface)
+
+    def _draw_start_prompt(self, surface: pygame.Surface) -> None:
+        center_x = surface.get_width() // 2
+
+        ticks = pygame.time.get_ticks()
+        float_offset = math.sin(ticks * 0.004) * self.float_amplitude
+        y = self.base_y + float_offset
+
+        if self.start_frames:
+            frame = self.start_frames[self.current_frame]
+            rect = frame.get_rect(center=(center_x, y))
+
+            glow_strength = 70 + int((math.sin(ticks * 0.006) + 1) * 35)
+
+            glow = pygame.Surface((rect.width + 50, rect.height + 30), pygame.SRCALPHA)
+            pygame.draw.rect(
+                glow,
+                (80, 170, 255, glow_strength),
+                glow.get_rect(),
+                border_radius=18,
+            )
+            glow_rect = glow.get_rect(center=rect.center)
+            surface.blit(glow, glow_rect)
+
+            shadow = pygame.Surface((rect.width + 16, rect.height + 12), pygame.SRCALPHA)
+            pygame.draw.rect(
+                shadow,
+                (0, 0, 0, 90),
+                shadow.get_rect(),
+                border_radius=16,
+            )
+            shadow_rect = shadow.get_rect(center=(rect.centerx + 3, rect.centery + 5))
+            surface.blit(shadow, shadow_rect)
+
+            surface.blit(frame, rect)
+        else:
+            font = pygame.font.Font(None, 72)
+            text = font.render("PRESS ENTER TO START", True, (255, 255, 255))
+            text_rect = text.get_rect(center=(center_x, y))
+
+            shadow = font.render("PRESS ENTER TO START", True, (40, 80, 140))
+            shadow_rect = shadow.get_rect(center=(center_x + 3, y + 3))
+
+            surface.blit(shadow, shadow_rect)
+            surface.blit(text, text_rect)
 
     @staticmethod
     def _try_load_image(path, *, convert_alpha: bool) -> pygame.Surface | None:
