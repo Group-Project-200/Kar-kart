@@ -1,6 +1,5 @@
 import math
 import random
-from collections import deque
 
 import pygame
 
@@ -50,65 +49,6 @@ class PowerupRendering:
 
         self.frames = PowerupRendering._frames_cache
 
-    def _is_background_pixel(self, color: pygame.Color) -> bool:
-        r, g, b, a = color.r, color.g, color.b, color.a
-
-        if a < 20:
-            return True
-
-        is_light = r > 185 and g > 185 and b > 185
-        is_grayish = max(r, g, b) - min(r, g, b) < 45
-
-        return is_light and is_grayish
-
-    def _remove_fake_background(self, image: pygame.Surface) -> pygame.Surface:
-        image = image.convert_alpha()
-        width, height = image.get_size()
-
-        visited = set()
-        queue = deque()
-
-        for x in range(width):
-            queue.append((x, 0))
-            queue.append((x, height - 1))
-
-        for y in range(height):
-            queue.append((0, y))
-            queue.append((width - 1, y))
-
-        while queue:
-            x, y = queue.popleft()
-
-            if (x, y) in visited:
-                continue
-
-            if x < 0 or x >= width or y < 0 or y >= height:
-                continue
-
-            visited.add((x, y))
-
-            color = image.get_at((x, y))
-
-            if not self._is_background_pixel(color):
-                continue
-
-            image.set_at((x, y), (255, 255, 255, 0))
-
-            queue.append((x + 1, y))
-            queue.append((x - 1, y))
-            queue.append((x, y + 1))
-            queue.append((x, y - 1))
-
-        crop_rect = image.get_bounding_rect(min_alpha=10)
-
-        if crop_rect.width <= 0 or crop_rect.height <= 0:
-            return image
-
-        cropped = pygame.Surface((crop_rect.width, crop_rect.height), pygame.SRCALPHA)
-        cropped.blit(image, (0, 0), crop_rect)
-
-        return cropped
-
     def _load_frames(self) -> list[pygame.Surface]:
         frame_names = [
             "box_1.png",
@@ -124,7 +64,6 @@ class PowerupRendering:
 
             try:
                 image = pygame.image.load(str(image_path)).convert_alpha()
-                image = self._remove_fake_background(image)
                 frames.append(image)
             except (FileNotFoundError, pygame.error):
                 print(f"Could not load powerup sprite: {image_path}")
@@ -164,7 +103,7 @@ class PowerupRendering:
         car_x: float,
         car_y: float,
         zoom: float,
-        camera_angle: float,
+        camera_angle: float = 0.0,
     ):
         if not self.active:
             return
@@ -200,7 +139,7 @@ class PowerupRendering:
         frame_index = (ticks // 120) % len(self.frames)
         frame = self.frames[frame_index]
 
-        scaled_frame = pygame.transform.scale(frame, (box_size, box_size))
+        scaled_frame = pygame.transform.smoothscale(frame, (box_size, box_size))
         frame_rect = scaled_frame.get_rect(center=(sx, sy))
 
         surface.blit(scaled_frame, frame_rect)

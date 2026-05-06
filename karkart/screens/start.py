@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import math
+
 import pygame
 
-from karkart.constants import Colors
+from karkart.constants import Colors, ScreenPositions as sp
 from karkart.paths import PICTURES_DIR
 from karkart.ui.help_icon import HelpIcon
 from karkart.ui.settings_icon import SettingsIcon
@@ -25,8 +26,20 @@ class StartScreen:
         self.frame_delay = 140
         self.last_frame_time = pygame.time.get_ticks()
 
-        self.base_y = 590
-        self.float_amplitude = 6
+        self.base_y = sp.HEIGHT - 100
+        self.float_amplitude = 5
+
+    def _scale_prompt(self, image: pygame.Surface) -> pygame.Surface:
+        max_width = 560
+        max_height = 90
+
+        width, height = image.get_size()
+        scale = min(max_width / width, max_height / height)
+
+        new_width = max(1, int(width * scale))
+        new_height = max(1, int(height * scale))
+
+        return pygame.transform.smoothscale(image, (new_width, new_height))
 
     def _load_start_frames(self) -> list[pygame.Surface]:
         frames = []
@@ -36,7 +49,9 @@ class StartScreen:
                 PICTURES_DIR / f"start_{i}.png",
                 convert_alpha=True,
             )
+
             if image is not None:
+                image = self._scale_prompt(image)
                 frames.append(image)
 
         return frames
@@ -82,39 +97,29 @@ class StartScreen:
             frame = self.start_frames[self.current_frame]
             rect = frame.get_rect(center=(center_x, y))
 
-            glow_strength = 70 + int((math.sin(ticks * 0.006) + 1) * 35)
+            glow_strength = 55 + int((math.sin(ticks * 0.006) + 1) * 25)
 
-            glow = pygame.Surface((rect.width + 50, rect.height + 30), pygame.SRCALPHA)
+            glow = pygame.Surface((rect.width + 38, rect.height + 22), pygame.SRCALPHA)
             pygame.draw.rect(
                 glow,
                 (80, 170, 255, glow_strength),
                 glow.get_rect(),
-                border_radius=18,
+                border_radius=16,
             )
             glow_rect = glow.get_rect(center=rect.center)
             surface.blit(glow, glow_rect)
 
-            shadow = pygame.Surface((rect.width + 16, rect.height + 12), pygame.SRCALPHA)
+            shadow = pygame.Surface((rect.width + 12, rect.height + 8), pygame.SRCALPHA)
             pygame.draw.rect(
                 shadow,
-                (0, 0, 0, 90),
+                (0, 0, 0, 75),
                 shadow.get_rect(),
-                border_radius=16,
+                border_radius=14,
             )
-            shadow_rect = shadow.get_rect(center=(rect.centerx + 3, rect.centery + 5))
+            shadow_rect = shadow.get_rect(center=(rect.centerx + 3, rect.centery + 4))
             surface.blit(shadow, shadow_rect)
 
             surface.blit(frame, rect)
-        else:
-            font = pygame.font.Font(None, 72)
-            text = font.render("PRESS ENTER TO START", True, (255, 255, 255))
-            text_rect = text.get_rect(center=(center_x, y))
-
-            shadow = font.render("PRESS ENTER TO START", True, (40, 80, 140))
-            shadow_rect = shadow.get_rect(center=(center_x + 3, y + 3))
-
-            surface.blit(shadow, shadow_rect)
-            surface.blit(text, text_rect)
 
     @staticmethod
     def _try_load_image(path, *, convert_alpha: bool) -> pygame.Surface | None:
