@@ -25,9 +25,11 @@ class MapScreen:
         )
         self.back_button = BackButton(self.manager, "car")
 
+        tracks = []
         for track in self.manager.get_app_data().get_tracks():
             track.set_dimensions(210, 210)
-            self.container.add_object(MapCard(track, manager))
+            tracks.append(MapCard(track, manager))
+        self.container.add_objects(tracks)
 
         self.container.calculate_padding()
         self.container.add_back_button(self.back_button)

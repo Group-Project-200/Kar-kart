@@ -14,7 +14,7 @@ import pygame
 from karkart.app_data import AppData
 from karkart.constants import ScreenPositions as sp
 from karkart.settings import settings
-from karkart.screens.pop_up_menus import PauseMenu, SettingsMenu, HelpMenu
+from karkart.screens.pop_up_menus import PauseMenu, SettingsMenu, ConfirmSettingsMenu, HelpMenu
 from karkart.screen_manager import ScreenManager
 from karkart.screens.car_selection import CarScreen
 from karkart.screens.map_selection import MapScreen
@@ -41,6 +41,8 @@ def main() -> None:
     # Register every screen up-front so they only load assets once.
     manager.add_screen(StartScreen(manager, "start"))
     manager.add_screen(SettingsMenu(manager, "settings"))
+    manager.add_screen(ConfirmSettingsMenu(manager, "confirm_settings"))
+    
     manager.add_screen(HelpMenu(manager, "help"))
     manager.add_screen(RaceSelector(manager, "race_selector"))
     manager.add_screen(CarScreen(manager, "car"))

@@ -16,17 +16,19 @@ class Button(UISelectObject):
         self.manager = manager
         self.action = action
 
+        self.text = text
+
         font_size = 15
         button_font = pygame.font.Font(str(PIXEL_FONT), font_size)
-        self.text = button_font.render(text, True, Colors.WHITE)
-        self.center = self.text.get_rect(center=(center_x, center_y))
+        self.rendered_text = button_font.render(text, True, Colors.WHITE)
+        self.center = self.rendered_text.get_rect(center=(center_x, center_y))
 
         if not self.width:
-            self.width = self.text.get_width() + font_size * 3
+            self.width = self.rendered_text.get_width() + font_size * 3
         if not self.height:
-            self.height = self.text.get_height() + font_size * 1.5
-        self.x = self.center.x - (self.width - self.text.get_width()) / 2
-        self.y = self.center.y - (self.height - self.text.get_height()) / 2
+            self.height = self.rendered_text.get_height() + font_size * 1.5
+        self.x = self.center.x - (self.width - self.rendered_text.get_width()) / 2
+        self.y = self.center.y - (self.height - self.rendered_text.get_height()) / 2
         self.button_rect = pygame.Rect(self.x, self.y, self.width, self.height)
 
     def handle_event(self, event) -> None:
@@ -39,24 +41,27 @@ class Button(UISelectObject):
         pygame.draw.rect(surface, self.color, self.button_rect, border_radius=8)
         pygame.draw.rect(surface, self.bord_2_color, self.button_rect, self.bord_2_thick, border_radius=8)
         pygame.draw.rect(surface, self.bord_color, self.button_rect, self.bord_thick, border_radius=8)
-        surface.blit(self.text, self.center)
+        surface.blit(self.rendered_text, self.center)
 
     def set_position(self, x, y):
         super().set_position(x, y)
-        self.center.x = self.x + (self.width - self.text.get_width()) / 2
-        self.center.y = self.y + (self.height - self.text.get_height()) / 2
+        self.center.x = self.x + (self.width - self.rendered_text.get_width()) / 2
+        self.center.y = self.y + (self.height - self.rendered_text.get_height()) / 2
         self.button_rect = pygame.Rect(self.x, self.y, self.width, self.height)
 
     def get_action(self):
         return self.action
+
+    def get_text(self):
+        return self.text
 
 class BackButton(Button):
     def __init__(self, manager, action):
         super().__init__("Back", manager, action, center_x=sp.XLEFT, center_y=sp.XXXBOTTOM)
 
 class PopUpButton(Button):
-    def __init__(self, text, manager, action=None):
-        super().__init__(text, manager, action, width=200, height=50)
+    def __init__(self, text, manager, action=None, width=200, height=50):
+        super().__init__(text, manager, action, width=width, height=height)
 
 
 class ColorButton(Button):
@@ -97,5 +102,5 @@ class ColorButton(Button):
         pygame.draw.rect(surface, color, self.rect, border_radius=8)
 
         button_font = pygame.font.SysFont("arial", 20, bold=True)
-        button_text = button_font.render(self.text, True, Colors.BLACK)
+        button_text = button_font.render(self.rendered_text, True, Colors.BLACK)
         surface.blit(button_text, button_text.get_rect(center=self.rect.center))
