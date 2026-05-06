@@ -164,6 +164,7 @@ class PowerupRendering:
         car_x: float,
         car_y: float,
         zoom: float,
+        camera_angle: float,
     ):
         if not self.active:
             return
@@ -175,8 +176,15 @@ class PowerupRendering:
 
         bob = math.sin(ticks * 0.01 + self.x * 0.05) * 3
 
-        sx = center[0] + int((world_center_x - car_x) * zoom)
-        sy = center[1] + int((world_center_y - car_y) * zoom + bob)
+        dx = (world_center_x - car_x) * zoom
+        dy = (world_center_y - car_y) * zoom
+
+        angle_rad = math.radians(camera_angle)
+        cos_a = math.cos(angle_rad)
+        sin_a = math.sin(angle_rad)
+
+        sx = center[0] + int(dx * cos_a - dy * sin_a)
+        sy = center[1] + int(dx * sin_a + dy * cos_a + bob)
 
         box_size = 42
 
