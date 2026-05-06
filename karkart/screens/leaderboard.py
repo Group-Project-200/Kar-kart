@@ -43,42 +43,41 @@ class LeaderboardScreen:
         self.name_font = self._load_font(16)
         self.score_font = self._load_font(14)
         self.button_font = self._load_font(16)
-        self.small_font = self._load_font(11)
 
         self.selected_button = 0
         self.counter = 0
 
         self.background = self._load_background()
 
-        self.play_again_rect = pygame.Rect(323, 676, 309, 33)
-        self.main_menu_rect = pygame.Rect(648, 676, 309, 33)
-        self.next_race_rect = pygame.Rect(323, 676, 309, 33)
+        self.play_again_rect = pygame.Rect(327, 680, 305, 34)
+        self.main_menu_rect = pygame.Rect(650, 680, 305, 34)
+        self.next_race_rect = pygame.Rect(327, 680, 305, 34)
 
         self.row_boxes = [
             {
-                "rank": pygame.Rect(318, 357, 52, 36),
-                "name": pygame.Rect(386, 357, 402, 36),
-                "score": pygame.Rect(808, 357, 160, 36),
+                "rank": pygame.Rect(322, 362, 52, 36),
+                "name": pygame.Rect(391, 362, 402, 36),
+                "score": pygame.Rect(813, 362, 160, 36),
             },
             {
-                "rank": pygame.Rect(318, 410, 52, 36),
-                "name": pygame.Rect(386, 410, 402, 36),
-                "score": pygame.Rect(808, 410, 160, 36),
+                "rank": pygame.Rect(322, 415, 52, 36),
+                "name": pygame.Rect(391, 415, 402, 36),
+                "score": pygame.Rect(813, 415, 160, 36),
             },
             {
-                "rank": pygame.Rect(318, 463, 52, 36),
-                "name": pygame.Rect(386, 463, 402, 36),
-                "score": pygame.Rect(808, 463, 160, 36),
+                "rank": pygame.Rect(322, 468, 52, 36),
+                "name": pygame.Rect(391, 468, 402, 36),
+                "score": pygame.Rect(813, 468, 160, 36),
             },
             {
-                "rank": pygame.Rect(318, 516, 52, 36),
-                "name": pygame.Rect(386, 516, 402, 36),
-                "score": pygame.Rect(808, 516, 160, 36),
+                "rank": pygame.Rect(322, 521, 52, 36),
+                "name": pygame.Rect(391, 521, 402, 36),
+                "score": pygame.Rect(813, 521, 160, 36),
             },
             {
-                "rank": pygame.Rect(318, 569, 52, 36),
-                "name": pygame.Rect(386, 569, 402, 36),
-                "score": pygame.Rect(808, 569, 160, 36),
+                "rank": pygame.Rect(322, 574, 52, 36),
+                "name": pygame.Rect(391, 574, 402, 36),
+                "score": pygame.Rect(813, 574, 160, 36),
             },
         ]
 
