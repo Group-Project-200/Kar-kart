@@ -8,10 +8,10 @@ from karkart.physics.car import Car
 
 class AIController:
 
-    LOOKAHEAD: int = 8
-    STEER_DEADZONE: float = 8.0
+    LOOKAHEAD: int = 5
+    STEER_DEADZONE: float = 4.0
     THROTTLE_OFF_ANGLE: float = 55.0
-    WAYPOINT_RADIUS: float = 32.0
+    WAYPOINT_RADIUS: float = 50.0
 
     STILL_DISTANCE_EPSILON: float = 2.0
     STILL_FRAME_LIMIT: int = 12
