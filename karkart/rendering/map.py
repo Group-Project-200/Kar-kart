@@ -147,8 +147,11 @@ class Map:
         view_x = car_map_x - center[0]
         view_y = car_map_y - center[1]
         view_width, view_height = render_size
+
         display.blit(
-            self.cache.surface, (0, 0), area=(view_x, view_y, view_width, view_height)
+            self.cache.surface,
+            (0, 0),
+            area=(view_x, view_y, view_width, view_height),
         )
 
     def draw_map_camera(
@@ -162,14 +165,22 @@ class Map:
         camera_angle: float,
     ) -> None:
 
+        assert self.cache is not None
+
         if abs(camera_angle) < 1e-4:
-            self.draw_map(display, center, render_size, car_x=car_x, car_y=car_y)
-            for obj in self.world_objects:
-                obj.draw(display, center, car_x, car_y, self.cache.zoom)
+            self.draw_map(
+                display,
+                center,
+                render_size,
+                car_x=car_x,
+                car_y=car_y,
+            )
             return
 
         assert self.camera_buffer is not None and self.camera_buffer_center is not None
+
         self.camera_buffer.fill((0, 0, 0))
+
         self.draw_map(
             self.camera_buffer,
             self.camera_buffer_center,
@@ -177,14 +188,7 @@ class Map:
             car_x=car_x,
             car_y=car_y,
         )
-        for obj in self.world_objects:
-            obj.draw(
-                self.camera_buffer,
-                self.camera_buffer_center,
-                car_x,
-                car_y,
-                self.cache.zoom,
-            )
+
         rotated_map = pygame.transform.rotate(self.camera_buffer, -camera_angle)
         rotated_rect = rotated_map.get_rect(center=center)
         display.blit(rotated_map, rotated_rect)

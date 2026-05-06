@@ -174,10 +174,20 @@ class GamePlay:
 
         self.countdown = StartSequence(self.manager.screen_display)
         proper_coordinates = []
+        item_size = 30
+        map_size = self.current_map_data.layers[0].get_size()
+
         for item in map_record["items"]:
-            proper_coordinates.append(
-                _position_mapping(item, self.current_map_data.layers[0].get_size())
-            )
+                x , y, w, h = _position_mapping(item, map_size)
+
+                proper_coordinates.append(
+                (
+                    x + w / 2 - item_size / 2,
+                    y + h / 2 - item_size / 2,
+                    item_size,
+                    item_size,
+                )
+    )
 
         self.current_car = Car(
             handling=get_handling_for(self.manager.app_data.current_car_name),
