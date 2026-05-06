@@ -17,7 +17,6 @@ from karkart.settings import settings
 from karkart.screens.pop_up_menus import PauseMenu, SettingsMenu, HelpMenu
 from karkart.screen_manager import ScreenManager
 from karkart.screens.car_selection import CarScreen
-from karkart.screens.end import EndScreen
 from karkart.screens.map_selection import MapScreen
 from karkart.screens.race_selection import RaceSelector
 from karkart.screens.start import StartScreen
@@ -49,7 +48,6 @@ def main() -> None:
 
     manager.add_screen(PauseMenu(manager, "pause"))
     manager.add_screen(LeaderboardScreen(manager, "leaderboard"))
-    manager.add_screen(EndScreen(manager, "end"))
 
     manager.change_screen("start")
 
