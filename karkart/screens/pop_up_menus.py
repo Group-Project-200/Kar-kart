@@ -5,19 +5,19 @@ from karkart.constants import Colors
 from karkart.constants import ScreenPositions as sp
 from karkart.screens.gameplay import GamePlay
 from karkart.settings import settings
-from karkart.ui import Arrow, ArrowContainer, Button, PopUpButton, PopUpContainer, PopUpCard, TitleCard
+from karkart.ui import Arrow, ArrowContainer, Button, Container, PopUpButton, PopUpContainer, PopUpCard, TitleCard
 from karkart.ui.ui_object import UISelectObject
 
 
 class PopUpMenu(ABC):
 
     @abstractmethod
-    def __init__(self, manager, label) -> None:
+    def __init__(self, manager, label, width=300, height=450) -> None:
         self.manager = manager
         self.label = label
 
-        self.width: int = 300
-        self.height: int = 450
+        self.width: int = width
+        self.height: int = height
 
         self.x: ScreenPosition = sp.CENTER_X
         self.y: ScreenPosition = sp.CCCBOTTOM
@@ -29,7 +29,7 @@ class PopUpMenu(ABC):
             self.x - self.width / 2, self.y - self.height / 2, self.width, self.height
         )
 
-        self.activate_black_layer: bool = False
+        self.active_black_layer: bool = False
 
         self.black_layer: bool = True
         self.screen: str | None = None
@@ -38,7 +38,7 @@ class PopUpMenu(ABC):
         if event.type == pygame.KEYDOWN:
 
             if event.key == pygame.K_ESCAPE:
-                self.activate_black_layer = True
+                self.active_black_layer = True
                 self.manager.pop_screen()
 
     def update(self):
@@ -59,12 +59,15 @@ class PopUpMenu(ABC):
         self.title.draw(surface)
         self.container.draw(surface)
 
-        if self.activate_black_layer:
+        if self.active_black_layer:
             self.black_layer = True
-            self.activate_black_layer = False
+            self.active_black_layer = False
 
     def get_label(self):
         return self.label
+
+    def activate_black_layer(self):
+        self.active_black_layer = True
 
     def deactivate_black_layer(self):
         self.black_layer = False
@@ -75,11 +78,14 @@ class PauseMenu(PopUpMenu):
     def __init__(self, manager, label) -> None:
         super().__init__(manager, label)
 
-        options : list[PopUpCard] = [PopUpButton("Settings", self.manager, action="settings"), PopUpButton("Restart", self.manager, action="race_selector"), PopUpButton("Quit", self.manager, action="end")]
+        options : list[PopUpCard] = [
+            PopUpButton("Settings", self.manager, action="settings"),
+            PopUpButton("Change car", self.manager, action="car"),
+            PopUpButton("Change mode", self.manager, action="race_selector"),
+            PopUpButton("Quit", self.manager, action="end")]
         self.container = PopUpContainer(self.x, self.y, self.width, self.height, len(options), 1)
 
-        for opt in options:
-            self.container.add_object(opt)
+        self.container.add_objects(options)
         self.container.calculate_padding(x_center=True, y_center=True)
 
         # Creates title.
@@ -113,19 +119,20 @@ class SettingsMenu(PopUpMenu):
         self.height: int = 450
         self.pause_rect = pygame.Rect(self.x - self.width / 2, self.y - self.height / 2, self.width, self.height)
 
-
-
         # Container that stores left and right arrows and all the selectable options.
         main_options = []
+        self.option_indexes = []
         for obj, opt_list in settings.get_objects().items():
             title_card = (TitleCard(obj, 150, font_size=10))
             side_options = [TitleCard(x, 150) for x in opt_list]
-            new_container = ArrowContainer(0, 0, 250, 150, side_options, title_card)
+            setting_height = title_card.get_height() + side_options[0].get_height()+10
+            new_container = ArrowContainer(0, 0, 250, setting_height, side_options, title_card)
+
             main_options.append(new_container)
+            self.option_indexes.append(new_container.get_opt_index())
 
         self.container = PopUpContainer(self.x, self.y, self.width, self.height, len(main_options), 1)
-        for x in main_options:
-            self.container.add_object(x)
+        self.container.add_objects(main_options)
 
         self.container.calculate_padding(x_center=True, y_center=True)
 
@@ -134,28 +141,109 @@ class SettingsMenu(PopUpMenu):
 
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE:
-                bindings_label = self.container.get_objects()[0].get_text()
-                settings.set_bindings(bindings_label)
+            changes = False
+            if event.key in {pygame.K_ESCAPE, pygame.K_RETURN}:
+                for i in range(len(self.option_indexes)):
+                    if self.option_indexes[i] != self.container.objects[i].get_opt_index():
+                        changes = True
+                        break
 
-                sound = self.container.get_objects()[1].get_text()
-                settings.set_sound(sound)
+            if changes:
+                self.activate_black_layer()
+                self.manager.push_screen(self.label)
+                self.manager.change_screen("confirm_settings")
+                self.manager.get_screen().deactivate_black_layer()
+                self.manager.get_screen().activate_confirm_black_layer(self.x, self.y, self.width, self.height)
+                self.manager.get_screen().import_new_values(self.option_indexes, self.container.get_objects())
 
-                music = self.container.get_objects()[2].get_text()
-                settings.set_music(music)
+            else:
+                super().handle_event(event)
 
-                settings.save()
-            
-            super().handle_event(event)
-            # Container returns a screen -> update the screen.
-            screen = self.container.handle_event(event)
-            if screen:
-                self.manager.change_screen(screen)
+
+
+            self.container.handle_event(event)
 
     def set_return_screen(self, screen):
 
         self.screen = screen
         self.black_layer = True
+
+class ConfirmSettingsMenu(PopUpMenu):
+    def __init__(self, manager, label) -> None:
+        super().__init__(manager, label, height=200)
+
+        self.confirm_black_layer: bool = True
+        self.blc_active: bool = False
+
+
+        self.yes_card = PopUpButton("Yes", self.manager, width=100, height=100)
+        self.no_card = PopUpButton("No", self.manager, width=100, height=100)
+
+        yes_no = [self.yes_card, self.no_card]
+        self.yes_no_container = PopUpContainer(0, 0, 260, 100, 1, len(yes_no))
+        self.yes_no_container.add_objects(yes_no)
+
+        self.title_card = TitleCard("Confirm the settings?", width=260, font_size=12)
+
+        objects = [self.title_card, self.yes_no_container]
+        self.container = Container(self.x, self.y, self.width, self.height, 2, 1)
+        self.container.add_objects(objects)
+
+        self.container.calculate_padding(x_center=True, y_center=True)
+
+        self.title = TitleCard("Settings", self.container.get_width())
+
+    def handle_event(self, event):
+        if event.type != pygame.KEYDOWN:
+            return
+
+        self.yes_no_container.handle_event(event)
+        
+        if event.key == pygame.K_RETURN:
+            if self.yes_card.is_selected():
+                set_list = [obj.get_text() for obj in self.objects]
+                settings.change(set_list)
+
+                settings.save()
+
+                for i, obj in enumerate(self.objects):
+                    self.option_indexes[i] = obj.get_opt_index()
+            
+            elif self.no_card.is_selected():
+                for i, obj in enumerate(self.objects):
+                    obj.set_opt_index(self.option_indexes[i])
+
+            self.yes_card.select()
+            self.no_card.unselect()
+            self.manager.pop_screen()
+            self.manager.pop_screen()
+
+    def draw(self, surface):
+        if self.confirm_black_layer:
+            black_layer = pygame.Surface((self.bl_width, self.bl_height))
+            black_layer.fill(Colors.BLACK)
+            black_layer.set_alpha(128)
+            surface.blit(black_layer, (self.bl_x - self.bl_width/2, self.bl_y - self.bl_height/2))
+
+            self.confirm_black_layer = False
+
+        super().draw(surface)
+
+        if self.blc_active:
+            self.confirm_black_layer = True
+            self.blc_active = False
+
+    def activate_confirm_black_layer(self, x, y, width, height):
+        self.blc_active = True
+
+        self.bl_x = x
+        self.bl_y = y
+        self.bl_width = width
+        self.bl_height = height
+
+    def import_new_values(self, option_indexes, objects):
+        self.option_indexes = option_indexes
+        self.objects = objects
 
 
 class HelpMenu(PopUpMenu):
@@ -171,8 +259,7 @@ class HelpMenu(PopUpMenu):
         # Keep PopUpContainer while rendering all help text in one inner box.
         options = [HelpTextCard(920, 490)]
         self.container = PopUpContainer(self.x, self.y, self.width, self.height, len(options), 1)
-        for opt in options:
-            self.container.add_object(opt)
+        self.container.add_objects(options)
         self.container.calculate_padding(x_center=True, y_center=True)
 
         self.title = TitleCard("Help Menu", self.container.get_width())
@@ -185,7 +272,7 @@ class HelpMenu(PopUpMenu):
             super().handle_event(event)
             self.container.handle_event(event)
             if event.key == pygame.K_h:
-                self.activate_black_layer = True
+                self.active_black_layer = True
                 self.manager.change_screen(self.screen)
 
     def set_return_screen(self, screen: str) -> None:
@@ -226,6 +313,9 @@ class HelpTextCard(UISelectObject):
 
     def get_action(self):
         return None
+    
+    def get_text(self):
+        return self.lines
 
     def handle_event(self, event) -> None:
         return None

@@ -112,7 +112,11 @@ class TitleCard(Card):
         self.center = self.render_text.get_rect(center=(sp.CENTER_X, sp.XTOP))
 
         self.width = width
-        self.height = self.render_text.get_height() + font_size * 1.5
+
+        if height:
+            self.height = height
+        else:
+            self.height = self.render_text.get_height() + font_size * 1.5
         self.x = self.center.x - (self.width - self.render_text.get_width()) / 2
         self.y = self.center.y - (self.height - self.render_text.get_height()) / 2
         self.instr_rect = pygame.Rect(self.x, self.y, self.width, self.height)

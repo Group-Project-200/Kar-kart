@@ -39,12 +39,15 @@ class Container(UIObject):
             if r >= rows - 1:
                 columns = n - (rows - 1) * columns
 
+            if self.padx_center:
+                curr_x += self.padding_x[r]
+
             for _ in range(columns):
                 obj = self.objects[i]
                 adjusted_y = curr_y + (self.max_height - obj.get_height()) / 2
-                obj.set_position(curr_x, adjusted_y)
+                obj.set_position(curr_x, curr_y)
                 obj.draw(surface)
-                curr_x += obj.get_width() + self.padding_x
+                curr_x += obj.get_width() + self.padding_x[r]
                 i += 1
 
             if obj is not None:
@@ -55,24 +58,38 @@ class Container(UIObject):
         self.objects.append(obj)
         self.calculate_padding()
 
+    def add_objects(self, list_obj) -> None:
+        for obj in list_obj:
+            self.objects.append(obj)
+        self.calculate_padding()
+
     def get_objects(self):
         return self.objects
 
     def calculate_padding(self, x_center: bool = False, y_center: bool = False) -> None:
-        first_row = self.objects[: self.columns]
+
+        self.padx_center = x_center
+        rows_list = []
+        for i in range(0, len(self.objects), self.columns):
+            rows_list.append(self.objects[i:i+self.columns])
+
         first_column = self.objects[:: self.columns]
 
         if x_center:
-            self.padding_x = (
-                self.width - sum(obj.get_width() for obj in first_row)
-            ) / (self.columns + 1)
-            self.x += self.padding_x
+            self.padding_x = [
+                ((self.width - sum(obj.get_width() for obj in row))
+                /
+                (self.columns + 1))
+                for row in rows_list]
+
         elif self.columns > 1:
-            self.padding_x = (
-                self.width - sum(obj.get_width() for obj in first_row)
-            ) / (self.columns - 1)
+            self.padding_x = [
+                ((self.width - sum(obj.get_width() for obj in row))
+                /
+                (self.columns - 1))
+                for row in rows_list]
         else:
-            self.padding_x = 0
+            self.padding_x = [0]*self.rows
 
         if y_center:
             self.padding_y = (
@@ -104,8 +121,8 @@ class SelectContainer(Container):
         super().__init__(center_x, center_y, width, height, rows, columns)
         self.selected = 0
 
-    def add_object(self, obj) -> None:
-        super().add_object(obj)
+    def add_objects(self, list_obj) -> None:
+        super().add_objects(list_obj)
         self.objects[self.selected].select()
 
     def handle_event(self, event) -> None:
@@ -208,38 +225,35 @@ class PopUpContainer(SelectContainer):
         if event.key == pygame.K_RETURN:
             # Enter on a pop-up card confirms the option selection.
             action = self.objects[self.selected].get_action()
+            self.default_selection()
             if action:
-                self.objects[self.selected].unselect()
-                self.selected = 0
-                self.objects[self.selected].select()
                 return action
         elif event.key == pygame.K_ESCAPE:
-            self.objects[self.selected].unselect()
-            self.selected = 0
-            self.objects[self.selected].select()
+            self.default_selection()
 
         super().handle_event(event)
         return None
 
+    def default_selection(self):
+        self.objects[self.selected].unselect()
+        self.selected = 0
+        self.objects[0].select()
 
-class ArrowContainer(SelectContainer):
+class _ArrowContainerNoTitle(SelectContainer):
 
     def __init__(
         self, center_x: float, center_y: float,
         width: float, height: float,
-        options: list[PopUpCard], title_card,
-        opt_index: int = 0
+        options: list[PopUpCard], opt_index: int = 0
     ) -> None:
 
         super().__init__(center_x, center_y, width, height, 1, 3)
 
         self.options = options
-        self.title_card = title_card
-        
         self.opt_index = opt_index
         self.objects = [Arrow(0, 0, 30, 30, "left"), self.options[self.opt_index], Arrow(0, 0, 30, 30, "right")]
 
-        # self.select()
+        self.padding_done = False
 
     def handle_event(self, event):
         if event.type != pygame.KEYDOWN:
@@ -257,16 +271,12 @@ class ArrowContainer(SelectContainer):
         self.options[prev].unselect()
         self.options[self.opt_index].select()
 
-    def draw(self, surface):
-        super().draw(surface)
-        self.title_card.draw(surface)
-
-
     def select(self):
         for x in self.objects:
             x.select()
-        self.title_card.select()
 
+        for x in self.options:
+            x.select()
 
     def unselect(self):
         for x in self.objects:
@@ -275,14 +285,64 @@ class ArrowContainer(SelectContainer):
         for x in self.options:
             x.unselect()
 
-        self.title_card.unselect()
-
-
     def set_position(self, x, y):
         super().set_position(x, y)
-        self.calculate_padding(x_center=True, y_center=True)
-        x_option, y_option = self.objects[1].get_position()
-        self.title_card.set_position(x_option, y_option-self.title_card.get_height()-2)
+
+        if not self.padding_done:
+            self.calculate_padding()
+            self.padding_done = True
 
     def get_text(self):
         return self.options[self.opt_index].get_text()
+
+    def set_opt_index(self, opt_index):
+        self.opt_index = opt_index
+        self.objects[1] = self.options[self.opt_index]
+
+    def get_opt_index(self):
+        return self.opt_index
+
+class ArrowContainer(SelectContainer):
+    def __init__(
+        self, center_x: float, center_y: float,
+        width: float, height: float,
+        options: list[PopUpCard], title_card,
+        opt_index: int = 0
+    ) -> None:
+        super().__init__(center_x, center_y, width, height, 2, 1)
+
+        self.arrow_container = _ArrowContainerNoTitle(center_x, center_y, width, height-title_card.get_height()-2, options, opt_index=opt_index)
+        self.title_card = title_card
+
+        self.objects = [self.title_card, self.arrow_container]
+        
+        self.padding_done = False
+
+    def handle_event(self, event):
+        if event.type != pygame.KEYDOWN:
+            return None
+
+        self.arrow_container.handle_event(event)
+
+    def select(self):
+        for x in self.objects:
+            x.select()
+
+    def unselect(self):
+        for x in self.objects:
+            x.unselect()
+
+    def set_position(self, x, y):
+        super().set_position(x, y)
+        if not self.padding_done:
+            self.calculate_padding(x_center=True, y_center=True)
+            self.padding_done = True
+
+    def get_text(self):
+        return self.arrow_container.get_text()
+
+    def set_opt_index(self, opt_index):
+        self.arrow_container.set_opt_index(opt_index)
+
+    def get_opt_index(self):
+        return self.arrow_container.get_opt_index()

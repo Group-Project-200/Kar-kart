@@ -53,7 +53,12 @@ class _Settings:
             "Controls" : self.all_bindings,
             "Sound" : self.all_sound,
             "Music" : self.all_music}
-        
+
+    def change(self, set_list):
+        self.set_bindings(set_list[0])
+        self.set_sound(set_list[1])
+        self.set_music(set_list[2])
+
 
     def save(self):
         data = {
@@ -88,7 +93,7 @@ class _Settings:
                 AudioManager.stop_background_music()
 
     def is_sound_active(self) -> bool:
-        return True if self.sound == "On" else False
+        return self.sound == "On"
     
     # ---------- Music -----------
     def set_music(self, label):
@@ -96,9 +101,6 @@ class _Settings:
             self.music = label
             if self.is_sound_active():
                 AudioManager.start_background_music(self.music)
-    
-    def is_sound_active(self) -> bool:
-        return self.sound == "On"
 
 
 class _Keys:
