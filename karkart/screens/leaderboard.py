@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import time
 from dataclasses import dataclass, field
 
@@ -40,44 +41,44 @@ class LeaderboardScreen:
             pygame.font.init()
 
         self.rank_font = self._load_font(14)
-        self.name_font = self._load_font(16)
-        self.score_font = self._load_font(14)
-        self.button_font = self._load_font(16)
+        self.name_font = self._load_font(15)
+        self.score_font = self._load_font(13)
+        self.button_font = self._load_font(15)
 
         self.selected_button = 0
         self.counter = 0
 
         self.background = self._load_background()
 
-        self.play_again_rect = pygame.Rect(327, 680, 305, 34)
-        self.main_menu_rect = pygame.Rect(650, 680, 305, 34)
-        self.next_race_rect = pygame.Rect(327, 680, 305, 34)
+        self.play_again_rect = pygame.Rect(323, 676, 309, 33)
+        self.main_menu_rect = pygame.Rect(648, 676, 309, 33)
+        self.next_race_rect = pygame.Rect(323, 676, 309, 33)
 
         self.row_boxes = [
             {
-                "rank": pygame.Rect(322, 362, 52, 36),
-                "name": pygame.Rect(391, 362, 402, 36),
-                "score": pygame.Rect(813, 362, 160, 36),
+                "rank": pygame.Rect(318, 357, 52, 36),
+                "name": pygame.Rect(381, 357, 392, 36),
+                "score": pygame.Rect(785, 357, 182, 36),
             },
             {
-                "rank": pygame.Rect(322, 415, 52, 36),
-                "name": pygame.Rect(391, 415, 402, 36),
-                "score": pygame.Rect(813, 415, 160, 36),
+                "rank": pygame.Rect(318, 410, 52, 36),
+                "name": pygame.Rect(381, 410, 392, 36),
+                "score": pygame.Rect(785, 410, 182, 36),
             },
             {
-                "rank": pygame.Rect(322, 468, 52, 36),
-                "name": pygame.Rect(391, 468, 402, 36),
-                "score": pygame.Rect(813, 468, 160, 36),
+                "rank": pygame.Rect(318, 463, 52, 36),
+                "name": pygame.Rect(381, 463, 392, 36),
+                "score": pygame.Rect(785, 463, 182, 36),
             },
             {
-                "rank": pygame.Rect(322, 521, 52, 36),
-                "name": pygame.Rect(391, 521, 402, 36),
-                "score": pygame.Rect(813, 521, 160, 36),
+                "rank": pygame.Rect(318, 516, 52, 36),
+                "name": pygame.Rect(381, 516, 392, 36),
+                "score": pygame.Rect(785, 516, 182, 36),
             },
             {
-                "rank": pygame.Rect(322, 574, 52, 36),
-                "name": pygame.Rect(391, 574, 402, 36),
-                "score": pygame.Rect(813, 574, 160, 36),
+                "rank": pygame.Rect(318, 569, 52, 36),
+                "name": pygame.Rect(381, 569, 392, 36),
+                "score": pygame.Rect(785, 569, 182, 36),
             },
         ]
 
@@ -242,7 +243,7 @@ class LeaderboardScreen:
         center: bool = False,
         midleft: bool = False,
     ) -> None:
-        shadow = font.render(text, False, (70, 50, 25))
+        shadow = font.render(text, False, (95, 65, 35))
         main = font.render(text, False, color)
 
         if center:
@@ -264,47 +265,64 @@ class LeaderboardScreen:
             return "3rd"
         return str(row_index + 1)
 
+    def _draw_small_star(self, surface: pygame.Surface, x: int, y: int) -> None:
+        points = [
+            (x, y - 7),
+            (x + 3, y - 2),
+            (x + 8, y - 2),
+            (x + 4, y + 2),
+            (x + 6, y + 8),
+            (x, y + 4),
+            (x - 6, y + 8),
+            (x - 4, y + 2),
+            (x - 8, y - 2),
+            (x - 3, y - 2),
+        ]
+        pygame.draw.polygon(surface, (90, 55, 15), points)
+        pygame.draw.polygon(surface, (255, 225, 90), points[:-1])
+
+    def _draw_row_highlight(self, surface: pygame.Surface, row_index: int, row: dict) -> None:
+        boxes = self.row_boxes[row_index]
+
+        full_rect = pygame.Rect(
+            boxes["rank"].left + 4,
+            boxes["rank"].top + 4,
+            boxes["score"].right - boxes["rank"].left - 8,
+            boxes["rank"].height - 8,
+        )
+
+        if row_index == 0:
+            ticks = pygame.time.get_ticks()
+            shine = int(45 + 25 * math.sin(ticks * 0.006))
+            self._draw_alpha_rect(surface, full_rect, (255, 225, 95, 55 + shine), 5)
+            self._draw_small_star(surface, boxes["rank"].left - 12, boxes["rank"].centery)
+        elif row["is_player"]:
+            self._draw_alpha_rect(surface, full_rect, (100, 180, 255, 35), 5)
+
     def _draw_row(self, surface: pygame.Surface, row: dict, row_index: int) -> None:
         boxes = self.row_boxes[row_index]
 
-        if row_index == 0:
-            fill = (255, 220, 110, 60)
-            border = (205, 155, 55)
-            text_color = (30, 20, 10)
-        elif row["is_player"]:
-            fill = (110, 180, 255, 45)
-            border = (95, 125, 170)
-            text_color = (30, 20, 10)
-        else:
-            fill = (255, 255, 255, 18)
-            border = (120, 100, 70)
-            text_color = (30, 20, 10)
-
-        self._draw_alpha_rect(surface, boxes["rank"], fill, 6)
-        self._draw_alpha_rect(surface, boxes["name"], fill, 6)
-        self._draw_alpha_rect(surface, boxes["score"], fill, 6)
-
-        pygame.draw.rect(surface, border, boxes["rank"], 2, border_radius=6)
-        pygame.draw.rect(surface, border, boxes["name"], 2, border_radius=6)
-        pygame.draw.rect(surface, border, boxes["score"], 2, border_radius=6)
+        self._draw_row_highlight(surface, row_index, row)
 
         rank_text = self._rank_label(row_index)
         name_text = self._fit_text(
             row["name"],
             self.name_font,
-            boxes["name"].width - 18,
+            boxes["name"].width - 28,
         )
         score_text = self._fit_text(
             row["score"],
             self.score_font,
-            boxes["score"].width - 14,
+            boxes["score"].width - 20,
         )
+
+        text_color = (35, 24, 12)
 
         self._draw_text_shadow(
             surface,
             self.rank_font,
             rank_text,
-            boxes["rank"].center,
+            (boxes["rank"].centerx, boxes["rank"].centery + 1),
             text_color,
             center=True,
         )
@@ -312,7 +330,7 @@ class LeaderboardScreen:
             surface,
             self.name_font,
             name_text,
-            (boxes["name"].x + 14, boxes["name"].centery),
+            (boxes["name"].x + 20, boxes["name"].centery + 1),
             text_color,
             midleft=True,
         )
@@ -320,7 +338,7 @@ class LeaderboardScreen:
             surface,
             self.score_font,
             score_text,
-            boxes["score"].center,
+            (boxes["score"].centerx, boxes["score"].centery + 1),
             text_color,
             center=True,
         )
@@ -335,38 +353,30 @@ class LeaderboardScreen:
         mouse_over = rect.collidepoint(pygame.mouse.get_pos())
         active = selected or mouse_over
 
-        pulse = (pygame.time.get_ticks() // 16) % 20
-        pulse_value = abs(10 - pulse)
+        ticks = pygame.time.get_ticks()
+        pulse = int(25 + 20 * math.sin(ticks * 0.008))
+
+        draw_rect = rect.copy()
+        if active:
+            draw_rect.y -= 2
 
         if active:
-            fill = (235, 205, 90, 175)
-            border = (255, 245, 180)
+            glow_rect = draw_rect.inflate(-6, -3)
+            self._draw_alpha_rect(surface, glow_rect, (255, 225, 85, 90 + pulse), 8)
             text_color = (35, 25, 12)
-            glow_alpha = 45 + pulse_value * 2
         else:
-            fill = (120, 95, 45, 70)
-            border = (150, 120, 70)
-            text_color = (60, 40, 20)
-            glow_alpha = 0
+            text_color = (75, 50, 25)
 
-        shadow_rect = rect.move(0, 3)
-        self._draw_alpha_rect(surface, shadow_rect, (0, 0, 0, 70), 8)
+        label = self.button_font.render(text, False, text_color)
+        shadow = self.button_font.render(text, False, (130, 85, 35))
 
-        if glow_alpha > 0:
-            glow_rect = rect.inflate(10, 8)
-            self._draw_alpha_rect(surface, glow_rect, (255, 230, 120, glow_alpha), 10)
+        label_rect = label.get_rect(center=(draw_rect.centerx, draw_rect.centery + 1))
+        surface.blit(shadow, label_rect.move(1, 1))
+        surface.blit(label, label_rect)
 
-        self._draw_alpha_rect(surface, rect, fill, 8)
-        pygame.draw.rect(surface, border, rect, 2, border_radius=8)
-
-        self._draw_text_shadow(
-            surface,
-            self.button_font,
-            text,
-            rect.center,
-            text_color,
-            center=True,
-        )
+        if active:
+            underline = pygame.Rect(label_rect.left, label_rect.bottom + 2, label_rect.width, 3)
+            self._draw_alpha_rect(surface, underline, (255, 240, 150, 150), 2)
 
     def _go_to_screen(self, target: str) -> None:
         self.manager.change_screen(target)
