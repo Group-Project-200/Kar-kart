@@ -39,11 +39,11 @@ class LeaderboardScreen:
         if not pygame.font.get_init():
             pygame.font.init()
 
-        self.rank_font = self._load_font(18)
-        self.name_font = self._load_font(18)
-        self.score_font = self._load_font(16)
-        self.button_font = self._load_font(18)
-        self.small_font = self._load_font(12)
+        self.rank_font = self._load_font(14)
+        self.name_font = self._load_font(16)
+        self.score_font = self._load_font(14)
+        self.button_font = self._load_font(16)
+        self.small_font = self._load_font(11)
 
         self.selected_button = 0
         self.counter = 0
@@ -56,29 +56,29 @@ class LeaderboardScreen:
 
         self.row_boxes = [
             {
-                "rank": pygame.Rect(318, 357, 36, 36),
-                "name": pygame.Rect(381, 357, 392, 36),
-                "score": pygame.Rect(785, 357, 182, 36),
+                "rank": pygame.Rect(318, 357, 52, 36),
+                "name": pygame.Rect(386, 357, 402, 36),
+                "score": pygame.Rect(808, 357, 160, 36),
             },
             {
-                "rank": pygame.Rect(318, 410, 36, 36),
-                "name": pygame.Rect(381, 410, 392, 36),
-                "score": pygame.Rect(785, 410, 182, 36),
+                "rank": pygame.Rect(318, 410, 52, 36),
+                "name": pygame.Rect(386, 410, 402, 36),
+                "score": pygame.Rect(808, 410, 160, 36),
             },
             {
-                "rank": pygame.Rect(318, 463, 36, 36),
-                "name": pygame.Rect(381, 463, 392, 36),
-                "score": pygame.Rect(785, 463, 182, 36),
+                "rank": pygame.Rect(318, 463, 52, 36),
+                "name": pygame.Rect(386, 463, 402, 36),
+                "score": pygame.Rect(808, 463, 160, 36),
             },
             {
-                "rank": pygame.Rect(318, 516, 36, 36),
-                "name": pygame.Rect(381, 516, 392, 36),
-                "score": pygame.Rect(785, 516, 182, 36),
+                "rank": pygame.Rect(318, 516, 52, 36),
+                "name": pygame.Rect(386, 516, 402, 36),
+                "score": pygame.Rect(808, 516, 160, 36),
             },
             {
-                "rank": pygame.Rect(318, 569, 36, 36),
-                "name": pygame.Rect(381, 569, 392, 36),
-                "score": pygame.Rect(785, 569, 182, 36),
+                "rank": pygame.Rect(318, 569, 52, 36),
+                "name": pygame.Rect(386, 569, 402, 36),
+                "score": pygame.Rect(808, 569, 160, 36),
             },
         ]
 
@@ -243,7 +243,7 @@ class LeaderboardScreen:
         center: bool = False,
         midleft: bool = False,
     ) -> None:
-        shadow = font.render(text, False, (0, 0, 0))
+        shadow = font.render(text, False, (70, 50, 25))
         main = font.render(text, False, color)
 
         if center:
@@ -253,50 +253,58 @@ class LeaderboardScreen:
         else:
             rect = main.get_rect(topleft=pos)
 
-        surface.blit(shadow, rect.move(2, 2))
+        surface.blit(shadow, rect.move(1, 1))
         surface.blit(main, rect)
+
+    def _rank_label(self, row_index: int) -> str:
+        if row_index == 0:
+            return "1st"
+        if row_index == 1:
+            return "2nd"
+        if row_index == 2:
+            return "3rd"
+        return str(row_index + 1)
 
     def _draw_row(self, surface: pygame.Surface, row: dict, row_index: int) -> None:
         boxes = self.row_boxes[row_index]
 
-        full_rect = pygame.Rect(
-            boxes["rank"].left - 8,
-            boxes["rank"].top - 4,
-            boxes["score"].right - boxes["rank"].left + 16,
-            boxes["rank"].height + 8,
-        )
-
         if row_index == 0:
-            self._draw_alpha_rect(surface, full_rect, (255, 220, 80, 95), 8)
-            border_color = (255, 245, 170)
-            text_color = (45, 28, 10)
+            fill = (255, 220, 110, 60)
+            border = (205, 155, 55)
+            text_color = (30, 20, 10)
         elif row["is_player"]:
-            self._draw_alpha_rect(surface, full_rect, (90, 170, 255, 80), 8)
-            border_color = (190, 225, 255)
-            text_color = (35, 25, 18)
+            fill = (110, 180, 255, 45)
+            border = (95, 125, 170)
+            text_color = (30, 20, 10)
         else:
-            self._draw_alpha_rect(surface, full_rect, (255, 255, 255, 28), 8)
-            border_color = (110, 80, 45)
-            text_color = (40, 28, 18)
+            fill = (255, 255, 255, 18)
+            border = (120, 100, 70)
+            text_color = (30, 20, 10)
 
-        pygame.draw.rect(surface, border_color, full_rect, 2, border_radius=8)
+        self._draw_alpha_rect(surface, boxes["rank"], fill, 6)
+        self._draw_alpha_rect(surface, boxes["name"], fill, 6)
+        self._draw_alpha_rect(surface, boxes["score"], fill, 6)
 
-        if row_index == 0:
-            rank = "1st"
-        elif row_index == 1:
-            rank = "2nd"
-        elif row_index == 2:
-            rank = "3rd"
-        else:
-            rank = str(row_index + 1)
+        pygame.draw.rect(surface, border, boxes["rank"], 2, border_radius=6)
+        pygame.draw.rect(surface, border, boxes["name"], 2, border_radius=6)
+        pygame.draw.rect(surface, border, boxes["score"], 2, border_radius=6)
 
-        name_text = self._fit_text(row["name"], self.name_font, boxes["name"].width - 18)
-        score_text = self._fit_text(row["score"], self.score_font, boxes["score"].width - 16)
+        rank_text = self._rank_label(row_index)
+        name_text = self._fit_text(
+            row["name"],
+            self.name_font,
+            boxes["name"].width - 18,
+        )
+        score_text = self._fit_text(
+            row["score"],
+            self.score_font,
+            boxes["score"].width - 14,
+        )
 
         self._draw_text_shadow(
             surface,
             self.rank_font,
-            rank,
+            rank_text,
             boxes["rank"].center,
             text_color,
             center=True,
@@ -305,7 +313,7 @@ class LeaderboardScreen:
             surface,
             self.name_font,
             name_text,
-            (boxes["name"].x + 12, boxes["name"].centery),
+            (boxes["name"].x + 14, boxes["name"].centery),
             text_color,
             midleft=True,
         )
@@ -328,33 +336,35 @@ class LeaderboardScreen:
         mouse_over = rect.collidepoint(pygame.mouse.get_pos())
         active = selected or mouse_over
 
+        pulse = (pygame.time.get_ticks() // 16) % 20
+        pulse_value = abs(10 - pulse)
+
         if active:
-            fill = (255, 218, 75, 145)
-            border = (255, 255, 220)
-            text_color = (45, 28, 10)
-            y_offset = -2
+            fill = (235, 205, 90, 175)
+            border = (255, 245, 180)
+            text_color = (35, 25, 12)
+            glow_alpha = 45 + pulse_value * 2
         else:
-            fill = (35, 22, 12, 80)
-            border = (120, 85, 45)
-            text_color = (255, 238, 190)
-            y_offset = 0
+            fill = (120, 95, 45, 70)
+            border = (150, 120, 70)
+            text_color = (60, 40, 20)
+            glow_alpha = 0
 
-        button_rect = rect.move(0, y_offset)
-        shadow_rect = button_rect.move(0, 4)
+        shadow_rect = rect.move(0, 3)
+        self._draw_alpha_rect(surface, shadow_rect, (0, 0, 0, 70), 8)
 
-        self._draw_alpha_rect(surface, shadow_rect, (0, 0, 0, 90), 8)
-        self._draw_alpha_rect(surface, button_rect, fill, 8)
-        pygame.draw.rect(surface, border, button_rect, 3, border_radius=8)
+        if glow_alpha > 0:
+            glow_rect = rect.inflate(10, 8)
+            self._draw_alpha_rect(surface, glow_rect, (255, 230, 120, glow_alpha), 10)
 
-        if active:
-            glow_rect = button_rect.inflate(10, 10)
-            self._draw_alpha_rect(surface, glow_rect, (255, 230, 100, 45), 12)
+        self._draw_alpha_rect(surface, rect, fill, 8)
+        pygame.draw.rect(surface, border, rect, 2, border_radius=8)
 
         self._draw_text_shadow(
             surface,
             self.button_font,
             text,
-            button_rect.center,
+            rect.center,
             text_color,
             center=True,
         )
