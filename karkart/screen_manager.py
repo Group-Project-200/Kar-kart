@@ -38,6 +38,8 @@ class ScreenManager:
 
     def pop_screen(self) -> str:
         self.current = self.screens[self.stack.pop()]
+        if hasattr(self.current, "on_activate"):
+            self.current.on_activate()
         return self.current.get_label()
 
     def get_screen(self):

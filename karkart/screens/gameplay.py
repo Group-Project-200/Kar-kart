@@ -505,6 +505,9 @@ class GamePlay:
         self._physics_thread = None
         self._threads_started = False
 
+    def on_activate(self) -> None:
+        self.world.pause_event.clear()
+
     def on_deactivate(self) -> None:
         self.world.pause_event.set()
 
