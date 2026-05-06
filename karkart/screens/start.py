@@ -40,7 +40,7 @@ class StartScreen:
         self.help_icon.handle_event(event)
         self.settings_icon.handle_event(event)
 
-        if event.key == pygame.K_SPACE:
+        if event.key == pygame.K_RETURN:
             self.manager.change_screen("race_selector")
 
     def update(self) -> None:
@@ -62,40 +62,73 @@ class StartScreen:
         mouse_over = self.start_rect.collidepoint(pygame.mouse.get_pos())
 
         pulse = int(35 + 25 * math.sin(ticks * 0.006))
+        shine_x = int((ticks * 0.18) % (self.start_rect.width + 120)) - 60
 
         draw_rect = self.start_rect.copy()
+
         if mouse_over:
             draw_rect.y -= 4
-            glow_alpha = 120 + pulse
-            fill = (255, 215, 85, 185)
-            border = (255, 250, 210)
-            text_color = (45, 28, 10)
+            glow_alpha = 125 + pulse
+            fill = (45, 145, 225, 205)
+            border = (210, 245, 255)
+            inner_border = (25, 70, 140)
+            text_color = (245, 255, 255)
         else:
-            glow_alpha = 60 + pulse
-            fill = (55, 95, 135, 165)
-            border = (170, 220, 255)
-            text_color = (255, 245, 220)
+            glow_alpha = 75 + pulse
+            fill = (35, 95, 170, 185)
+            border = (145, 220, 255)
+            inner_border = (20, 45, 95)
+            text_color = (230, 245, 255)
 
         shadow_rect = draw_rect.move(0, 6)
-        self._draw_alpha_rect(surface, shadow_rect, (0, 0, 0, 95), 12)
+        self._draw_alpha_rect(surface, shadow_rect, (0, 0, 0, 105), 12)
 
-        glow_rect = draw_rect.inflate(18, 14)
-        self._draw_alpha_rect(surface, glow_rect, (255, 225, 100, glow_alpha), 16)
+        glow_rect = draw_rect.inflate(22, 16)
+        self._draw_alpha_rect(surface, glow_rect, (80, 190, 255, glow_alpha), 16)
 
         self._draw_alpha_rect(surface, draw_rect, fill, 12)
-        pygame.draw.rect(surface, border, draw_rect, 4, border_radius=12)
-        pygame.draw.rect(surface, (35, 25, 18), draw_rect, 2, border_radius=12)
 
-        text = "PRESS SPACE TO START"
-        shadow = self.start_font.render(text, False, (55, 35, 18))
+        top_half = pygame.Rect(
+            draw_rect.x + 5,
+            draw_rect.y + 5,
+            draw_rect.width - 10,
+            draw_rect.height // 2,
+        )
+        self._draw_alpha_rect(surface, top_half, (160, 230, 255, 45), 10)
+
+        shine = pygame.Surface((70, draw_rect.height), pygame.SRCALPHA)
+        pygame.draw.polygon(
+            shine,
+            (255, 255, 255, 65),
+            [
+                (20, 0),
+                (70, 0),
+                (50, draw_rect.height),
+                (0, draw_rect.height),
+            ],
+        )
+        surface.blit(shine, (draw_rect.x + shine_x, draw_rect.y))
+
+        pygame.draw.rect(surface, border, draw_rect, 4, border_radius=12)
+        pygame.draw.rect(
+            surface,
+            inner_border,
+            draw_rect.inflate(-8, -8),
+            2,
+            border_radius=8,
+        )
+        pygame.draw.rect(surface, (10, 20, 45), draw_rect, 2, border_radius=12)
+
+        text = "PRESS ENTER TO START"
+        shadow = self.start_font.render(text, False, (10, 25, 60))
         label = self.start_font.render(text, False, text_color)
 
         label_rect = label.get_rect(center=draw_rect.center)
         surface.blit(shadow, label_rect.move(3, 3))
         surface.blit(label, label_rect)
 
-        hint = self.small_font.render("ENTER THE RACE", False, (255, 245, 210))
-        hint_shadow = self.small_font.render("ENTER THE RACE", False, (70, 40, 20))
+        hint = self.small_font.render("ENTER THE RACE", False, (210, 240, 255))
+        hint_shadow = self.small_font.render("ENTER THE RACE", False, (10, 25, 60))
         hint_rect = hint.get_rect(center=(draw_rect.centerx, draw_rect.bottom + 22))
 
         surface.blit(hint_shadow, hint_rect.move(2, 2))
