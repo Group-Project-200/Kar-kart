@@ -1,32 +1,4 @@
-"""Offline map editor.
-
-Run this script to place checkpoints, a finish line, a starting grid and an
-item region on a map image, and to save the result back into ``map_data.json``.
-
-Controls
---------
-* Left-click + drag         -- pan the camera (map area only).
-* Right-click + drag        -- draw a rectangle of the current kind.
-* Right-click x4            -- place the four corners of the start grid (G mode).
-* ``C`` / ``F`` / ``G`` / ``I`` / ``D`` -- switch between:
-    - ``C``: checkpoints (appended to the list)
-    - ``F``: finish line (the last checkpoint; crossing it after all CPs counts a lap)
-    - ``G``: starting grid (click 4 corners to define a polygon)
-    - ``I``: item placement
-    - ``D``: delete checkpoints or rectangles
-* ``ESC``                   -- cancel the current rectangle / pending corners.
-* Sidebar [▲] / [▼] buttons -- move a checkpoint up or down in race order.
-* Close window              -- save ``map_data.json`` and exit.
-
-Checkpoints are labelled CP_01 … CP_NN on the map and listed in the right-hand
-sidebar in their current race order. Use the arrow buttons to correct the order
-before closing; the final array order is what the game uses.
-"""
-
-from __future__ import annotations
-
 import json
-import math
 import pygame
 
 from karkart.paths import MAPS_DIR, MAP_DATA_FILE
@@ -248,9 +220,8 @@ def _try_delete_at(data: dict, map_name: str, wx: int, wy: int) -> bool:
     checkpoints = entry.get("checkpoints", [])
     for i in range(len(checkpoints) - 1, -1, -1):
         cp = checkpoints[i]
-        if _point_in_rect(wx, wy, cp["x"], cp["y"], cp["w"], cp["h"]):
-            checkpoints.pop(i)
-            return True
+        checkpoints.pop(i)
+
     return False
 
 
@@ -264,13 +235,12 @@ def _draw_map_overlays(
 ) -> None:
     cps = data[map_name]["checkpoints"]
     for i, cp in enumerate(cps):
-        rx = cp["x"] - camera_x
-        ry = cp["y"] - camera_y
-        pygame.draw.rect(screen, (255, 80, 80), (rx, ry, cp["w"], cp["h"]), 2)
+        cx = cp["x"] - camera_x
+        cy = cp["y"] - camera_y
+        cr = cp["r"]
+        pygame.draw.circle(screen, (255, 80, 80), (cx, cy), cr,2)
 
         label_surf = font.render(f"CP_{i + 1:02d}", True, (255, 240, 80))
-        cx = rx + cp["w"] // 2
-        cy = ry + cp["h"] // 2
         backing = pygame.Surface(
             (label_surf.get_width() + 4, label_surf.get_height() + 2),
             pygame.SRCALPHA,
@@ -434,6 +404,9 @@ def main() -> None:
                         spawn_points = _start_pos(pending_points)
                         data[map_name]["spawn_points"] = [list(p) for p in spawn_points]
                         pending_points = []
+                elif mode == "checkpoints":
+                    cps.append({"x": wx, "y": wy, "r": 200})
+
                 elif mx < _MAP_VIEW_W:
                     place_start = (mx + camera_x, my + camera_y)
                     placing = True
@@ -443,9 +416,7 @@ def main() -> None:
                 end = (mx + camera_x, my + camera_y)
                 x, y, w, h = _rect_from_corners(place_start, end)
                 if w > 5 and h > 5:
-                    if mode == "checkpoints":
-                        cps.append({"x": x, "y": y, "w": w, "h": h})
-                    elif mode == "finish_line":
+                    if mode == "finish_line":
                         data[map_name]["finish_line"] = (x, y, w, h)
                     elif mode == "item placements":
                         box1, box2, box3 = powerups_sizing(x, y, w, h)

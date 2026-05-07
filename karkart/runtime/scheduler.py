@@ -51,7 +51,7 @@ class FixedRateThread(threading.Thread):
 
 
 class PhysicsScheduler(FixedRateThread):
-    _LAP_TARGET: int = 3
+    _LAP_TARGET: int = 1
 
     def __init__(self, *, world: "World", snapshot_buffer: "SnapshotBuffer") -> None:
         super().__init__(world=world, target_hz=60.0, name="kk-physics")

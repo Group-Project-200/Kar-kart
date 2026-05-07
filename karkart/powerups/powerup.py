@@ -2,7 +2,7 @@ from karkart.helpers import forward_vector
 
 
 class SpeedBoost:
-    name = "Speed Boost"
+    name = "Boost"
     duration_frames = 180
 
     def __init__(self):
@@ -71,7 +71,7 @@ class Shield:
 
 
 class EMPJammer:
-    name = "EMP Jammer"
+    name = "Jammer"
     duration_frames = 150
 
     def __init__(self):

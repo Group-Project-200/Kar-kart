@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import math
 import time
 from dataclasses import dataclass, field
@@ -32,6 +30,115 @@ class Leaderboard:
 GAME_LEADERBOARD = Leaderboard()
 
 
+def _load_font(size: int) -> pygame.font.Font:
+    try:
+        return pygame.font.Font(str(PIXEL_FONT), size)
+    except (FileNotFoundError, OSError, pygame.error):
+        return pygame.font.SysFont("arial", size, bold=True)
+
+
+def _load_background() -> pygame.Surface:
+    image_path = PICTURES_DIR / "leaderboard.png"
+    image = pygame.image.load(str(image_path)).convert()
+    return pygame.transform.smoothscale(image, (sp.WIDTH, sp.HEIGHT))
+
+
+def _format_time(seconds: float) -> str:
+    total_ms = int(round(seconds * 1000))
+    minutes = total_ms // 60000
+    secs = (total_ms % 60000) // 1000
+    ms = total_ms % 1000
+    return f"{minutes:02d}:{secs:02d}.{ms:03d}"
+
+
+def _fit_text(text: str, font: pygame.font.Font, max_width: int) -> str:
+    if font.size(text)[0] <= max_width:
+        return text
+
+    trimmed = text
+    while trimmed and font.size(trimmed + "...")[0] > max_width:
+        trimmed = trimmed[:-1]
+
+    if not trimmed:
+        return ""
+
+    return trimmed + "..."
+
+def _draw_alpha_rect(
+    surface: pygame.Surface,
+    rect: pygame.Rect,
+    color: tuple[int, int, int, int],
+    border_radius: int = 0,
+) -> None:
+    temp = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+    pygame.draw.rect(temp, color, temp.get_rect(), border_radius=border_radius)
+    surface.blit(temp, rect.topleft)
+
+def _draw_text_shadow(
+    surface: pygame.Surface,
+    font: pygame.font.Font,
+    text: str,
+    pos: tuple[int, int],
+    color: tuple[int, int, int],
+    *,
+    center: bool = False,
+    midleft: bool = False,
+) -> None:
+    shadow = font.render(text, False, (95, 65, 35))
+    main = font.render(text, False, color)
+
+    if center:
+        rect = main.get_rect(center=pos)
+    elif midleft:
+        rect = main.get_rect(midleft=pos)
+    else:
+        rect = main.get_rect(topleft=pos)
+
+    surface.blit(shadow, rect.move(1, 1))
+    surface.blit(main, rect)
+
+def _rank_label(row_index: int) -> str:
+    if row_index == 0:
+        return "1st"
+    if row_index == 1:
+        return "2nd"
+    if row_index == 2:
+        return "3rd"
+    return str(row_index + 1)
+
+def _draw_small_star( surface: pygame.Surface, x: int, y: int) -> None:
+    points = [
+        (x, y - 7),
+        (x + 3, y - 2),
+        (x + 8, y - 2),
+        (x + 4, y + 2),
+        (x + 6, y + 8),
+        (x, y + 4),
+        (x - 6, y + 8),
+        (x - 4, y + 2),
+        (x - 8, y - 2),
+        (x - 3, y - 2),
+    ]
+    pygame.draw.polygon(surface, (90, 55, 15), points)
+    pygame.draw.polygon(surface, (255, 225, 90), points[:-1])
+
+
+def _build_history_rows() -> list[dict]:
+    rows = []
+
+    for result in GAME_LEADERBOARD.results[:5]:
+        rows.append(
+            {
+                "name": result.player_name,
+                "score": _format_time(result.total_time),
+                "metric": (0, 0),
+                "is_player": False,
+            }
+        )
+
+    return rows
+
+
 class LeaderboardScreen:
     def __init__(self, manager, label) -> None:
         self.manager = manager
@@ -40,19 +147,22 @@ class LeaderboardScreen:
         if not pygame.font.get_init():
             pygame.font.init()
 
-        self.rank_font = self._load_font(14)
-        self.name_font = self._load_font(15)
-        self.score_font = self._load_font(13)
-        self.button_font = self._load_font(15)
+        self.rank_font = _load_font(14)
+        self.name_font = _load_font(15)
+        self.score_font = _load_font(13)
+        self.button_font =_load_font(15)
 
         self.selected_button = 0
         self.counter = 0
 
-        self.background = self._load_background()
+        self.background = _load_background()
 
         self.play_again_rect = pygame.Rect(323, 676, 309, 33)
         self.main_menu_rect = pygame.Rect(648, 676, 309, 33)
         self.next_race_rect = pygame.Rect(323, 676, 309, 33)
+        self.results_rect = pygame.Rect(323, 676, 309, 33)
+        self.buttons = None
+        self.championship_over =False
 
         self.row_boxes = [
             {
@@ -82,36 +192,7 @@ class LeaderboardScreen:
             },
         ]
 
-    def _load_font(self, size: int) -> pygame.font.Font:
-        try:
-            return pygame.font.Font(str(PIXEL_FONT), size)
-        except (FileNotFoundError, OSError, pygame.error):
-            return pygame.font.SysFont("arial", size, bold=True)
 
-    def _load_background(self) -> pygame.Surface:
-        image_path = PICTURES_DIR / "leaderboard.png"
-        image = pygame.image.load(str(image_path)).convert()
-        return pygame.transform.smoothscale(image, (sp.WIDTH, sp.HEIGHT))
-
-    def _format_time(self, seconds: float) -> str:
-        total_ms = int(round(seconds * 1000))
-        minutes = total_ms // 60000
-        secs = (total_ms % 60000) // 1000
-        ms = total_ms % 1000
-        return f"{minutes:02d}:{secs:02d}.{ms:03d}"
-
-    def _fit_text(self, text: str, font: pygame.font.Font, max_width: int) -> str:
-        if font.size(text)[0] <= max_width:
-            return text
-
-        trimmed = text
-        while trimmed and font.size(trimmed + "...")[0] > max_width:
-            trimmed = trimmed[:-1]
-
-        if not trimmed:
-            return ""
-
-        return trimmed + "..."
 
     def _is_championship(self) -> bool:
         mode = self.manager.app_data.current_mode
@@ -121,6 +202,12 @@ class LeaderboardScreen:
         if self._is_championship() and self.counter < 2:
             return [
                 ("NEXT RACE", "map", self.next_race_rect),
+                ("MAIN MENU", "start", self.main_menu_rect),
+            ]
+
+        if self._is_championship() and self.counter >= 2:
+            return [
+                ("SHOW RESULTS", "winner_screen", self.results_rect),
                 ("MAIN MENU", "start", self.main_menu_rect),
             ]
 
@@ -150,7 +237,7 @@ class LeaderboardScreen:
             player_time = time.perf_counter() - game.world.race_start_time
 
         player_state = game.player_state
-        player_score = self._format_time(player_time) if player_time is not None else "FINISHED"
+        player_score = _format_time(player_time) if player_time is not None else "FINISHED"
 
         rows.append(
             {
@@ -200,86 +287,14 @@ class LeaderboardScreen:
         rows.sort(key=lambda row: row["metric"], reverse=True)
         return rows[:5]
 
-    def _build_history_rows(self) -> list[dict]:
-        rows = []
 
-        for result in GAME_LEADERBOARD.results[:5]:
-            rows.append(
-                {
-                    "name": result.player_name,
-                    "score": self._format_time(result.total_time),
-                    "metric": (0, 0),
-                    "is_player": False,
-                }
-            )
-
-        return rows
 
     def _get_rows_to_draw(self) -> list[dict]:
         current_race_rows = self._build_current_race_rows()
         if current_race_rows:
             return current_race_rows
-        return self._build_history_rows()
+        return _build_history_rows()
 
-    def _draw_alpha_rect(
-        self,
-        surface: pygame.Surface,
-        rect: pygame.Rect,
-        color: tuple[int, int, int, int],
-        border_radius: int = 0,
-    ) -> None:
-        temp = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
-        pygame.draw.rect(temp, color, temp.get_rect(), border_radius=border_radius)
-        surface.blit(temp, rect.topleft)
-
-    def _draw_text_shadow(
-        self,
-        surface: pygame.Surface,
-        font: pygame.font.Font,
-        text: str,
-        pos: tuple[int, int],
-        color: tuple[int, int, int],
-        *,
-        center: bool = False,
-        midleft: bool = False,
-    ) -> None:
-        shadow = font.render(text, False, (95, 65, 35))
-        main = font.render(text, False, color)
-
-        if center:
-            rect = main.get_rect(center=pos)
-        elif midleft:
-            rect = main.get_rect(midleft=pos)
-        else:
-            rect = main.get_rect(topleft=pos)
-
-        surface.blit(shadow, rect.move(1, 1))
-        surface.blit(main, rect)
-
-    def _rank_label(self, row_index: int) -> str:
-        if row_index == 0:
-            return "1st"
-        if row_index == 1:
-            return "2nd"
-        if row_index == 2:
-            return "3rd"
-        return str(row_index + 1)
-
-    def _draw_small_star(self, surface: pygame.Surface, x: int, y: int) -> None:
-        points = [
-            (x, y - 7),
-            (x + 3, y - 2),
-            (x + 8, y - 2),
-            (x + 4, y + 2),
-            (x + 6, y + 8),
-            (x, y + 4),
-            (x - 6, y + 8),
-            (x - 4, y + 2),
-            (x - 8, y - 2),
-            (x - 3, y - 2),
-        ]
-        pygame.draw.polygon(surface, (90, 55, 15), points)
-        pygame.draw.polygon(surface, (255, 225, 90), points[:-1])
 
     def _draw_row_highlight(self, surface: pygame.Surface, row_index: int, row: dict) -> None:
         boxes = self.row_boxes[row_index]
@@ -294,23 +309,23 @@ class LeaderboardScreen:
         if row_index == 0:
             ticks = pygame.time.get_ticks()
             shine = int(45 + 25 * math.sin(ticks * 0.006))
-            self._draw_alpha_rect(surface, full_rect, (255, 225, 95, 55 + shine), 5)
-            self._draw_small_star(surface, boxes["rank"].left - 12, boxes["rank"].centery)
+            _draw_alpha_rect(surface, full_rect, (255, 225, 95, 55 + shine), 5)
+            _draw_small_star(surface, boxes["rank"].left - 12, boxes["rank"].centery)
         elif row["is_player"]:
-            self._draw_alpha_rect(surface, full_rect, (100, 180, 255, 35), 5)
+            _draw_alpha_rect(surface, full_rect, (100, 180, 255, 35), 5)
 
     def _draw_row(self, surface: pygame.Surface, row: dict, row_index: int) -> None:
         boxes = self.row_boxes[row_index]
 
         self._draw_row_highlight(surface, row_index, row)
 
-        rank_text = self._rank_label(row_index)
-        name_text = self._fit_text(
+        rank_text = _rank_label(row_index)
+        name_text = _fit_text(
             row["name"],
             self.name_font,
             boxes["name"].width - 28,
         )
-        score_text = self._fit_text(
+        score_text = _fit_text(
             row["score"],
             self.score_font,
             boxes["score"].width - 20,
@@ -318,7 +333,7 @@ class LeaderboardScreen:
 
         text_color = (35, 24, 12)
 
-        self._draw_text_shadow(
+        _draw_text_shadow(
             surface,
             self.rank_font,
             rank_text,
@@ -326,7 +341,7 @@ class LeaderboardScreen:
             text_color,
             center=True,
         )
-        self._draw_text_shadow(
+        _draw_text_shadow(
             surface,
             self.name_font,
             name_text,
@@ -334,7 +349,7 @@ class LeaderboardScreen:
             text_color,
             midleft=True,
         )
-        self._draw_text_shadow(
+        _draw_text_shadow(
             surface,
             self.score_font,
             score_text,
@@ -362,7 +377,7 @@ class LeaderboardScreen:
 
         if active:
             glow_rect = draw_rect.inflate(-6, -3)
-            self._draw_alpha_rect(surface, glow_rect, (255, 225, 85, 90 + pulse), 8)
+            _draw_alpha_rect(surface, glow_rect, (255, 225, 85, 90 + pulse), 8)
             text_color = (35, 25, 12)
         else:
             text_color = (75, 50, 25)
@@ -376,7 +391,7 @@ class LeaderboardScreen:
 
         if active:
             underline = pygame.Rect(label_rect.left, label_rect.bottom + 2, label_rect.width, 3)
-            self._draw_alpha_rect(surface, underline, (255, 240, 150, 150), 2)
+            _draw_alpha_rect(surface, underline, (255, 240, 150, 150), 2)
 
     def _go_to_screen(self, target: str) -> None:
         self.manager.change_screen(target)
@@ -385,35 +400,28 @@ class LeaderboardScreen:
         self.counter += 1
 
         if self.counter >= 3:
+            self.championship_over = True
             self.counter = 0
             self.manager.app_data.modes[self.manager.app_data.current_mode]["loop"] = False
 
-    def restart_championship(self) -> None:
-        start_pos = 1
-
-        for i, player in enumerate(self.manager.app_data.championship_results.values()):
-            player[0] = 0
-            player[1] = start_pos + i
-
-        self.counter = 0
 
     def handle_event(self, event) -> None:
-        buttons = self._get_buttons()
+        self.buttons = self._get_buttons()
 
         if event.type == pygame.KEYDOWN:
             if event.key in (pygame.K_LEFT, pygame.K_a):
-                self.selected_button = (self.selected_button - 1) % len(buttons)
+                self.selected_button = (self.selected_button - 1) % len(self.buttons)
 
             elif event.key in (pygame.K_RIGHT, pygame.K_d):
-                self.selected_button = (self.selected_button + 1) % len(buttons)
+                self.selected_button = (self.selected_button + 1) % len(self.buttons)
 
             elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
-                name, target, _ = buttons[self.selected_button]
+                name, target, _ = self.buttons[self.selected_button]
 
                 if name == "NEXT RACE":
                     self._next_check()
-                elif name == "PLAY AGAIN":
-                    self.restart_championship()
+                elif name == "PLAY AGAIN" or "MAIN MENU":
+                    self.counter = 0
 
                 self._go_to_screen(target)
 
@@ -421,19 +429,19 @@ class LeaderboardScreen:
                 self._go_to_screen("start")
 
         elif event.type == pygame.MOUSEMOTION:
-            for i, (_, _, rect) in enumerate(buttons):
+            for i, (_, _, rect) in enumerate(self.buttons):
                 if rect.collidepoint(event.pos):
                     self.selected_button = i
 
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            for i, (name, target, rect) in enumerate(buttons):
+            for i, (name, target, rect) in enumerate(self.buttons):
                 if rect.collidepoint(event.pos):
                     self.selected_button = i
 
                     if name == "NEXT RACE":
                         self._next_check()
-                    elif name == "PLAY AGAIN":
-                        self.restart_championship()
+                    elif name == "PLAY AGAIN" or "MAIN MENU":
+                        self.counter = 0
 
                     self._go_to_screen(target)
                     break

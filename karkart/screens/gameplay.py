@@ -787,7 +787,7 @@ class GamePlay:
                 self.manager.app_data.championship_results[player["name"]][0] += points[i]
                 self.manager.app_data.championship_results[player["name"]][1] = positions[i]
 
-        print(self.manager.app_data.championship_results)
+
         self.manager.change_screen("leaderboard")
 
     def draw(self, _surface: pygame.Surface) -> None:
