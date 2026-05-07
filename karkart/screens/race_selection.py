@@ -77,8 +77,6 @@ class RaceSelector:
         elif event.key == pygame.K_RETURN:
             self.manager.app_data.current_mode = self.races[self.selected_index]
             self.manager.change_screen("car")
-        elif event.key == pygame.K_ESCAPE:
-            self.manager.change_screen("start")
 
     def update(self) -> None:
         pass

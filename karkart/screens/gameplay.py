@@ -154,9 +154,13 @@ class GamePlay:
         self._hud_font = pygame.font.Font(str(PIXEL_FONT), 17)
 
         if self.mode_name == "Time Trial":
-            self.hud_img = pygame.image.load(str(PICTURES_DIR / "time_trial_HUD.png")).convert_alpha()
+            self.hud_img = pygame.image.load(
+                str(PICTURES_DIR / "time_trial_HUD.png")
+            ).convert_alpha()
         else:
-            self.hud_img = pygame.image.load(str(PICTURES_DIR / "other_HUD.png")).convert_alpha()
+            self.hud_img = pygame.image.load(
+                str(PICTURES_DIR / "other_HUD.png")
+            ).convert_alpha()
 
         self.player_state = RacerState()
         self.ai_states: list[RacerState] = []
@@ -178,16 +182,16 @@ class GamePlay:
         map_size = self.current_map_data.layers[0].get_size()
 
         for item in map_record["items"]:
-                x , y, w, h = _position_mapping(item, map_size)
+            x, y, w, h = _position_mapping(item, map_size)
 
-                proper_coordinates.append(
+            proper_coordinates.append(
                 (
                     x + w / 2 - item_size / 2,
                     y + h / 2 - item_size / 2,
                     item_size,
                     item_size,
                 )
-    )
+            )
 
         self.current_car = Car(
             handling=get_handling_for(self.manager.app_data.current_car_name),
@@ -222,7 +226,9 @@ class GamePlay:
 
         self.sp = map_record["spawn_points"]
 
-        grid_cx, grid_cy = self.sp[self.manager.app_data.championship_results["Player 1"][1] - 1]
+        grid_cx, grid_cy = self.sp[
+            self.manager.app_data.championship_results["Player 1"][1] - 1
+        ]
         start_world_x, start_world_y = _car_pos_scaling(
             grid_cx,
             grid_cy,
@@ -270,12 +276,12 @@ class GamePlay:
 
             ai_stacks = self._pick_ai_car_stacks(ai_count)
             ai_rng = random.Random()
-            self.ai_names = ["Osyra", "Driftaroo","Zippa", "Khepra"]
+            self.ai_names = ["Osyra", "Driftaroo", "Zippa", "Khepra"]
             for i in range(ai_count):
                 ai_name, ai_stack = ai_stacks[i]
                 ai_car = Car(
                     handling=randomize_for_ai(get_handling_for(ai_name), ai_rng),
-                    name = self.ai_names[i]
+                    name=self.ai_names[i],
                 )
                 ai_car.physics.car_x, ai_car.physics.car_y = ai_positions[i]
                 ai_car.physics.rotation = start_rotation
@@ -335,7 +341,6 @@ class GamePlay:
     _GRID_SIDE: float = 20.0
     _POLE_FORWARD_OFFSET: float = 12.0
 
-
     def update_map(self):
         map_name = self.manager.app_data.current_map.name
         map_record = _MAP_DATA[map_name]
@@ -346,7 +351,6 @@ class GamePlay:
         current_map_data.layers = self.manager.app_data.return_map_layers()
 
         return current_map_data, map_record
-
 
     def _compute_start_pose(
         self,
@@ -390,7 +394,9 @@ class GamePlay:
         ai_positions: list[tuple[float, float]] = []
         for i in range(ai_count):
 
-            current_x, current_y =self.sp[self.manager.app_data.championship_results[ai_names[i]][1] - 1]
+            current_x, current_y = self.sp[
+                self.manager.app_data.championship_results[ai_names[i]][1] - 1
+            ]
             start_x, start_y = _car_pos_scaling(
                 current_x,
                 current_y,
@@ -544,7 +550,6 @@ class GamePlay:
             )
         )
 
-
     def update(self) -> None:
         if not self.countdown.complete:
             self.countdown.update()
@@ -592,37 +597,42 @@ class GamePlay:
         cp_in_lap = snapshot.player_racer.list_counter
         lap = snapshot.player_racer.current_lap
         speed = snapshot.player.speed
-        powerup = self.world.powerups_manager.current.name if self.world.powerups_manager.current is not None else "NONE"
-        kph = int(60*speed)
+        powerup = (
+            self.world.powerups_manager.current.name
+            if self.world.powerups_manager.current is not None
+            else "NONE"
+        )
+        kph = int(60 * speed)
 
         if self.countdown.complete and self.world.race_start_time is not None:
             time_passed = time.perf_counter() - self.world.race_start_time
         else:
             time_passed = 0
 
-        minutes = int(time_passed //60)
+        minutes = int(time_passed // 60)
         seconds = time_passed % 60
 
         if self.mode_name == "Time Trial":
-            HUD_lines =[
-            f"{minutes}:{seconds:06.3f}",
-            f"{kph}kmh",
-            f" {lap}/3",
-            f" {cp_in_lap}/{total_cps}",]
+            HUD_lines = [
+                f"{minutes}:{seconds:06.3f}",
+                f"{kph}kmh",
+                f" {lap}/3",
+                f" {cp_in_lap}/{total_cps}",
+            ]
 
         else:
             HUD_lines = [
-            f"   {snapshot.position_label}",
-            f" {powerup}",
-            f"{kph}kmh",
-            f" {lap}/3",
-            f" {cp_in_lap}/{total_cps}",
-        ]
-        
+                f"   {snapshot.position_label}",
+                f" {powerup}",
+                f"{kph}kmh",
+                f" {lap}/3",
+                f" {cp_in_lap}/{total_cps}",
+            ]
+
         if self.mode_name == "Time Trial":
             padding = 2.5
             rendered = [
-            self._hud_font.render(text, True, (255, 255, 255)) for text in HUD_lines
+                self._hud_font.render(text, True, (255, 255, 255)) for text in HUD_lines
             ]
 
             y = 30 + padding
@@ -646,6 +656,7 @@ class GamePlay:
         if self._debug_checkpoints:
             self._draw_checkpoint_debug(screen, snapshot)
             self._draw_waypoint_debug(screen, snapshot)
+            self._draw_ai_debug(screen, snapshot)
 
     _MINIMAP_SIZE: int = 180
     _MINIMAP_MARGIN: int = 12
@@ -743,6 +754,53 @@ class GamePlay:
             pygame.draw.circle(screen, (0, 0, 0), (sx, sy), 4)
             pygame.draw.circle(screen, (255, 140, 0), (sx, sy), 3)
 
+    def _draw_ai_debug(self, screen: pygame.Surface, snapshot: WorldSnapshot) -> None:
+        renderer = self.current_renderer
+        screen_w, _ = screen.get_size()
+        frame_w, _ = renderer.render_size
+        scale = renderer.map_zoom * screen_w / frame_w
+        hitbox_r = max(2, int(self._CAR_COLLISION_RADIUS * scale))
+
+        player_x = snapshot.player.car_x
+        player_y = snapshot.player.car_y
+        camera_angle = snapshot.camera_angle
+
+        px, py = self._world_to_screen_real(
+            player_x,
+            player_y,
+            player_x=player_x,
+            player_y=player_y,
+            camera_angle=camera_angle,
+        )
+        pygame.draw.circle(screen, (80, 200, 255), (px, py), hitbox_r, 2)
+
+        if not self.ai_controllers or not self.circuit_waypoints:
+            return
+        n = len(self.circuit_waypoints)
+        for ai_snap, controller in zip(snapshot.ai, self.ai_controllers):
+            ax, ay = ai_snap.car_x, ai_snap.car_y
+            sx, sy = self._world_to_screen_real(
+                ax,
+                ay,
+                player_x=player_x,
+                player_y=player_y,
+                camera_angle=camera_angle,
+            )
+            pygame.draw.circle(screen, (255, 80, 80), (sx, sy), hitbox_r, 2)
+
+            aim_idx = (controller._wp_idx + AIController.LOOKAHEAD) % n
+            wx, wy = self.circuit_waypoints[aim_idx]
+            wx_s, wy_s = self._world_to_screen_real(
+                wx,
+                wy,
+                player_x=player_x,
+                player_y=player_y,
+                camera_angle=camera_angle,
+            )
+            pygame.draw.line(screen, (255, 80, 80), (sx, sy), (wx_s, wy_s), 1)
+            pygame.draw.circle(screen, (0, 0, 0), (wx_s, wy_s), 5)
+            pygame.draw.circle(screen, (255, 80, 80), (wx_s, wy_s), 4)
+
     def complete_race(self) -> None:
         if self._race_finished:
             return
@@ -766,29 +824,37 @@ class GamePlay:
             print(f"Could not save race result: {error}")
 
         if self.mode_name == "Championship":
-            racers = [{
-                "name": "Player 1",
-                "metric": (
-                    self.player_state.total_checkpoints,
-                    -getattr(self.player_state, "last_pass_order", 0),
-                ),
-            }]
-            for car, state in zip(self.ai_cars, self.ai_states):
-                racers.append({
-                    "name": car.name,
+            racers = [
+                {
+                    "name": "Player 1",
                     "metric": (
-                        state.total_checkpoints,
-                        -getattr(state, "last_pass_order", 0),
+                        self.player_state.total_checkpoints,
+                        -getattr(self.player_state, "last_pass_order", 0),
                     ),
-                })
+                }
+            ]
+            for car, state in zip(self.ai_cars, self.ai_states):
+                racers.append(
+                    {
+                        "name": car.name,
+                        "metric": (
+                            state.total_checkpoints,
+                            -getattr(state, "last_pass_order", 0),
+                        ),
+                    }
+                )
 
             racers.sort(key=lambda r: r["metric"], reverse=True)
 
-            points = [5,4,3,2,1]
-            positions= [1,2,3,4,5]
+            points = [5, 4, 3, 2, 1]
+            positions = [1, 2, 3, 4, 5]
             for i, player in enumerate(racers):
-                self.manager.app_data.championship_results[player["name"]][0] += points[i]
-                self.manager.app_data.championship_results[player["name"]][1] = positions[i]
+                self.manager.app_data.championship_results[player["name"]][0] += points[
+                    i
+                ]
+                self.manager.app_data.championship_results[player["name"]][1] = (
+                    positions[i]
+                )
 
         print(self.manager.app_data.championship_results)
         self.manager.change_screen("leaderboard")

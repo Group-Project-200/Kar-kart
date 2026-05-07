@@ -8,7 +8,7 @@ from karkart.physics.car import Car
 
 class AIController:
 
-    LOOKAHEAD: int = 6
+    LOOKAHEAD: int = 12
     STEER_DEADZONE: float = 4.0
     THROTTLE_OFF_ANGLE: float = 55.0
     WAYPOINT_RADIUS: float = 55.0

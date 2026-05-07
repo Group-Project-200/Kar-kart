@@ -24,8 +24,9 @@ class SettingsIcon(UISelectObject):
 
     def handle_event(self, event):
         if event.key == pygame.K_ESCAPE:
-            self.manager.push_screen(self.manager.get_screen().get_label())
-            self.manager.change_screen("settings")
+            if not getattr(self.manager.get_screen(), "is_popup", False):
+                self.manager.push_screen(self.manager.get_screen().get_label())
+                self.manager.change_screen("settings")
     
     def draw(self, surface):
 

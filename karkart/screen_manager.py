@@ -32,6 +32,8 @@ class ScreenManager:
         self.current = self.screens[label]
         if hasattr(self.current, "update_resources"):
             self.current.update_resources()
+        if hasattr(self.current, "on_activate"):
+            self.current.on_activate()
 
     def push_screen(self, label: str) -> None:
         self.stack.append(label)

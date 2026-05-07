@@ -11,6 +11,7 @@ from karkart.ui.ui_object import UISelectObject
 
 class Card(UISelectObject, ABC):
     """A bordered rectangular card. ``(x, y)`` is the *centre*."""
+
     @abstractmethod
     def __init__(
         self, center_x: float, center_y: float, width: float, height: float
@@ -21,7 +22,9 @@ class Card(UISelectObject, ABC):
     def draw(self, surface: pygame.Surface) -> None:
         self.outer_card = pygame.Rect(self.x, self.y, self.width, self.height)
         pygame.draw.rect(surface, self.bord_2_color, self.outer_card, border_radius=8)
-        pygame.draw.rect(surface, self.bord_color, self.outer_card, self.bord_thick, border_radius=8)
+        pygame.draw.rect(
+            surface, self.bord_color, self.outer_card, self.bord_thick, border_radius=8
+        )
 
     def get_text(self):
         return self.text
@@ -42,7 +45,9 @@ class MapCard(Card):
 
         name_rect = pygame.Rect(self.x + 10, self.y + 5, self.track.get_width(), 20)
         pygame.draw.rect(surface, self.color, name_rect, border_radius=4)
-        pygame.draw.rect(surface, self.bord_color, name_rect, self.bord_thick, border_radius=4)
+        pygame.draw.rect(
+            surface, self.bord_color, name_rect, self.bord_thick, border_radius=4
+        )
 
         name_font = pygame.font.Font(str(PIXEL_FONT), 9)
         name_text = name_font.render(self.track.get_name(), True, Colors.WHITE)
@@ -63,18 +68,17 @@ class MapCard(Card):
 
 class PopUpCard(Card):
     """Selectable card showing an option in the pause menu."""
-    
+
     def __init__(
         self,
         text: str,
-        action: Screen | None =None,
-        width: int | None =200,
-        height: int | None =50
+        action: Screen | None = None,
+        width: int | None = 200,
+        height: int | None = 50,
     ) -> None:
         super().__init__(0, 0, width, height)
         self.text = text
         self.action = action
-
 
     def handle_event(self, event):
         pass
@@ -94,9 +98,6 @@ class PopUpCard(Card):
     def get_text(self):
         return self.text
 
-    # def unselect(self) -> None:
-    #     super().unselect()
-    #     self.color = Colors.DARK_BLUE
 
 class TitleCard(Card):
     """
@@ -119,8 +120,16 @@ class TitleCard(Card):
 
     def draw(self, surface: pygame.Surface) -> None:
         pygame.draw.rect(surface, self.color, self.instr_rect, border_radius=8)
-        pygame.draw.rect(surface, self.bord_2_color, self.instr_rect, self.bord_2_thick, border_radius=8)
-        pygame.draw.rect(surface, self.bord_color, self.instr_rect, self.bord_thick, border_radius=8)
+        pygame.draw.rect(
+            surface,
+            self.bord_2_color,
+            self.instr_rect,
+            self.bord_2_thick,
+            border_radius=8,
+        )
+        pygame.draw.rect(
+            surface, self.bord_color, self.instr_rect, self.bord_thick, border_radius=8
+        )
         surface.blit(self.render_text, self.center)
 
     def set_position(self, x, y):

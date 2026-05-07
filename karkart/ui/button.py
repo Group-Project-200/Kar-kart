@@ -55,8 +55,11 @@ class BackButton(Button):
         super().__init__("Back", manager, action, center_x=sp.XLEFT, center_y=sp.XXXBOTTOM)
 
 class PopUpButton(Button):
-    def __init__(self, text, manager, action=None):
-        super().__init__(text, manager, action, width=200, height=50)
+    def __init__(self, text, manager, action=None, width=200, height=50):
+        super().__init__(text, manager, action, width=width, height=height)
+
+    def handle_event(self, event) -> None:
+        return None
 
 
 class ColorButton(Button):
