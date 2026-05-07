@@ -5,15 +5,15 @@ import pygame
 from karkart.constants import Colors, ScreenPositions as sp
 from karkart.paths import PICTURES_DIR, PIXEL_FONT
 from karkart.screens.gameplay import GamePlay
+from karkart.screens.screen_object import Screen
 from karkart.ui import BackButton, MapCard, MapContainer, SettingsIcon
 from karkart.ui.help_icon import HelpIcon
 
 
-class MapScreen:
+class MapScreen(Screen):
 
     def __init__(self, manager, label) -> None:
-        self.manager = manager
-        self.label = label
+        super().__init__(manager, label)
 
         self.container = MapContainer(
             sp.CENTER_X,

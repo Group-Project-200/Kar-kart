@@ -6,15 +6,15 @@ import pygame
 
 from karkart.constants import Colors, ScreenPositions as sp
 from karkart.paths import PICTURES_DIR
+from karkart.screens.screen_object import Screen
 from karkart.ui.help_icon import HelpIcon
 from karkart.ui.settings_icon import SettingsIcon
 
 
-class StartScreen:
+class StartScreen(Screen):
 
     def __init__(self, manager, label) -> None:
-        self.manager = manager
-        self.label = label
+        super().__init__(manager, label)
 
         self.bg = self._try_load_image(PICTURES_DIR / "bp2.png", convert_alpha=False)
 

@@ -59,48 +59,9 @@ class BackButton(Button):
     def __init__(self, manager, action):
         super().__init__("Back", manager, action, center_x=sp.XLEFT, center_y=sp.XXXBOTTOM)
 
-class PopUpButton(Button):
+class TextButton(Button):
     def __init__(self, text, manager, action=None, width=200, height=50):
         super().__init__(text, manager, action, width=width, height=height)
 
-
-class ColorButton(Button):
-
-    def __init__(
-        self,
-        x: float,
-        y: float,
-        width: float,
-        height: float,
-        text: str,
-        action: str,
-        manager,
-        color_normal: tuple[int, int, int],
-        color_hover: tuple[int, int, int],
-    ) -> None:
-        super().__init__(x, y, width, height, text, action, manager)
-        self.color_normal = color_normal
-        self.color_hover = color_hover
-        self.keyboard_hovered = False
-
     def handle_event(self, event) -> None:
-        if event.type == pygame.MOUSEBUTTONDOWN and self.rect.collidepoint(event.pos):
-            if self.action:
-                self.manager.change_screen(self.action)
-
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_s:
-                self.keyboard_hovered = not self.keyboard_hovered
-            elif event.key == pygame.K_RETURN:
-                if self.keyboard_hovered and self.action:
-                    self.manager.change_screen(self.action)
-
-    def draw(self, surface: pygame.Surface) -> None:
-        mouse_pos = pygame.mouse.get_pos()
-        hovered = self.rect.collidepoint(mouse_pos) or self.keyboard_hovered
-        color = self.color_hover if hovered else self.color_normal
-        pygame.draw.rect(surface, color, self.rect, border_radius=8)
-
-        button_font = pygame.font.SysFont("arial", 20, bold=True)
-        button_text = button_font.render(self.rendered_text, True, Colors.BLACK)
-        surface.blit(button_text, button_text.get_rect(center=self.rect.center))
+        return None

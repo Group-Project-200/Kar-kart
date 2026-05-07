@@ -21,8 +21,9 @@ class PathfinderWorker:
         self._thread: threading.Thread | None = None
 
     def start(self) -> None:
-        if self._thread is not None:
+        if self._thread is not None and self._thread.is_alive():
             return
+        self._stop.clear()
         self._thread = threading.Thread(
             target=self._run,
             name="kk-pathfinder",
@@ -57,8 +58,11 @@ class PathfinderWorker:
 
     def _run(self) -> None:
         while not self._stop.is_set():
-            item = self._requests.get()
-            if item is _SHUTDOWN or self._stop.is_set():
+            try:
+                item = self._requests.get(timeout=0.1)
+            except Empty:
+                continue
+            if item is _SHUTDOWN:
                 break
             ai_index, start, goal = item
             try:

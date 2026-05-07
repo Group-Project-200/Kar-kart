@@ -7,6 +7,7 @@ import pygame
 from karkart.constants import ScreenPositions as sp
 from karkart.ui.help_icon import HelpIcon
 from karkart.paths import PICTURES_DIR
+from karkart.screens.screen_object import Screen
 from karkart.settings import Keys as K
 from karkart.ui import SettingsIcon
 
@@ -19,15 +20,14 @@ _MODE_IMAGE_NAMES: tuple[str, ...] = (
 _MODE_LABELS: tuple[str, ...] = ("Time Trial", "Race Mode", "Championship")
 
 
-class RaceSelector:
+class RaceSelector(Screen):
 
     CARD_WIDTH = 280
     CARD_HEIGHT = 220
     CARD_GAP = 40
 
     def __init__(self, manager, label) -> None:
-        self.manager = manager
-        self.label = label
+        super().__init__(manager, label)
 
         self.races = _MODE_LABELS
         self.selected_index = 1
@@ -77,8 +77,6 @@ class RaceSelector:
         elif event.key == pygame.K_RETURN:
             self.manager.app_data.current_mode = self.races[self.selected_index]
             self.manager.change_screen("car")
-        elif event.key == pygame.K_ESCAPE:
-            self.manager.change_screen("start")
 
     def update(self) -> None:
         pass

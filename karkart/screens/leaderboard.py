@@ -6,6 +6,7 @@ import pygame
 
 from karkart.constants import ScreenPositions as sp
 from karkart.paths import PICTURES_DIR, PIXEL_FONT
+from karkart.screens.screen_object import Screen
 
 
 @dataclass
@@ -139,10 +140,9 @@ def _build_history_rows() -> list[dict]:
     return rows
 
 
-class LeaderboardScreen:
+class LeaderboardScreen(Screen):
     def __init__(self, manager, label) -> None:
-        self.manager = manager
-        self.label = label
+        super().__init__(manager, label)
 
         if not pygame.font.get_init():
             pygame.font.init()

@@ -6,6 +6,20 @@ from collections import deque
 
 import pygame
 
+_Grid = list[list[int]]
+
+_DIRS_8 = ((-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (-1, 1), (1, -1), (1, 1))
+_DIRS_8_COST = (
+    (-1, 0, 1.0),
+    (1, 0, 1.0),
+    (0, -1, 1.0),
+    (0, 1, 1.0),
+    (-1, -1, 1.41421356),
+    (-1, 1, 1.41421356),
+    (1, -1, 1.41421356),
+    (1, 1, 1.41421356),
+)
+
 
 class AStarPathfinder:
 
@@ -26,17 +40,14 @@ class AStarPathfinder:
         self.mask_scale_y = mask_h / self.map_height if self.map_height else 1.0
 
         self.road_mask = road_mask
-
         self.cols = max(1, self.map_width // self.cell_size)
         self.rows = max(1, self.map_height // self.cell_size)
 
-        self._raw_grid: list[list[int]] = self._build_grid(mask)
-
-        self._grid: list[list[int]] = [row[:] for row in self._raw_grid]
+        self._raw_grid: _Grid = self._build_grid(mask)
+        self._grid: _Grid = [row[:] for row in self._raw_grid]
         self._pad_grid()
 
-    def _build_grid(self, mask: pygame.mask.Mask) -> list[list[int]]:
-
+    def _build_grid(self, mask: pygame.mask.Mask) -> _Grid:
         mask_w, mask_h = mask.get_size()
         road_w = road_h = 0
         if self.road_mask is not None:
@@ -61,7 +72,6 @@ class AStarPathfinder:
         return grid
 
     def _pad_grid(self) -> None:
-
         if self.padding <= 0:
             return
 
@@ -78,16 +88,7 @@ class AStarPathfinder:
             d = dist[row][col]
             if d >= self.padding:
                 continue
-            for dr, dc in (
-                (-1, 0),
-                (1, 0),
-                (0, -1),
-                (0, 1),
-                (-1, -1),
-                (-1, 1),
-                (1, -1),
-                (1, 1),
-            ):
+            for dr, dc in _DIRS_8:
                 nr, nc = row + dr, col + dc
                 if not (0 <= nr < self.rows and 0 <= nc < self.cols):
                     continue
@@ -102,56 +103,44 @@ class AStarPathfinder:
                     self._grid[row][col] = 1
 
     def _world_to_cell(self, wx: float, wy: float) -> tuple[int, int]:
-
-        mx = wx + self.map_width / 2
-        my = wy + self.map_height / 2
-        col = int(mx // self.cell_size)
-        row = int(my // self.cell_size)
-        col = max(0, min(self.cols - 1, col))
-        row = max(0, min(self.rows - 1, row))
+        col = max(
+            0, min(self.cols - 1, int((wx + self.map_width / 2) // self.cell_size))
+        )
+        row = max(
+            0, min(self.rows - 1, int((wy + self.map_height / 2) // self.cell_size))
+        )
         return row, col
 
     def _cell_to_world(self, row: int, col: int) -> tuple[float, float]:
-
-        mx = (col + 0.5) * self.cell_size
-        my = (row + 0.5) * self.cell_size
-        return mx - self.map_width / 2, my - self.map_height / 2
-
-    def _is_free(self, row: int, col: int) -> bool:
-        if not (0 <= row < self.rows and 0 <= col < self.cols):
-            return False
-        return self._grid[row][col] == 0
+        return (col + 0.5) * self.cell_size - self.map_width / 2, (
+            row + 0.5
+        ) * self.cell_size - self.map_height / 2
 
     def _nearest_free(
-        self, row: int, col: int, max_radius: int = 30
+        self,
+        row: int,
+        col: int,
+        grid: _Grid | None = None,
+        max_radius: int = 30,
     ) -> tuple[int, int] | None:
-
-        if self._is_free(row, col):
+        if grid is None:
+            grid = self._grid
+        if 0 <= row < self.rows and 0 <= col < self.cols and grid[row][col] == 0:
             return row, col
         seen: set[tuple[int, int]] = {(row, col)}
         queue: deque[tuple[int, int, int]] = deque([(row, col, 0)])
-        neighbours = (
-            (-1, 0),
-            (1, 0),
-            (0, -1),
-            (0, 1),
-            (-1, -1),
-            (-1, 1),
-            (1, -1),
-            (1, 1),
-        )
         while queue:
             r, c, d = queue.popleft()
             if d >= max_radius:
                 continue
-            for dr, dc in neighbours:
+            for dr, dc in _DIRS_8:
                 nr, nc = r + dr, c + dc
                 if (nr, nc) in seen:
                     continue
                 seen.add((nr, nc))
                 if not (0 <= nr < self.rows and 0 <= nc < self.cols):
                     continue
-                if self._grid[nr][nc] == 0:
+                if grid[nr][nc] == 0:
                     return nr, nc
                 queue.append((nr, nc, d + 1))
         return None
@@ -161,9 +150,9 @@ class AStarPathfinder:
         start_world: tuple[float, float],
         goal_world: tuple[float, float],
     ) -> list[tuple[float, float]]:
-
         start_cell = self._world_to_cell(*start_world)
         goal_cell = self._world_to_cell(*goal_world)
+
         start_free = self._nearest_free(*start_cell)
         goal_free = self._nearest_free(*goal_cell)
         if start_free is not None and goal_free is not None:
@@ -171,36 +160,29 @@ class AStarPathfinder:
             if cells:
                 return [self._cell_to_world(r, c) for r, c in cells]
 
-        saved_grid = self._grid
-        self._grid = self._raw_grid
-        try:
-            start_free = self._nearest_free(*start_cell)
-            goal_free = self._nearest_free(*goal_cell)
-            if start_free is None or goal_free is None:
-                return []
-            cells = self._astar(start_free, goal_free)
-        finally:
-            self._grid = saved_grid
-        if not cells:
+        start_raw = self._nearest_free(*start_cell, grid=self._raw_grid)
+        goal_raw = self._nearest_free(*goal_cell, grid=self._raw_grid)
+        if start_raw is None or goal_raw is None:
             return []
-        return [self._cell_to_world(r, c) for r, c in cells]
+
+        start_padded = self._nearest_free(*start_raw)
+        goal_padded = self._nearest_free(*goal_raw)
+        if start_padded is not None and goal_padded is not None:
+            cells = self._astar(start_padded, goal_padded)
+            if cells:
+                return [self._cell_to_world(r, c) for r, c in cells]
+
+        cells = self._astar(start_raw, goal_raw, grid=self._raw_grid)
+        return [self._cell_to_world(r, c) for r, c in cells] if cells else []
 
     def _astar(
         self,
         start: tuple[int, int],
         goal: tuple[int, int],
+        grid: _Grid | None = None,
     ) -> list[tuple[int, int]]:
-
-        neighbours = (
-            (-1, 0, 1.0),
-            (1, 0, 1.0),
-            (0, -1, 1.0),
-            (0, 1, 1.0),
-            (-1, -1, 1.41421356),
-            (-1, 1, 1.41421356),
-            (1, -1, 1.41421356),
-            (1, 1, 1.41421356),
-        )
+        if grid is None:
+            grid = self._grid
 
         def heuristic(a: tuple[int, int], b: tuple[int, int]) -> float:
             return math.hypot(a[0] - b[0], a[1] - b[1])
@@ -221,20 +203,22 @@ class AStarPathfinder:
                 return self._reconstruct(came_from, current)
             closed.add(current)
             cur_g = g_score[current]
-            for dr, dc, cost in neighbours:
+            for dr, dc, cost in _DIRS_8_COST:
                 nr, nc = current[0] + dr, current[1] + dc
                 if not (0 <= nr < self.rows and 0 <= nc < self.cols):
                     continue
-                if self._grid[nr][nc] == 1:
+                if grid[nr][nc] == 1:
                     continue
                 tentative = cur_g + cost
                 neighbour = (nr, nc)
                 if tentative < g_score.get(neighbour, float("inf")):
                     came_from[neighbour] = current
                     g_score[neighbour] = tentative
-                    f = tentative + heuristic(neighbour, goal)
                     counter += 1
-                    heapq.heappush(open_heap, (f, counter, neighbour))
+                    heapq.heappush(
+                        open_heap,
+                        (tentative + heuristic(neighbour, goal), counter, neighbour),
+                    )
         return []
 
     @staticmethod

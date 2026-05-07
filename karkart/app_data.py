@@ -74,6 +74,13 @@ class AppData:
 
         self.championship_results = {"Osyra": [0,1], "Driftaroo": [0,2], "Zippa": [0,3], "Khepra": [0,4], "Player 1": [0,5]}
 
+    _INITIAL_RESULTS = {"Osyra": [0,1], "Driftaroo": [0,2], "Zippa": [0,3], "Khepra": [0,4], "Player 1": [0,5]}
+
+    def reset_championship(self) -> None:
+        for name, defaults in self._INITIAL_RESULTS.items():
+            self.championship_results[name] = list(defaults)
+        self.modes["Championship"]["loop"] = True
+
     def add_track(self, track: Track) -> None:
         self.tracks.append(track)
 

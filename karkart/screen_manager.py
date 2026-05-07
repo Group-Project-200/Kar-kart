@@ -32,17 +32,23 @@ class ScreenManager:
         self.current = self.screens[label]
         if hasattr(self.current, "update_resources"):
             self.current.update_resources()
+        if hasattr(self.current, "on_activate"):
+            self.current.on_activate()
 
     def push_screen(self, label: str) -> None:
         self.stack.append(label)
 
     def pop_screen(self) -> str:
         self.current = self.screens[self.stack.pop()]
+        if hasattr(self.current, "on_activate"):
+            self.current.on_activate()
         return self.current.get_label()
 
     def get_screen(self):
-
         return self.current
+
+    def get_prev_screen(self):
+        return self.stack[-1]
 
     def get_app_data(self) -> "AppData":
         return self.app_data

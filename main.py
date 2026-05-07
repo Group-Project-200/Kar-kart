@@ -14,7 +14,14 @@ import pygame
 from karkart.app_data import AppData
 from karkart.constants import ScreenPositions as sp
 from karkart.settings import settings
-from karkart.screens.pop_up_menus import PauseMenu, SettingsMenu, ConfirmSettingsMenu, HelpMenu
+from karkart.screens.pop_up_menus import (
+    ChampionshipQuitConfirmMenu,
+    ConfirmSettingsMenu,
+    HelpMenu,
+    PauseMenu,
+    QuitConfirmMenu,
+    SettingsMenu,
+)
 from karkart.screen_manager import ScreenManager
 from karkart.screens.car_selection import CarScreen
 from karkart.screens.end import EndScreen
@@ -24,7 +31,6 @@ from karkart.screens.start import StartScreen
 from karkart.screens.leaderboard import LeaderboardScreen
 from karkart.screens.winner_result import WinnerScreen
 from karkart.audio import AudioManager
-
 
 
 TARGET_FPS = 60
@@ -51,6 +57,8 @@ def main() -> None:
     manager.add_screen(MapScreen(manager, "map"))
 
     manager.add_screen(PauseMenu(manager, "pause"))
+    manager.add_screen(QuitConfirmMenu(manager, "quit_confirm"))
+    manager.add_screen(ChampionshipQuitConfirmMenu(manager, "championship_quit_confirm"))
     manager.add_screen(LeaderboardScreen(manager, "leaderboard"))
     manager.add_screen(WinnerScreen(manager, "winner_screen"))
     manager.add_screen(EndScreen(manager, "end"))

@@ -1,6 +1,6 @@
 from karkart.ui.arrow import Arrow
-from karkart.ui.button import BackButton, Button, ColorButton, PopUpButton
-from karkart.ui.card import Card, MapCard, PopUpCard, TitleCard
+from karkart.ui.button import BackButton, Button, ColorButton, TextButton
+from karkart.ui.card import Card, HelpTextCard, MapCard, PopUpCard, TextCard
 from karkart.ui.container import (
     ArrowContainer,
     Container,
@@ -19,13 +19,14 @@ __all__ = [
     "Card",
     "ColorButton",
     "Container",
+    "HelpTextCard",
     "MapCard",
     "MapContainer",
-    "PopUpButton",
-    "PopUpCard",
     "PopUpContainer",
     "SelectContainer",
     "SettingsIcon",
-    "TitleCard",
+    "TextButton",
+    "TextCard",
+    "PopUpCard",
     "Track",
 ]

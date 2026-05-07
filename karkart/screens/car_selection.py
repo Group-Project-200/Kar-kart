@@ -11,23 +11,29 @@ from karkart.rendering.preview import (
     build_render_pipeline,
     render_preview_debug_frame,
 )
+from karkart.screens.screen_object import Screen
 from karkart.ui import BackButton, SettingsIcon
 
 
-class CarScreen:
+class CarScreen(Screen):
 
     PREVIEW_SIZE = (600, 450)
     STATBOX_SIZE = (600, 400)
 
     def __init__(self, manager, label) -> None:
-        self.manager = manager
-        self.label = label
+        super().__init__(manager, label)
         self.back_button = BackButton(self.manager, "race_selector")
         self.back_selected = False
 
+        # self.x = 0
+        # self.y = 0
+
+        # self.width = sp.WIDTH
+        # self.height = sp.HEIGHT
+
         self.background = pygame.transform.scale(
             pygame.image.load(str(PICTURES_DIR / "cust1.png")).convert(),
-            (sp.WIDTH, sp.HEIGHT),
+            (self.width, self.height),
         )
 
         self.car_names = sorted(self.manager.app_data.cars.keys())
@@ -112,7 +118,7 @@ class CarScreen:
     def draw(self, surface: pygame.Surface) -> None:
         pygame.display.set_caption("Car Selection")
 
-        surface.blit(self.background, (0, 0))
+        surface.blit(self.background, (self.x, self.y))
         surface.blit(self.loaded_statboxes[self.selected], (770, 400))
         pipeline = self.pipelines[self.selected]
 

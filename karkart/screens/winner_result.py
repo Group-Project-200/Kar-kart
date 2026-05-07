@@ -3,6 +3,7 @@ import math
 import pygame
 from karkart.constants import ScreenPositions as sp
 from karkart.paths import PICTURES_DIR, PIXEL_FONT
+from karkart.screens.screen_object import Screen
 
 
 def _load_font( size: int) -> pygame.font.Font:
@@ -28,10 +29,9 @@ def _draw_alpha_rect(
     surface.blit(temp, rect.topleft)
 
 
-class WinnerScreen:
+class WinnerScreen(Screen):
     def __init__(self, manager, label):
-        self.manager = manager
-        self.label = label
+        super().__init__(manager, label)
 
         if not pygame.font.get_init():
             pygame.font.init()
