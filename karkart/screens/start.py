@@ -3,7 +3,7 @@ from __future__ import annotations
 import pygame
 
 from karkart.constants import Colors, ScreenPositions as sp
-from karkart.paths import PICTURES_DIR
+from karkart.paths import PICTURES_DIR, PIXEL_FONT
 from karkart.screens.screen_object import Screen
 from karkart.ui import TextCard
 from karkart.ui.help_icon import HelpIcon
@@ -31,6 +31,8 @@ class StartScreen(Screen):
             sp.HEIGHT - 120,
         )
 
+        self.help_font = pygame.font.Font(str(PIXEL_FONT), 12)
+
     def handle_event(self, event) -> None:
         if event.type != pygame.KEYDOWN:
             return None
@@ -44,6 +46,22 @@ class StartScreen(Screen):
     def update(self) -> None:
         pass
 
+    def _draw_help_text(self, surface: pygame.Surface) -> None:
+        text = "PRESS H FOR HELP"
+
+        shadow = self.help_font.render(text, False, (25, 25, 25))
+        label = self.help_font.render(text, False, Colors.WHITE)
+
+        text_rect = label.get_rect(
+            center=(
+                sp.CENTER_X,
+                sp.HEIGHT - 35,
+            )
+        )
+
+        surface.blit(shadow, text_rect.move(2, 2))
+        surface.blit(label, text_rect)
+
     def draw(self, surface: pygame.Surface) -> None:
         pygame.display.set_caption("Kar Kart")
 
@@ -53,6 +71,7 @@ class StartScreen(Screen):
             surface.fill(Colors.BLACK)
 
         self.start_card.draw(surface)
+        self._draw_help_text(surface)
 
         self.help_icon.draw(surface)
         self.settings_icon.draw(surface)

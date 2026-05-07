@@ -617,7 +617,7 @@ class GamePlay(Screen):
             HUD_lines = [
                 f"{minutes}:{seconds:06.3f}",
                 f"{kph}kmh",
-                f" {lap}/3",
+                f" {lap}/1",
                 f" {cp_in_lap}/{total_cps}",
             ]
 
@@ -626,7 +626,7 @@ class GamePlay(Screen):
                 f"   {snapshot.position_label}",
                 f" {powerup}",
                 f"{kph}kmh",
-                f" {lap}/3",
+                f" {lap}/1",
                 f" {cp_in_lap}/{total_cps}",
             ]
 
