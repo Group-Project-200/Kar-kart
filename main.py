@@ -21,6 +21,7 @@ from karkart.screens.map_selection import MapScreen
 from karkart.screens.race_selection import RaceSelector
 from karkart.screens.start import StartScreen
 from karkart.screens.leaderboard import LeaderboardScreen
+from karkart.screens.winner_result import WinnerScreen
 from karkart.audio import AudioManager
 
 
@@ -48,6 +49,7 @@ def main() -> None:
 
     manager.add_screen(PauseMenu(manager, "pause"))
     manager.add_screen(LeaderboardScreen(manager, "leaderboard"))
+    manager.add_screen(WinnerScreen(manager, "winner_screen"))
 
     manager.change_screen("start")
 
