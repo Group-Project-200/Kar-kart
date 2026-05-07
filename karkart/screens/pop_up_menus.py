@@ -5,7 +5,7 @@ from karkart.constants import Colors
 from karkart.constants import ScreenPositions as sp
 from karkart.screens.gameplay import GamePlay
 from karkart.settings import settings
-from karkart.ui import Arrow, ArrowContainer, Button, Container, PopUpButton, PopUpContainer, PopUpCard, TitleCard
+from karkart.ui import Arrow, ArrowContainer, Button, Container, PopUpButton, PopUpContainer, PopUpCard, SelectContainer, TitleCard
 from karkart.ui.ui_object import UISelectObject
 
 
@@ -183,9 +183,9 @@ class ConfirmSettingsMenu(PopUpMenu):
         self.yes_no_container = PopUpContainer(0, 0, 260, 100, 1, len(yes_no))
         self.yes_no_container.add_objects(yes_no)
 
-        self.title_card = TitleCard("Confirm the settings?", width=260, font_size=12)
+        self.description = TitleCard("Confirm the settings?", width=260, font_size=12)
 
-        objects = [self.title_card, self.yes_no_container]
+        objects = [self.description, self.yes_no_container]
         self.container = Container(self.x, self.y, self.width, self.height, 2, 1)
         self.container.add_objects(objects)
 
@@ -196,8 +196,6 @@ class ConfirmSettingsMenu(PopUpMenu):
     def handle_event(self, event):
         if event.type != pygame.KEYDOWN:
             return
-
-        self.yes_no_container.handle_event(event)
         
         if event.key == pygame.K_RETURN:
             if self.yes_card.is_selected():
@@ -217,6 +215,8 @@ class ConfirmSettingsMenu(PopUpMenu):
             self.no_card.unselect()
             self.manager.pop_screen()
             self.manager.pop_screen()
+
+        self.yes_no_container.handle_event(event)
 
     def draw(self, surface):
         if self.confirm_black_layer:
