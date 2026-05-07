@@ -25,7 +25,7 @@ class SpeedBoost:
         # Push the car forward every frame while the boost is active.
         forward_x, forward_y = forward_vector(player.rotation)
 
-        player.speed = min(player.speed + 0.08, 7.0)
+        player.speed = min(player.speed + 0.08, 5.0)
         player.velocity_x += forward_x * 0.12
         player.velocity_y += forward_y * 0.12
 

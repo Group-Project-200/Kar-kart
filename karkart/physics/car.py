@@ -75,11 +75,11 @@ class BoostTier:
 @dataclass(frozen=True, slots=True)
 class CarHandling:
 
-    plateau_acceleration: float = 0.4
+    plateau_acceleration: float = 0.35
     turn_damping: float = 0.2
     max_turn_rate: float = 2.3
     turn_stop_epsilon: float = 0.05
-    initial_turn_acceleration: float = 0.2
+    initial_turn_acceleration: float = 0.1
     late_turn_acceleration: float = 0.15
     initial_phase_frames: int = 4
     plateau_phase_frames: int = 7
@@ -90,7 +90,7 @@ class CarHandling:
     coast_deceleration: float = 0.004
     brake_deceleration: float = 0.09
     reverse_acceleration: float = 0.04
-    max_speed: float = 2.5
+    max_speed: float = 3.0
     max_reverse_speed: float = 1.0
     min_steer_speed: float = 0.03
     turn_speed_penalty: float = 0.01
@@ -105,7 +105,7 @@ class CarHandling:
     hop_gravity: float = -0.045
     hop_pixel_scale: float = 12.0
 
-    overspeed_near_threshold: float = 0.75
+    overspeed_near_threshold: float = 0.9
     overspeed_mid_threshold: float = 1.25
     overspeed_deceleration_near: float = 0.006
     overspeed_deceleration_mid: float = 0.011
