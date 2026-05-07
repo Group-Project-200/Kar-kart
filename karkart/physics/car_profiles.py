@@ -7,25 +7,32 @@ from karkart.physics.car import CarHandling
 
 
 CAR_HANDLING_PROFILES: dict[str, CarHandling] = {
-    "car_01": CarHandling(),
-    "car_02": CarHandling(
-        max_speed=2.75,
-        throttle_acceleration=0.045,
-        max_turn_rate=2.1,
-        default_slide_factor=0.45,
-    ),
-    "car_03": CarHandling(
-        max_speed=2.3,
-        throttle_acceleration=0.065,
-        reverse_acceleration=0.05,
-        max_turn_rate=2.25,
-    ),
-    "car_04": CarHandling(
+    "car_01": CarHandling(
         max_speed=3.0,
-        throttle_acceleration=0.04,
-        max_turn_rate=2.0,
-        plateau_turn_rate=1.6,
-        default_slide_factor=0.5,
+        throttle_acceleration=0.05,
+        plateau_acceleration=0.35,
+        turn_slip_weight=0.2,
+        coast_velocity_decay=0.01,
+        default_slide_factor=0.4,
+    ),
+    "car_02": CarHandling(
+        max_speed=3.0,
+        throttle_acceleration=0.05,
+        plateau_acceleration=0.35,
+        turn_slip_weight=0.5,
+        coast_velocity_decay=0.01,
+        default_slide_factor=0.15,
+    ),
+    "car_03": CarHandling(),
+    "car_04": CarHandling(
+        max_speed=3.5,
+        throttle_acceleration=0.08,
+        plateau_acceleration=0.45,
+        turn_slip_weight=0.5,
+        coast_velocity_decay=0.05,
+        default_slide_factor=0.15,
+        max_slip=0.5,
+        turn_top_speed_falloff=0.5,
     ),
     "car_05": CarHandling(),
 }
