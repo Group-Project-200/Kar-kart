@@ -17,9 +17,9 @@ class MapScreen:
 
         self.container = MapContainer(
             sp.CENTER_X,
-            sp.CCCBOTTOM,
-            sp.WIDTH *10/25,
-            sp.HEIGHT *17/25,
+            sp.CENTER_Y,
+            width=480,
+            height=400,
             rows=2,
             columns=2,
         )
@@ -27,7 +27,7 @@ class MapScreen:
 
         tracks = []
         for track in self.manager.get_app_data().get_tracks():
-            track.set_dimensions(210, 210)
+            track.set_dimensions(150, 150)
             tracks.append(MapCard(track, manager))
         self.container.add_objects(tracks)
 
@@ -44,6 +44,10 @@ class MapScreen:
         self.help_icon = HelpIcon(self.manager, "map")
 
     def handle_event(self, event) -> None:
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            x, y = event.pos
+            print(x, y)
+
         if event.type != pygame.KEYDOWN:
             return None
 
@@ -67,7 +71,7 @@ class MapScreen:
         font_size = 15
         instr_font = pygame.font.Font(str(PIXEL_FONT), font_size)
         instr_text = instr_font.render(
-            "Select the track you want to race on", True, Colors.WHITE
+            "Select the track", True, Colors.WHITE
         )
         instr_center = instr_text.get_rect(center=(sp.CENTER_X, 100))
 
