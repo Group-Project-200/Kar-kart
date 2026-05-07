@@ -3,7 +3,6 @@ from __future__ import annotations
 import pygame
 
 from karkart.constants import Colors, ScreenPositions as sp
-from karkart.ui.help_icon import HelpIcon
 from karkart.settings import Keys as K
 from karkart.paths import CAR_RENDER_DIR, PICTURES_DIR, PIXEL_FONT
 from karkart.rendering.preview import (
@@ -12,7 +11,7 @@ from karkart.rendering.preview import (
     render_preview_debug_frame,
 )
 from karkart.screens.screen_object import Screen
-from karkart.ui import BackButton, SettingsIcon
+from karkart.ui import BackButton, HelpIcon, SettingsIcon
 
 
 class CarScreen(Screen):
@@ -24,12 +23,6 @@ class CarScreen(Screen):
         super().__init__(manager, label)
         self.back_button = BackButton(self.manager, "race_selector")
         self.back_selected = False
-
-        # self.x = 0
-        # self.y = 0
-
-        # self.width = sp.WIDTH
-        # self.height = sp.HEIGHT
 
         self.background = pygame.transform.scale(
             pygame.image.load(str(PICTURES_DIR / "cust1.png")).convert(),

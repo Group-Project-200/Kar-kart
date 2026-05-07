@@ -6,8 +6,7 @@ from karkart.constants import Colors, ScreenPositions as sp
 from karkart.paths import PICTURES_DIR
 from karkart.screens.screen_object import Screen
 from karkart.ui import TextCard
-from karkart.ui.help_icon import HelpIcon
-from karkart.ui.settings_icon import SettingsIcon
+from karkart.ui import HelpIcon, SettingsIcon
 
 
 class StartScreen(Screen):

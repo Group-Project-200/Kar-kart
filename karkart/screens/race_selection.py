@@ -5,11 +5,10 @@ import math
 import pygame
 
 from karkart.constants import ScreenPositions as sp
-from karkart.ui.help_icon import HelpIcon
 from karkart.paths import PICTURES_DIR
 from karkart.screens.screen_object import Screen
 from karkart.settings import Keys as K
-from karkart.ui import SettingsIcon
+from karkart.ui import HelpIcon, SettingsIcon
 
 
 _MODE_IMAGE_NAMES: tuple[str, ...] = (

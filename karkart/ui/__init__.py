@@ -8,7 +8,7 @@ from karkart.ui.container import (
     PopUpContainer,
     SelectContainer,
 )
-from karkart.ui.settings_icon import SettingsIcon
+from karkart.ui.icon import HelpIcon, SettingsIcon
 from karkart.ui.track import Track
 
 __all__ = [
@@ -18,6 +18,7 @@ __all__ = [
     "Button",
     "Card",
     "Container",
+    "HelpIcon",
     "HelpTextCard",
     "MapCard",
     "MapContainer",
