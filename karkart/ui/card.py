@@ -30,7 +30,7 @@ class Card(UISelectObject, ABC):
 class MapCard(Card):
 
     def __init__(self, track, manager) -> None:
-        self.width, self.height = 245, 245
+        self.width, self.height = 220, 190
         super().__init__(0, 0, self.width, self.height)
 
         self.track = track
@@ -40,7 +40,7 @@ class MapCard(Card):
         super().draw(surface)
         self.track.draw(surface)
 
-        name_rect = pygame.Rect(self.x + 10, self.y + 5, self.track.get_width(), 20)
+        name_rect = pygame.Rect(self.x + (self.width-self.track.get_width()) / 2, self.y + 5, self.track.get_width(), 20)
         pygame.draw.rect(surface, self.color, name_rect, border_radius=4)
         pygame.draw.rect(surface, self.bord_color, name_rect, self.bord_thick, border_radius=4)
 
