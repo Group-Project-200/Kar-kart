@@ -1,3 +1,21 @@
+"""Kar-Kart car selection screen.
+
+This file implements the screen where the player chooses which car to drive.
+
+In the game flow:
+- Start -> choose mode -> this screen (choose car) -> choose track -> gameplay.
+
+What the player does here:
+- LEFT / RIGHT: switch between the available cars.
+- ENTER: confirm the highlighted car.
+- DOWN: go to the back button (to return to mode selection).
+
+What the program does:
+- Shows a rotating preview of the car (so you can see it from different angles).
+- Shows a pre-made stats image for the currently highlighted car.
+- Saves the chosen car in shared state (`app_data`) so the next screens can use it.
+"""
+
 from __future__ import annotations
 
 import pygame
@@ -15,6 +33,7 @@ from karkart.ui import BackButton, HelpIcon, SettingsIcon
 
 
 class CarScreen(Screen):
+    """Screen where the player selects the car they want to race with."""
 
     PREVIEW_SIZE = (600, 450)
     STATBOX_SIZE = (600, 400)
@@ -29,8 +48,11 @@ class CarScreen(Screen):
             (self.width, self.height),
         )
 
+        # We sort the car names so the order is always the same for the player.
         self.car_names = sorted(self.manager.app_data.cars.keys())
 
+        # Each car has a pre-made PNG "stats card". We load and scale them once,
+        # then simply blit the correct one during draw().
         self.loaded_statboxes = [
             pygame.transform.scale(
                 pygame.image.load(
@@ -45,8 +67,11 @@ class CarScreen(Screen):
             for car_name in self.car_names
         ]
 
+        # The preview renderer uses a stack of PNG slices for each car.
         self.car_slices = [self._load_car_slices(car_name) for car_name in self.car_names]
 
+        # We build the render pipeline once per car in __init__ because it is
+        # expensive. During the game loop, draw() can reuse it every frame.
         self.pipelines = [
             build_render_pipeline(
                 screen_size=self.PREVIEW_SIZE,
@@ -66,6 +91,11 @@ class CarScreen(Screen):
 
     @staticmethod
     def _load_car_slices(folder_name: str) -> list[pygame.Surface]:
+        """Load the PNG slices for one car preview.
+
+        Each car is stored in its own folder inside `CAR_RENDER_DIR`.
+        We load all `.png` files, sort them, and return them as a list.
+        """
         folder = CAR_RENDER_DIR / folder_name
         return [
             pygame.image.load(str(p)).convert_alpha()
@@ -74,6 +104,7 @@ class CarScreen(Screen):
         ]
 
     def handle_event(self, event) -> None:
+        """Handle keyboard controls on the car selection screen."""
 
         if event.type != pygame.KEYDOWN:
             return
@@ -81,6 +112,8 @@ class CarScreen(Screen):
         self.help_icon.handle_event(event)
         self.settings_icon.handle_event(event)
 
+        # When the back button is selected, we do not want LEFT/RIGHT to change cars.
+        # Instead, ENTER activates the back button and UP returns focus to the cars.
         if self.back_selected:
             if event.key == pygame.K_RETURN:
 
@@ -98,9 +131,11 @@ class CarScreen(Screen):
             elif event.key == K.LEFT:
                 self.selected = (self.selected - 1) % len(self.car_slices)
             elif event.key == K.DOWN:
+                # Move focus from car browsing to the back button.
                 self.back_selected = True
                 self.back_button.select()
             elif event.key == pygame.K_RETURN:
+                # Save the chosen car in shared app data so the next screens can use it.
                 car_name = self.car_names[self.selected]
                 self.manager.app_data.set_current_car(car_name)
                 self.manager.change_screen("map")
@@ -109,12 +144,14 @@ class CarScreen(Screen):
         pass
 
     def draw(self, surface: pygame.Surface) -> None:
+        """Draw the full car selection screen (background + preview + UI)."""
         pygame.display.set_caption("Car Selection")
 
         surface.blit(self.background, (self.x, self.y))
         surface.blit(self.loaded_statboxes[self.selected], (770, 400))
         pipeline = self.pipelines[self.selected]
 
+        # We increase the angle a little bit each frame to animate rotation.
         self.preview_angle = (self.preview_angle + 1) % 360
 
         preview_surface = pygame.Surface(self.PREVIEW_SIZE, pygame.SRCALPHA)
@@ -127,6 +164,7 @@ class CarScreen(Screen):
         preview_rect = preview_surface.get_rect(center=(sp.WIDTH // 2, sp.HEIGHT // 2))
         surface.blit(preview_surface, preview_rect)
 
+        # Instruction banner: simple text inside a rectangle.
         font_size = 15
         instr_font = pygame.font.Font(str(PIXEL_FONT), font_size)
         instr_text = instr_font.render(

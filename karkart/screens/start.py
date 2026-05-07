@@ -1,3 +1,16 @@
+"""Kar-Kart start screen.
+
+This file implements the very first screen of the game.
+
+What the player sees/does:
+- A background image (title screen).
+- A message that tells them to press ENTER.
+
+What happens in the program:
+- When the player presses ENTER, we switch to the next 
+screen (`race_selector`), where they choose the game mode.
+"""
+
 from __future__ import annotations
 
 import pygame, time
@@ -10,15 +23,20 @@ from karkart.ui import HelpIcon, SettingsIcon
 
 
 class StartScreen(Screen):
+    """First screen shown when the game launches."""
 
     def __init__(self, manager, label) -> None:
         super().__init__(manager, label)
 
+        # We try to load the background image. If it is missing, the game still
+        # runs and we just draw a black background instead (so it won't crash).
         self.bg = self._try_load_image(PICTURES_DIR / "bp2.png", convert_alpha=False)
 
         self.settings_icon = SettingsIcon(self.manager, "start")
         self.help_icon = HelpIcon(self.manager, "start")
 
+        # TextCard is a reusable UI widget. Here it is used as an on-screen
+        # instruction so the player knows how to continue.
         self.start_card = TextCard(
             "PRESS ENTER TO START",
             width=560,
@@ -45,6 +63,11 @@ class StartScreen(Screen):
         self.help_font = pygame.font.Font(str(PIXEL_FONT), 12)
 
     def handle_event(self, event) -> None:
+        """React to key presses on the start screen.
+
+        The important input here is ENTER, which starts 
+        the game flow by moving to the next screen.
+        """
         if event.type != pygame.KEYDOWN:
             return None
 
@@ -52,6 +75,7 @@ class StartScreen(Screen):
         self.settings_icon.handle_event(event)
 
         if event.key == pygame.K_RETURN:
+            # Move from the start screen to the mode selection screen.
             self.manager.change_screen("race_selector")
 
     def update(self) -> None:
@@ -80,6 +104,7 @@ class StartScreen(Screen):
         surface.blit(label, text_rect)
 
     def draw(self, surface: pygame.Surface) -> None:
+        """Draw everything visible on the start screen (background + UI)."""
         pygame.display.set_caption("Kar Kart")
 
         if self.bg is not None:
@@ -96,6 +121,11 @@ class StartScreen(Screen):
 
     @staticmethod
     def _try_load_image(path, *, convert_alpha: bool) -> pygame.Surface | None:
+        """Load an image safely.
+
+        We return None if the file cannot be loaded so the rest of the game can
+        continue running (useful during development or if an asset is missing).
+        """
         try:
             image = pygame.image.load(str(path))
         except (FileNotFoundError, pygame.error):

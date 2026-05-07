@@ -1,3 +1,19 @@
+"""Kar-Kart race/mode selection screen.
+
+This file handles the step *after* the start screen.
+
+In the game flow:
+- Start screen -> (ENTER) -> this screen (choose mode) -> (ENTER) -> car selection.
+
+What the player does here:
+- Use LEFT / RIGHT to move between the different modes.
+- Press ENTER to confirm the mode.
+
+What the code does:
+- Stores the chosen mode in `app_data.current_mode` so later screens (car/map/game)
+  can read it and configure gameplay.
+"""
+
 from __future__ import annotations
 
 import math
@@ -20,6 +36,7 @@ _MODE_LABELS: tuple[str, ...] = ("Time Trial", "Race Mode", "Championship")
 
 
 class RaceSelector(Screen):
+    """Screen where the player chooses the type of race/game mode."""
 
     CARD_WIDTH = 280
     CARD_HEIGHT = 220
@@ -28,17 +45,23 @@ class RaceSelector(Screen):
     def __init__(self, manager, label) -> None:
         super().__init__(manager, label)
 
+        # These strings are also used as the "saved value" for the choice.
+        # Later, gameplay can check `current_mode` to know what rules to apply.
         self.races = _MODE_LABELS
         self.selected_index = 1
 
+        # Background image is optional (missing asset should not crash the game).
         self.bg = self._try_load_background(PICTURES_DIR / "race_selection_bg.png")
 
+        # Pre-calculate where the cards should be drawn. This avoids repeating
+        # the same math every frame and keeps draw() simpler.
         self.card_y = sp.HEIGHT - self.CARD_HEIGHT - 105
         total_cards_width = self.CARD_WIDTH * len(self.races) + self.CARD_GAP * (
             len(self.races) - 1
         )
         self.card_start_x = (sp.WIDTH - total_cards_width) // 2
 
+        # Mode "cards" are images. If an image is missing, we draw a plain box.
         self.mode_images = [
             self._try_load_card(PICTURES_DIR / name) for name in _MODE_IMAGE_NAMES
         ]
@@ -59,6 +82,7 @@ class RaceSelector(Screen):
 
     @staticmethod
     def _try_load_background(path) -> pygame.Surface | None:
+        """Try to load the background; return None if loading fails."""
         try:
             image = pygame.image.load(str(path)).convert()
         except (FileNotFoundError, pygame.error):
@@ -68,6 +92,7 @@ class RaceSelector(Screen):
 
     @classmethod
     def _try_load_card(cls, path) -> pygame.Surface | None:
+        """Try to load a mode card image and scale it to the standard size."""
         try:
             image = pygame.image.load(str(path)).convert_alpha()
         except (FileNotFoundError, pygame.error):
@@ -76,6 +101,12 @@ class RaceSelector(Screen):
         return pygame.transform.scale(image, (cls.CARD_WIDTH, cls.CARD_HEIGHT))
 
     def handle_event(self, event) -> None:
+        """Handle keyboard input for choosing a mode.
+
+        We only react to KEYDOWN events:
+        - LEFT/RIGHT changes which card is highlighted.
+        - ENTER confirms the choice and moves to the car selection screen.
+        """
         if event.type != pygame.KEYDOWN:
             return
 
@@ -89,6 +120,8 @@ class RaceSelector(Screen):
             self.selected_index = (self.selected_index + 1) % len(self.races)
 
         elif event.key == pygame.K_RETURN:
+            # Save the player's choice in shared state so the next screens can
+            # access it. Then go to car selection.
             self.manager.app_data.current_mode = self.races[self.selected_index]
             self.manager.change_screen("car")
 
@@ -101,6 +134,10 @@ class RaceSelector(Screen):
         rect: pygame.Rect,
         selected: bool,
     ) -> None:
+        """Draw a shadow behind a card.
+
+        We use a stronger shadow for the selected card to make it stand out.
+        """
         if selected:
             shadow = pygame.Surface((rect.width + 24, rect.height + 24), pygame.SRCALPHA)
             pygame.draw.rect(
@@ -121,6 +158,11 @@ class RaceSelector(Screen):
             surface.blit(shadow, (rect.x - 5, rect.y + 8))
 
     def _draw_selected_glow(self, surface: pygame.Surface, rect: pygame.Rect) -> None:
+        """Draw a pulsing glow around the selected card.
+
+        The animation is based on time (pygame ticks) so it looks "alive" and
+        the player can easily see which card is currently selected.
+        """
         ticks = pygame.time.get_ticks()
         pulse = int(45 + 35 * math.sin(ticks * 0.006))
 
@@ -156,11 +198,13 @@ class RaceSelector(Screen):
         surface: pygame.Surface,
         rect: pygame.Rect,
     ) -> None:
+        """Dim cards that are not selected so the selected one is clearer."""
         overlay = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 80))
         surface.blit(overlay, rect.topleft)
 
     def draw(self, surface: pygame.Surface) -> None:
+        """Draw the whole mode selection screen (background + cards + UI)."""
         pygame.display.set_caption("Kar Kart - Race Selector")
 
         if self.bg is not None:
@@ -176,6 +220,9 @@ class RaceSelector(Screen):
             x = self.card_start_x + i * (self.CARD_WIDTH + self.CARD_GAP)
             y = self.card_y
 
+            # Visual feedback:
+            # - selected: slightly bigger and moved up
+            # - not selected: slightly smaller and moved down
             if selected:
                 scale = 1.08
                 y -= 18
