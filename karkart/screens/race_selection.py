@@ -8,8 +8,7 @@ from karkart.constants import ScreenPositions as sp
 from karkart.paths import PICTURES_DIR
 from karkart.screens.screen_object import Screen
 from karkart.settings import Keys as K
-from karkart.ui import SettingsIcon, TextCard
-from karkart.ui.help_icon import HelpIcon
+from karkart.ui import HelpIcon, SettingsIcon, TextCard
 
 
 _MODE_IMAGE_NAMES: tuple[str, ...] = (
@@ -45,7 +44,7 @@ class RaceSelector(Screen):
         ]
 
         self.instruction_card = TextCard(
-            "SELECT WITH ARROWS/WASD, CONFIRM WITH ENTER",
+            "SELECT WITH WASD/ARROWS, CONFIRM WITH ENTER",
             width=760,
             height=46,
             font_size=11,
@@ -55,7 +54,7 @@ class RaceSelector(Screen):
             sp.HEIGHT - 58,
         )
 
-        self.settings_icon = SettingsIcon(self.manager, "car")
+        self.settings_icon = SettingsIcon(self.manager, "race_selector")
         self.help_icon = HelpIcon(self.manager, "race_selector")
 
     @staticmethod

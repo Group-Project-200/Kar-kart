@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-import pygame
+import pygame, time
 
 from karkart.constants import Colors, ScreenPositions as sp
 from karkart.paths import PICTURES_DIR, PIXEL_FONT
 from karkart.screens.screen_object import Screen
-from karkart.ui import TextCard
-from karkart.ui.help_icon import HelpIcon
-from karkart.ui.settings_icon import SettingsIcon
+from karkart.ui import TextCard, TextButton
+from karkart.ui import HelpIcon, SettingsIcon
 
 
 class StartScreen(Screen):
@@ -28,7 +27,19 @@ class StartScreen(Screen):
         )
         self.start_card.set_position(
             sp.CENTER_X - self.start_card.get_width() / 2,
-            sp.HEIGHT - 120,
+            sp.XBOTTOM - self.start_card.get_height() / 2,
+        )
+
+        self.start_card.bord_2_thick = 15
+        self.start_card.bord_thick = 5
+        self.start_card.border_radius = 30
+
+        self.time = time.time()
+
+        self.help_card = TextCard("PRESS H FOR HELP", width=280, font_size=12)
+        self.help_card.set_position(
+            sp.CENTER_X - self.help_card.get_width() / 2,
+            (sp.XXXBOTTOM + sp.XXBOTTOM)/2 - self.help_card.get_height() / 2,
         )
 
         self.help_font = pygame.font.Font(str(PIXEL_FONT), 12)
@@ -44,7 +55,13 @@ class StartScreen(Screen):
             self.manager.change_screen("race_selector")
 
     def update(self) -> None:
-        pass
+        new_time = time.time()
+        if new_time - self.time > 0.5:
+            self.time = new_time
+            if self.start_card.is_selected():
+                self.start_card.unselect()
+            else:
+                self.start_card.select()
 
     def _draw_help_text(self, surface: pygame.Surface) -> None:
         text = "PRESS H FOR HELP"
@@ -71,7 +88,8 @@ class StartScreen(Screen):
             surface.fill(Colors.BLACK)
 
         self.start_card.draw(surface)
-        self._draw_help_text(surface)
+        self.help_card.draw(surface)
+        # self._draw_help_text(surface)
 
         self.help_icon.draw(surface)
         self.settings_icon.draw(surface)

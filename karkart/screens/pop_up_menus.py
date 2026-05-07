@@ -43,6 +43,8 @@ class PopUpMenu(Screen, ABC):
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
             self.manager.pop_screen()
+            if getattr(self.manager.current, "is_popup", False):
+                self.manager.current.off_black_layer()
 
     def update(self):
         pass
@@ -51,11 +53,10 @@ class PopUpMenu(Screen, ABC):
         if self.black_layer:
             last_screen_label = self.manager.get_prev_screen()
             last_screen = self.manager.screens[last_screen_label]
-            if not hasattr(last_screen, "is_pop"):
-                dim = pygame.Surface((last_screen.width, last_screen.height))
-                dim.fill(Colors.BLACK)
-                dim.set_alpha(128)
-                surface.blit(dim, (last_screen.x, last_screen.y))
+            dim = pygame.Surface((last_screen.width, last_screen.height))
+            dim.fill(Colors.BLACK)
+            dim.set_alpha(128)
+            surface.blit(dim, (last_screen.x, last_screen.y))
             self.black_layer = False
 
         pygame.draw.rect(surface, Colors.LIGHT_BLUE, self.pause_rect, border_radius=8)
@@ -132,13 +133,11 @@ class PauseMenu(PopUpMenu):
             return
 
         if screen == "resume":
-            self.on_activate()
             self.manager.pop_screen()
 
         elif screen == "restart":
             _stop_game(self.manager)
             self.manager.add_screen(GamePlay(self.manager, "game"))
-            self.on_activate()
             self.manager.pop_screen()
 
         elif screen == "quit_confirm":
@@ -182,25 +181,9 @@ class SettingsMenu(PopUpMenu):
         self.container = PopUpContainer(self.center_x, self.center_y, self.width, self.height, len(main_options), 1)
         self.container.add_objects(main_options)
 
-        # container_y = self.center_y - (self.height - self._CONTAINER_HEIGHT) / 2
-        # self.container = PopUpContainer(
-        #     self.center_x, container_y, self.width, self._CONTAINER_HEIGHT, len(main_options), 1
-        # )
-        # for opt in main_options:
-        #     self.container.add_object(opt)
         self.container.calculate_padding(x_center=True, y_center=True)
 
         self.title = TextCard("Settings", self.container.get_width())
-
-        # hint_font = pygame.font.Font(str(PIXEL_FONT), 12)
-        # self._esc_hint_text = hint_font.render("ESC to save", True, Colors.WHITE)
-        # hint_w, hint_h = 200, 36
-        # hint_x = sp.CENTER_X - hint_w / 2
-        # hint_y = self.pause_rect.bottom - hint_h - 12
-        # self._esc_hint_rect = pygame.Rect(hint_x, hint_y, hint_w, hint_h)
-        # self._esc_hint_text_pos = self._esc_hint_text.get_rect(
-        #     center=self._esc_hint_rect.center
-        # )
 
     def _save_settings(self) -> None:
         objs = self.container.get_objects()
@@ -211,10 +194,6 @@ class SettingsMenu(PopUpMenu):
 
     def draw(self, surface: pygame.Surface) -> None:
         super().draw(surface)
-        # pygame.draw.rect(surface, Colors.DARK_BLUE, self._esc_hint_rect, border_radius=8)
-        # pygame.draw.rect(surface, Colors.LIGHT_BLUE, self._esc_hint_rect, 4, border_radius=8)
-        # pygame.draw.rect(surface, Colors.BLACK, self._esc_hint_rect, 2, border_radius=8)
-        # surface.blit(self._esc_hint_text, self._esc_hint_text_pos)
 
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
@@ -241,16 +220,11 @@ class SettingsMenu(PopUpMenu):
             if not screen:
                 return
 
-            self.on_activate()
+            # self.on_activate()
 
             if screen == "quit_confirm":
                 self._save_settings()
                 target = screen
-                # target = (
-                #     "championship_quit_confirm"
-                #     if self.manager.app_data.current_mode == "Championship"
-                #     else "quit_confirm"
-                # )
                 self.manager.push_screen(self.label)
                 self.manager.change_screen(target)
             elif screen:
@@ -372,6 +346,8 @@ class ConfirmSettingsMenu(_BaseQuitConfirmMenu):
         self.no_card.select()
         self.manager.pop_screen()
         self.manager.pop_screen()
+        if getattr(self.manager.current, "is_popup", False):
+            self.manager.current.off_black_layer()
 
     def import_new_values(self, option_indexes, objects):
         self.option_indexes = option_indexes
@@ -381,6 +357,9 @@ class QuitConfirmMenu(_BaseQuitConfirmMenu):
     def __init__(self, manager, label):
         text = "Are you sure?"
         super().__init__(manager, label, text)
+
+    def _on_yes(self) -> None:
+        self.manager.toggle_running()
 
 
 class ChampionshipQuitConfirmMenu(_BaseQuitConfirmMenu):

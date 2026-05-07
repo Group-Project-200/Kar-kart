@@ -18,12 +18,13 @@ class Card(UISelectObject, ABC):
     ) -> None:
         super().__init__(center_x, center_y, width, height)
         self.text = None
+        self.border_radius = 8
 
     def draw(self, surface: pygame.Surface) -> None:
         self.outer_card = pygame.Rect(self.x, self.y, self.width, self.height)
-        pygame.draw.rect(surface, self.bord_2_color, self.outer_card, border_radius=8)
+        pygame.draw.rect(surface, self.bord_2_color, self.outer_card, border_radius=self.border_radius)
         pygame.draw.rect(
-            surface, self.bord_color, self.outer_card, self.bord_thick, border_radius=8
+            surface, self.bord_color, self.outer_card, self.bord_thick, border_radius=self.border_radius
         )
 
     def get_text(self):
@@ -85,7 +86,7 @@ class PopUpCard(Card):
 
     def draw(self, surface: pygame.Surface) -> None:
         self.outer_card = pygame.Rect(self.x, self.y, self.width, self.height)
-        pygame.draw.rect(surface, self.color, self.outer_card, border_radius=8)
+        pygame.draw.rect(surface, self.color, self.outer_card, border_radius=self.border_radius)
         super().draw(surface)
 
         name_font = pygame.font.Font(str(PIXEL_FONT), 12)
@@ -123,16 +124,16 @@ class TextCard(Card):
         self.instr_rect = pygame.Rect(self.x, self.y, self.width, self.height)
 
     def draw(self, surface: pygame.Surface) -> None:
-        pygame.draw.rect(surface, self.color, self.instr_rect, border_radius=8)
+        pygame.draw.rect(surface, self.color, self.instr_rect, border_radius=self.border_radius)
         pygame.draw.rect(
             surface,
             self.bord_2_color,
             self.instr_rect,
             self.bord_2_thick,
-            border_radius=8,
+            border_radius=self.border_radius,
         )
         pygame.draw.rect(
-            surface, self.bord_color, self.instr_rect, self.bord_thick, border_radius=8
+            surface, self.bord_color, self.instr_rect, self.bord_thick, border_radius=self.border_radius
         )
         surface.blit(self.render_text, self.center)
 
@@ -176,8 +177,8 @@ class HelpTextCard(Card):
 
     def draw(self, surface: pygame.Surface) -> None:
         rect = pygame.Rect(self.x, self.y, self.width, self.height)
-        pygame.draw.rect(surface, self.color, rect, border_radius=8)
-        pygame.draw.rect(surface, self.bord_color, rect, self.bord_thick, border_radius=8)
+        pygame.draw.rect(surface, self.color, rect, border_radius=self.border_radius)
+        pygame.draw.rect(surface, self.bord_color, rect, self.bord_thick, border_radius=self.border_radius)
 
         line_y = self.y + 20
         line_x = self.x + 24

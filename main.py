@@ -81,8 +81,6 @@ def main() -> None:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 manager.toggle_running()
-            elif event.type == pygame.KEYDOWN and event.key == pygame.K_q:
-                manager.toggle_running()
 
             current.handle_event(event)
 

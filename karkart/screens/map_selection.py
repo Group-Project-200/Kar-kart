@@ -6,8 +6,7 @@ from karkart.constants import Colors, ScreenPositions as sp
 from karkart.paths import PICTURES_DIR, PIXEL_FONT
 from karkart.screens.gameplay import GamePlay
 from karkart.screens.screen_object import Screen
-from karkart.ui import BackButton, MapCard, MapContainer, SettingsIcon
-from karkart.ui.help_icon import HelpIcon
+from karkart.ui import BackButton, MapCard, MapContainer, SettingsIcon, HelpIcon
 
 
 class MapScreen(Screen):
