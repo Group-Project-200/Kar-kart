@@ -5,11 +5,11 @@ import math
 import pygame
 
 from karkart.constants import ScreenPositions as sp
-from karkart.ui.help_icon import HelpIcon
 from karkart.paths import PICTURES_DIR
 from karkart.screens.screen_object import Screen
 from karkart.settings import Keys as K
-from karkart.ui import SettingsIcon
+from karkart.ui import SettingsIcon, TextCard
+from karkart.ui.help_icon import HelpIcon
 
 
 _MODE_IMAGE_NAMES: tuple[str, ...] = (
@@ -34,7 +34,7 @@ class RaceSelector(Screen):
 
         self.bg = self._try_load_background(PICTURES_DIR / "race_selection_bg.png")
 
-        self.card_y = sp.HEIGHT - self.CARD_HEIGHT - 100
+        self.card_y = sp.HEIGHT - self.CARD_HEIGHT - 105
         total_cards_width = self.CARD_WIDTH * len(self.races) + self.CARD_GAP * (
             len(self.races) - 1
         )
@@ -43,6 +43,17 @@ class RaceSelector(Screen):
         self.mode_images = [
             self._try_load_card(PICTURES_DIR / name) for name in _MODE_IMAGE_NAMES
         ]
+
+        self.instruction_card = TextCard(
+            "SELECT WITH ARROWS/WASD, CONFIRM WITH ENTER",
+            width=760,
+            height=46,
+            font_size=11,
+        )
+        self.instruction_card.set_position(
+            sp.CENTER_X - self.instruction_card.get_width() / 2,
+            sp.HEIGHT - 58,
+        )
 
         self.settings_icon = SettingsIcon(self.manager, "car")
         self.help_icon = HelpIcon(self.manager, "race_selector")
@@ -53,6 +64,7 @@ class RaceSelector(Screen):
             image = pygame.image.load(str(path)).convert()
         except (FileNotFoundError, pygame.error):
             return None
+
         return pygame.transform.scale(image, (sp.WIDTH, sp.HEIGHT))
 
     @classmethod
@@ -61,6 +73,7 @@ class RaceSelector(Screen):
             image = pygame.image.load(str(path)).convert_alpha()
         except (FileNotFoundError, pygame.error):
             return None
+
         return pygame.transform.scale(image, (cls.CARD_WIDTH, cls.CARD_HEIGHT))
 
     def handle_event(self, event) -> None:
@@ -70,10 +83,12 @@ class RaceSelector(Screen):
         self.help_icon.handle_event(event)
         self.settings_icon.handle_event(event)
 
-        if event.key == K.LEFT:
+        if event.key in (K.LEFT, pygame.K_a):
             self.selected_index = (self.selected_index - 1) % len(self.races)
-        elif event.key == K.RIGHT:
+
+        elif event.key in (K.RIGHT, pygame.K_d):
             self.selected_index = (self.selected_index + 1) % len(self.races)
+
         elif event.key == pygame.K_RETURN:
             self.manager.app_data.current_mode = self.races[self.selected_index]
             self.manager.change_screen("car")
@@ -81,7 +96,12 @@ class RaceSelector(Screen):
     def update(self) -> None:
         pass
 
-    def _draw_card_shadow(self, surface: pygame.Surface, rect: pygame.Rect, selected: bool) -> None:
+    def _draw_card_shadow(
+        self,
+        surface: pygame.Surface,
+        rect: pygame.Rect,
+        selected: bool,
+    ) -> None:
         if selected:
             shadow = pygame.Surface((rect.width + 24, rect.height + 24), pygame.SRCALPHA)
             pygame.draw.rect(
@@ -132,7 +152,11 @@ class RaceSelector(Screen):
             border_radius=14,
         )
 
-    def _draw_unselected_overlay(self, surface: pygame.Surface, rect: pygame.Rect) -> None:
+    def _draw_unselected_overlay(
+        self,
+        surface: pygame.Surface,
+        rect: pygame.Rect,
+    ) -> None:
         overlay = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 80))
         surface.blit(overlay, rect.topleft)
@@ -144,6 +168,8 @@ class RaceSelector(Screen):
             surface.blit(self.bg, (0, 0))
         else:
             surface.fill((50, 100, 200))
+
+        self.instruction_card.draw(surface)
 
         for i, image in enumerate(self.mode_images):
             selected = i == self.selected_index
