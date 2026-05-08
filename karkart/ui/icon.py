@@ -60,9 +60,8 @@ class _Icon(UISelectObject, ABC):
         if event.key == self.control or (
             event.key == pygame.K_RETURN and self.is_selected()
         ):
-            if not getattr(self.manager.get_screen(), "is_popup", False):
-                self.manager.push_screen(self.screen)
-                self.manager.change_screen(self.next_screen)
+            self.manager.push_screen(self.screen)
+            self.manager.change_screen(self.next_screen)
 
     def draw(self, surface):
         """Draw 3 layers of background circle + the picture."""
