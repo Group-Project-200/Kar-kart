@@ -18,7 +18,7 @@ from karkart.paths import PIXEL_FONT
 from karkart.screens.gameplay import GamePlay
 from karkart.screens.screen_object import Screen
 from karkart.settings import settings
-from karkart.ui import Arrow, ArrowContainer, Button, Container, HelpTextCard, TextButton, PopUpContainer, PopUpCard, SelectContainer, TextCard
+from karkart.ui import Arrow, ArrowContainer, Button, Container, HelpTextCard, TextButton, PopUpContainer, PopUpCard, SelectContainer, SettingsIcon, TextCard
 from karkart.ui.ui_object import UISelectObject
 
 
@@ -126,8 +126,10 @@ class PauseMenu(PopUpMenu):
         # List all buttons.
         options = [
             TextButton("Resume",    self.manager, action="resume"),
+            TextButton("Settings",    self.manager, action="settings"),
             TextButton("Restart",   self.manager, action="restart"),
-            TextButton("Quit Race", self.manager, action="quit_mode"),
+            TextButton("Main menu", self.manager, action="quit_mode"),
+            TextButton("QUIT GAME!", self.manager, action="quit_confirm")
         ]
         self.container = PopUpContainer(
             self.center_x, self.center_y, self.width, self.height, len(options), 1
@@ -137,17 +139,15 @@ class PauseMenu(PopUpMenu):
 
         self.title = TextCard("Pause Menu", self.container.get_width())
 
+        self.settings_icon = SettingsIcon(self.manager, self.label)
+
     def handle_event(self, event):
         """Handle closing menu and opening others."""
 
         if event.type != pygame.KEYDOWN:
             return
-
-        if event.key == pygame.K_ESCAPE:
-            self.manager.push_screen(self.label)
-            self.manager.change_screen("settings")
-            self.manager.get_screen().off_black_layer()
-            return
+            
+        self.settings_icon.handle_event(event)
 
         screen = self.container.handle_event(event)
         if not screen:
@@ -155,6 +155,11 @@ class PauseMenu(PopUpMenu):
 
         if screen == "resume":
             self.manager.pop_screen()
+
+        elif screen == "settings":
+            self.manager.push_screen(self.label)
+            self.manager.change_screen("settings")
+            self.manager.get_screen().off_black_layer()
 
         elif screen == "restart":
             _stop_game(self.manager)
@@ -170,6 +175,14 @@ class PauseMenu(PopUpMenu):
             self.manager.push_screen(self.label)
             self.manager.change_screen(target)
 
+        elif screen == "quit_confirm":
+            target = screen
+            self.manager.push_screen(self.label)
+            self.manager.change_screen(target)
+
+    def draw(self, surface: pygame.Surface):
+        super().draw(surface)
+        self.settings_icon.draw(surface)
 
 class SettingsMenu(PopUpMenu):
     """Extension of PopUpMenu for the pop-up settings menu."""
