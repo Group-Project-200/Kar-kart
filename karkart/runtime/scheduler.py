@@ -156,6 +156,7 @@ class PhysicsScheduler(FixedRateThread):
     def _advance_player_checkpoints(self) -> None:
         world = self.world
         old_lap = world.player_state.current_lap
+        prev_total = world.player_state.total_checkpoints
         advance_checkpoints(
             world.player_state,
             world.current_map.checkpoints_list,
@@ -163,6 +164,14 @@ class PhysicsScheduler(FixedRateThread):
             items_active=world.current_map.active,
             world_objects=world.world_box,
         )
+        if world.player_state.total_checkpoints != prev_total:
+            world.cp_pass_counter += 1
+            world.player_state.last_pass_order = world.cp_pass_counter
+            world.cached_position_label = _compute_position_label(
+                world.player_state,
+                world.ai_states,
+                ai_active=True,
+            )
         if world.player_state.current_lap > old_lap and world.last_lap_start_time > 0.0:
             now = time.perf_counter()
             world.player_lap_times.append(now - world.last_lap_start_time)
