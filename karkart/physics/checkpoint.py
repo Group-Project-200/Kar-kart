@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 
 import pygame
 
-
+"""This is the checkpoints class that defines the map's checkpoint's position and its state"""
 class Checkpoint:
 
     def __init__(self, x: float, y: float, width: float, height: float) -> None:
@@ -26,7 +26,8 @@ class RacerState:
 
     last_pass_order: int = 0
 
-
+"""this function is used to check whether checkpoints were passed in a certain order to make sure the player is 
+moving in the correct direction and order by having a list of checkpoints and checking for its collision sequentially """
 def advance_checkpoints(
     state: RacerState,
     checkpoints_list: list,

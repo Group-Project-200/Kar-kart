@@ -6,7 +6,8 @@ import pygame
 
 from karkart.paths import PIXEL_FONT
 
-
+""" this class if for the countdown at the beginning of any race it draws alot of things to create the animation showed 
+in the gameplay """
 class StartSequence:
 
     def __init__(self, screen: pygame.Surface, start_seconds: int = 3) -> None:

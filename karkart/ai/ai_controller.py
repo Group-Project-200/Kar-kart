@@ -5,7 +5,8 @@ import math
 from karkart.helpers import shortest_angle_delta
 from karkart.physics.car import Car
 
-
+"""basically this is what controls the ai's movements because they dont move in a straight line. it creates waypoints 
+that are created at each tick and are tracked from each checkpoint to the other using a star algorithm """
 class AIController:
 
     LOOKAHEAD: int = 12
@@ -58,6 +59,7 @@ class AIController:
         self._steer_toward(self.circuit_waypoints[aim_idx])
         self.car.controls.drift_input = False
 
+    """ there is also a check for if the ai is stuck in the wall so it reverses and tries again to find the path"""
     def _check_stuck(self) -> None:
         # Don't count wall-stun frames as being stuck.
         if self.car.physics.wall_stun_frames > 0:

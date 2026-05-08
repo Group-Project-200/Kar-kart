@@ -5,7 +5,7 @@ import random
 
 from karkart.physics.car import CarHandling
 
-
+""" This is the file for the car model's handling where the cars have different max speed, drifting styles"""
 CAR_HANDLING_PROFILES: dict[str, CarHandling] = {
     "car_01": CarHandling(
         max_speed=3.0,

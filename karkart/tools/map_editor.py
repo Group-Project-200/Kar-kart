@@ -1,3 +1,9 @@
+"""when creating the maps we needed a way to place checkpoints, items, start and finish and other stuff so we decided
+to create a map editor that has different modes and a click and drag feature to add different items as well as math to
+calculate specific stuff such as the start positions based on the start area. the information for each map is saved
+into a json file and is also updated based on changes made like deleting checkpoints or adding new items. """
+
+
 import json
 import pygame
 
@@ -220,8 +226,9 @@ def _try_delete_at(data: dict, map_name: str, wx: int, wy: int) -> bool:
     checkpoints = entry.get("checkpoints", [])
     for i in range(len(checkpoints) - 1, -1, -1):
         cp = checkpoints[i]
-        checkpoints.pop(i)
-
+        if _point_in_rect(wx, wy, cp["x"], cp["y"], cp["w"], cp["h"]):
+            checkpoints.pop(i)
+            return True
     return False
 
 
@@ -235,12 +242,13 @@ def _draw_map_overlays(
 ) -> None:
     cps = data[map_name]["checkpoints"]
     for i, cp in enumerate(cps):
-        cx = cp["x"] - camera_x
-        cy = cp["y"] - camera_y
-        cr = cp["r"]
-        pygame.draw.circle(screen, (255, 80, 80), (cx, cy), cr,2)
+        rx = cp["x"] - camera_x
+        ry = cp["y"] - camera_y
+        pygame.draw.rect(screen, (255, 80, 80), (rx, ry, cp["w"], cp["h"]), 2)
 
         label_surf = font.render(f"CP_{i + 1:02d}", True, (255, 240, 80))
+        cx = rx + cp["w"] // 2
+        cy = ry + cp["h"] // 2
         backing = pygame.Surface(
             (label_surf.get_width() + 4, label_surf.get_height() + 2),
             pygame.SRCALPHA,
@@ -404,9 +412,6 @@ def main() -> None:
                         spawn_points = _start_pos(pending_points)
                         data[map_name]["spawn_points"] = [list(p) for p in spawn_points]
                         pending_points = []
-                elif mode == "checkpoints":
-                    cps.append({"x": wx, "y": wy, "r": 200})
-
                 elif mx < _MAP_VIEW_W:
                     place_start = (mx + camera_x, my + camera_y)
                     placing = True
@@ -416,7 +421,9 @@ def main() -> None:
                 end = (mx + camera_x, my + camera_y)
                 x, y, w, h = _rect_from_corners(place_start, end)
                 if w > 5 and h > 5:
-                    if mode == "finish_line":
+                    if mode == "checkpoints":
+                        cps.append({"x": x, "y": y, "w": w, "h": h})
+                    elif mode == "finish_line":
                         data[map_name]["finish_line"] = (x, y, w, h)
                     elif mode == "item placements":
                         box1, box2, box3 = powerups_sizing(x, y, w, h)

@@ -8,7 +8,7 @@ import pygame
 
 from karkart.helpers import forward_vector
 
-
+"""this file contains drawing the sparks for drifting in the game"""
 _REAR_OFFSET: float = 4.0
 _WHEEL_SIDE: float = 4.5
 _MAX_SPARKS: int = 2000
@@ -38,7 +38,7 @@ def _lerp_color(
         int(a[2] + (b[2] - a[2]) * t),
     )
 
-
+"""it works by checking the amount of frames it has been active for and turns from a blue to orange"""
 class SparkManager:
 
     _BLUE: tuple[int, int, int] = (60, 200, 255)

@@ -1,6 +1,7 @@
 from karkart.helpers import forward_vector
 
-
+"""These are the different powerups in our game where Boost gives you a speed boost, Sheild protects you from collisions
+with ai cars and Jammper makes the ai cars slower giving you an advantage to overtake or create a gap. """
 class SpeedBoost:
     name = "Boost"
     duration_frames = 180

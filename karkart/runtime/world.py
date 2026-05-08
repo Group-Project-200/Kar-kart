@@ -12,7 +12,8 @@ if TYPE_CHECKING:
     from karkart.rendering.sparks import SparkManager
     from karkart.rendering.stacker import Stacker
 
-
+"""this class counts as the container of all the data that the gameplay goes through where it passes these data to the 
+threads and receives and updates it each frame"""
 class World:
     def __init__(
         self,
@@ -35,6 +36,7 @@ class World:
         ai_collisions: list["CollisionDetector"],
         car_collision_radius: float,
         snap_step_degrees: float,
+        cached_position_label : int
     ) -> None:
         self.player_car = player_car
         self.current_car = player_car
@@ -64,7 +66,9 @@ class World:
         self.pause_event = Event()
         self.race_finished_event = Event()
 
-        self.cached_position_label: str = "1st"
+        suffix = {1: "st", 2: "nd", 3: "rd", 4 : "th", 5 : "th"}
+        current_pos = str(cached_position_label) + suffix[cached_position_label]
+        self.cached_position_label: str = current_pos
         self.cp_pass_counter: int = 0
         self.race_start_time: float = 0.0
         self.last_lap_start_time: float = 0.0

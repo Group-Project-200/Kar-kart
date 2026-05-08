@@ -13,7 +13,7 @@ from karkart.helpers import (
     snap_angle,
 )
 from karkart.physics.collision import apply_wall_bounce, push_out_of_wall
-
+""" This is the class for the car, it contains the physics engine of the car, the handling, and updating these values"""
 
 def _update_steer_hold(
     steer_input: int,
@@ -63,7 +63,8 @@ def _update_hop(physics: "PhysicsState", handling: "CarHandling") -> None:
     if physics.car_z == 0.0:
         physics.velocity_z = 0.0
 
-
+""" these classes are for the different aspects of the car and lead to different game outcomes like the handling where it 
+defines the max acceleration, how the brakes work for this certain object"""
 @dataclass(frozen=True, slots=True)
 class BoostTier:
 
@@ -194,7 +195,7 @@ class CarHandling:
             return self.short_boost
         return None
 
-
+"""this class is for the physics of the player like the position, the car's current rotation, and other values"""
 @dataclass(slots=True)
 class PhysicsState:
 
@@ -234,7 +235,8 @@ class ControlState:
     drift_input: bool = False
     min_speed_request: float = 0.0
 
-
+""" the car class has functions where it calculates the current position of the car based on input, the rotation of it, 
+and the collision box of the car"""
 class Car:
 
     def __init__(self, handling: "CarHandling | None" = None, name : str | None = None) -> None:
@@ -590,7 +592,8 @@ class Car:
             velocity_y = 0.0
 
         return velocity_x, velocity_y
-
+    """ this is the main function that comes up and calls all the other functions and returns the current physics state of 
+    the car"""
     def step_physics(
         self,
         *,

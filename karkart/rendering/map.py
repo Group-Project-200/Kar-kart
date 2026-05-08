@@ -8,6 +8,8 @@ import pygame
 from karkart.physics.camera import Camera
 from karkart.physics.checkpoint import Checkpoint
 
+"""this file contains the map, the positioning of items, rendering , and other functions 
+the first classes are data classes to save attributes of the map like the x,y positions, the items on the map"""
 
 @dataclass(frozen=True, slots=True)
 class MapCache:
@@ -39,7 +41,7 @@ def _simplify_surface(surface: pygame.Surface, factor: float = 1.5) -> pygame.Su
     )
     return pygame.transform.scale(small, (w, h))
 
-
+"""the map class gets the camera class's instance passed through meaning it also gets the player's car """
 class Map:
 
     def __init__(
@@ -69,7 +71,7 @@ class Map:
 
         self.car_map_x: int | None = None
         self.car_map_y: int | None = None
-
+    """this function fixes the zooming of the map based on the camera's zoom, and the dimensions of the map """
     def zoom_fixing(self, zoom: float, view_size: tuple[int, int]) -> None:
 
         map_width, map_height = self.map_surface.get_size()
@@ -153,7 +155,7 @@ class Map:
             (0, 0),
             area=(view_x, view_y, view_width, view_height),
         )
-
+    """this function is where the map's rendering happens based on the camera's angle and draws this to the screen"""
     def draw_map_camera(
         self,
         display: pygame.Surface,

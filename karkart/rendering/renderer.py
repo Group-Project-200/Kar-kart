@@ -13,7 +13,8 @@ from karkart.rendering.stacker import Stacker
 
 
 class Renderer:
-    """Draws one frame per ``render_frame`` call: pixelated map + rotated car stack."""
+    """It draws once frame and is responsible for collecting the elements of the current frame and drawing it correctly
+    by calling their update and draw functions"""
 
     _MAP_ZOOM: float = 3.0
     _CAR_ZOOM: float = 3.0
@@ -129,7 +130,7 @@ class Renderer:
                 radius,
             )
             self.frame_surface.blit(spark_surface, (sx - radius, sy - radius))
-
+    """here is where the rendering happens where it takes the player, the camera, the ai cars, and draws the scene"""
     def render_frame(
         self,
         stack_spread: float,

@@ -10,7 +10,8 @@ from karkart.helpers import clamp_scale, clamp_zoom
 DEFAULT_DIRS = 36
 PREVIEW_BG_COLOR = (0, 0, 0, 0)
 
-
+"""this file contains rendering for the car stacks in the select map screen. It takes the car, builds it, 
+builds the background around it, and renders it to the screen"""
 @dataclass(frozen=True, slots=True)
 class MapCache:
     surface: pygame.Surface

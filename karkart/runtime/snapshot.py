@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-
+"""this file is made for the threads to share data without colliding and overwriting each other"""
 @dataclass(slots=True)
 class CarSnapshot:
     car_x: float

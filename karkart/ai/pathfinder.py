@@ -20,7 +20,7 @@ _DIRS_8_COST = (
     (1, 1, 1.41421356),
 )
 
-
+"""this is the path finding algorithm we use for the ai cars to make them reach the end"""
 class AStarPathfinder:
 
     def __init__(

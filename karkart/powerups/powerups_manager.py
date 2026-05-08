@@ -6,7 +6,7 @@ import pygame
 from karkart.paths import PICTURES_DIR
 from karkart.powerups.powerup import EMPJammer, Shield, SpeedBoost
 
-
+"""this class is used to create the random effect once you pick up a powerup box and manages the powerups. """
 class PowerupsManager:
     def __init__(self, game):
         self.powerup_classes = [
@@ -34,7 +34,8 @@ class PowerupsManager:
 
         return self.current.name
 
-
+"""this class is what renders the powerup boxes and does the animation for it. it also has the collision detection 
+for the player and the box in the function check"""
 class PowerupRendering:
     _frames_cache = None
 

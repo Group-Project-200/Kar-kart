@@ -9,7 +9,7 @@ def _convert_for_display(surface: pygame.Surface) -> pygame.Surface:
         return surface
     return surface.convert_alpha()
 
-
+"""this is the car renderer which stacks the images to give the "3D" effect """
 class Stacker:
 
     _COLLISION_SCALE: float = 0.70
@@ -39,7 +39,8 @@ class Stacker:
             height = max(1, int(img.get_height() * self.scale))
             scaled = pygame.transform.scale(img, (width, height))
             self.scaled_img.append(_convert_for_display(scaled))
-
+    """it creates the car with the given directions and saves the result in the cache so the car's rotation positions 
+    are already saved"""
     def _build_rotated_cache(self) -> None:
         step_deg = 360 / self.dirs
         self.rotated_cache = [
@@ -65,6 +66,8 @@ class Stacker:
             self._scale_images()
             self._build_rotated_cache()
 
+    """this here draws it to the screen where it has the direction given by the renderer and draws the car by 
+    each layer at a time. the spread is the space between the image slices that are being put on top of each other. """
     def render_stack(
         self,
         display: pygame.Surface,

@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from karkart.runtime.snapshot import SnapshotBuffer
     from karkart.runtime.world import World
 
-
+"""this is where the threads are being defined to make the gameplay smoother and the scheduling of these threads"""
 class FixedRateThread(threading.Thread):
     def __init__(self, *, world: "World", target_hz: float, name: str) -> None:
         super().__init__(name=name, daemon=True)
@@ -49,7 +49,7 @@ class FixedRateThread(threading.Thread):
     def _tick(self) -> None:
         raise NotImplementedError
 
-
+"""thread of physics engine"""
 class PhysicsScheduler(FixedRateThread):
     _LAP_TARGET: int = 1
 
@@ -152,7 +152,7 @@ class PhysicsScheduler(FixedRateThread):
                     radius=radius,
                     radius_sq=radius_sq,
                 )
-
+    # this is where the player's checkpoints are being calculated
     def _advance_player_checkpoints(self) -> None:
         world = self.world
         old_lap = world.player_state.current_lap
@@ -231,7 +231,7 @@ class PhysicsScheduler(FixedRateThread):
             race_finished=world.race_finished_event.is_set(),
         )
 
-
+"""thread for collisions"""
 class CollisionScheduler(FixedRateThread):
     def __init__(self, *, world: "World", snapshot_buffer: "SnapshotBuffer") -> None:
         super().__init__(world=world, target_hz=30.0, name="kk-collision")
@@ -286,7 +286,7 @@ class CollisionScheduler(FixedRateThread):
                 ai_car.collision_results = hit
                 ai_car.collision_normal = normal
 
-
+"""thread for ai handling """
 class AIScheduler(FixedRateThread):
     def __init__(self, *, world: "World", snapshot_buffer: "SnapshotBuffer") -> None:
         super().__init__(world=world, target_hz=30.0, name="kk-ai")
@@ -385,7 +385,7 @@ def _resolve_pair(
     p.speed = p.velocity_x * fwd_ax + p.velocity_y * fwd_ay
     q.speed = q.velocity_x * fwd_bx + q.velocity_y * fwd_by
 
-
+#this function calculates the current position of the player compared to the Ai and the checkpoints finished by them
 def _compute_position_label(player_state, ai_states, *, ai_active: bool) -> str:
     if not ai_active:
         return "1st"

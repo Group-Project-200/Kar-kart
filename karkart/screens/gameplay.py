@@ -36,7 +36,7 @@ from karkart.powerups.powerups_manager import PowerupRendering, PowerupsManager
 with MAP_DATA_FILE.open() as f:
     _MAP_DATA = json.load(f)
 
-
+""" this is where all the gameplay is being connected with the checks and rendering and creations"""
 @dataclass(frozen=True, slots=True)
 class GameConfig:
     fps: int = 60
@@ -141,7 +141,7 @@ class GamePlay(Screen):
 
     def __init__(self, manager, label) -> None:
         super().__init__(manager, label)
-
+        # the creation of data needed to determine the mode of the gameplay
         self.mode_name = self.manager.app_data.current_mode
         self.mode = self.manager.app_data.modes[self.mode_name]
         self.ai_active = self.mode["Ai"]
@@ -194,6 +194,7 @@ class GamePlay(Screen):
                 )
             )
 
+        # creating the car, map, camera, powerup objects, renderer
         self.current_car = Car(
             handling=get_handling_for(self.manager.app_data.current_car_name),
         )
@@ -215,10 +216,12 @@ class GamePlay(Screen):
             self.sparks,
         )
 
+
         self.player_checkpoints = _duplicate_checkpoints(
             self.current_map.checkpoints_list,
         )
 
+        #the masks of the map is being created and sent to the collision detector
         wall_mask, road_mask = _build_collision_masks(self.current_map.masks)
         self.collision_detector = CollisionDetector(
             [wall_mask],
@@ -254,12 +257,14 @@ class GamePlay(Screen):
 
         self.current_camera.angle = start_rotation
 
+        # creation of the Ai cars and their properties
         self.ai_cars: list[Car] = []
         self.ai_stackers: list[Stacker] = []
         self.ai_collisions: list[CollisionDetector] = []
         self.ai_controllers: list[AIController] = []
         self.circuit_waypoints: list[tuple[float, float]] = []
 
+        #creates the Ai cars configurations and way points and stackers if the game mode contains Ai cars
         if self.ai_active:
             self.pathfinder = AStarPathfinder(
                 mask=wall_mask,
@@ -310,6 +315,7 @@ class GamePlay(Screen):
         else:
             self.pathfinder = None
 
+        #create the world of the gameplay so it can send it to the threads
         self.snapshot_buffer = SnapshotBuffer()
         self.world = World(
             player_car=self.current_car,
@@ -330,6 +336,7 @@ class GamePlay(Screen):
             ai_collisions=self.ai_collisions,
             car_collision_radius=self._CAR_COLLISION_RADIUS,
             snap_step_degrees=self.config.rotation_snap_degrees,
+            cached_position_label = self.manager.app_data.championship_results["Player 1"][1]
         )
         self._physics_thread: PhysicsScheduler | None = None
         self._collision_thread: CollisionScheduler | None = None
@@ -342,6 +349,7 @@ class GamePlay(Screen):
     _GRID_SIDE: float = 20.0
     _POLE_FORWARD_OFFSET: float = 12.0
 
+    #adds the elements of the map so it can be rendered and added
     def update_map(self):
         map_name = self.manager.app_data.current_map.name
         map_record = _MAP_DATA[map_name]
@@ -353,6 +361,7 @@ class GamePlay(Screen):
 
         return current_map_data, map_record
 
+    #creates the start positions of the ai
     def _compute_start_pose(
         self,
         start_world_x: float,
@@ -423,6 +432,7 @@ class GamePlay(Screen):
 
         return [others[i % len(others)] for i in range(count)]
 
+    # handles key inputs
     def handle_event(self, event) -> None:
         controls = self.current_car.controls
 
@@ -477,6 +487,7 @@ class GamePlay(Screen):
                     with self.world.lock:
                         controls.drift_input = False
 
+    #starts the threads
     def _start_threads(self) -> None:
         if self._threads_started:
             return
@@ -521,6 +532,7 @@ class GamePlay(Screen):
     def on_destroy(self) -> None:
         self._stop_threads()
 
+    # creates the first frames of the gameplay in the world
     def _publish_initial_snapshot(self) -> None:
         from karkart.runtime.scheduler import _car_snapshot
         from karkart.runtime.snapshot import RacerSnapshot, WorldSnapshot
@@ -551,6 +563,7 @@ class GamePlay(Screen):
             )
         )
 
+    # it starts the countdown sequence for the game
     def update(self) -> None:
         if not self.countdown.complete:
             self.countdown.update()
@@ -567,6 +580,8 @@ class GamePlay(Screen):
         if self.world.race_finished_event.is_set():
             self.complete_race()
 
+
+    #calls rendering of the world
     def _world_to_screen_real(
         self,
         wx: float,
@@ -591,6 +606,7 @@ class GamePlay(Screen):
         frame_w, frame_h = renderer.render_size
         return int(fx * screen_w / frame_w), int(fy * screen_h / frame_h)
 
+    #draws the HUD(stats) display like the current position, powerups collected, and checkpoints left
     def draw_hud(self, screen: pygame.Surface, snapshot: WorldSnapshot) -> None:
         screen.blit(self.hud_img, (4, 4))
 
@@ -700,6 +716,8 @@ class GamePlay(Screen):
         pygame.draw.circle(screen, (0, 0, 0), (px, py), 5)
         pygame.draw.circle(screen, (250, 220, 60), (px, py), 4)
 
+
+    # draws the debug shaped for debug mode so we can see how the checkpoints, collisions, and hit boxes look like and work
     def _draw_checkpoint_debug(
         self, screen: pygame.Surface, snapshot: WorldSnapshot
     ) -> None:
@@ -802,6 +820,7 @@ class GamePlay(Screen):
             pygame.draw.circle(screen, (0, 0, 0), (wx_s, wy_s), 5)
             pygame.draw.circle(screen, (255, 80, 80), (wx_s, wy_s), 4)
 
+    #this completes the race and sends results to the leaderboard
     def complete_race(self) -> None:
         if self._race_finished:
             return
@@ -860,6 +879,7 @@ class GamePlay(Screen):
 
         self.manager.change_screen("leaderboard")
 
+    #this draws the frame
     def draw(self, _surface: pygame.Surface) -> None:
         screen = self.manager.screen_display
 

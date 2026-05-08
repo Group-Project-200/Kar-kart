@@ -5,7 +5,8 @@ from karkart.constants import ScreenPositions as sp
 from karkart.paths import PICTURES_DIR, PIXEL_FONT
 from karkart.screens.screen_object import Screen
 
-
+"""this file contains the screen for the winner of the championship mode. It is gets the data from the accumulation of the 
+races, and places the final score on the screen"""
 def _load_font( size: int) -> pygame.font.Font:
     try:
         return pygame.font.Font(str(PIXEL_FONT), size)

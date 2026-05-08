@@ -5,6 +5,9 @@ from dataclasses import dataclass
 from karkart.helpers import clamp, shortest_angle_delta
 from karkart.physics.car import Car
 
+'''this is the class for the camera that is used by the player it contains a function to calculate the angle of the camera
+because the car is being rendered using image stacking so it needs to know the angle of which to show the sides of the car
+the camera gets the player's car passed through to calculate the new attributes more accurately and update everything once '''
 
 @dataclass(frozen=True, slots=True)
 class CameraFollowSettings:

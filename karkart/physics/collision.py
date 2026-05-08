@@ -10,7 +10,7 @@ _NORMAL_SAMPLE_DIRECTIONS: tuple[tuple[float, float], ...] = tuple(
     for a in range(0, 360, 360 // 16)
 )
 
-
+"""this is the collision detector for our game that checks for collisions between the player and the map"""
 class CollisionDetector:
 
     def __init__(
@@ -72,7 +72,8 @@ class CollisionDetector:
             return None
         return fx / length, fy / length
 
-
+"""these functions are made to push the player out of the collision overlap and return him to a position 
+where the game is playable. this was created because the player used to get stuck into the walls after a collision"""
 def apply_wall_bounce(
     vx: float,
     vy: float,
