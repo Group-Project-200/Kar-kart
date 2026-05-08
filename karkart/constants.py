@@ -1,9 +1,17 @@
+"""
+constants.py
+--------
+Store all constants used throughout the game.
+
+"""
+
 from __future__ import annotations
 
 import pygame
 
 
 class Colors:
+    """Store all colors used and more: (int, int, int)."""
 
     BLACK = (0, 0, 0)
     WHITE = (255, 255, 255)
@@ -25,6 +33,7 @@ class Colors:
 
 
 class ScreenPositions:
+    """Store all screen dimensions and positions in a 15x15 grid"""
 
     WIDTH = 1280
     HEIGHT = 720

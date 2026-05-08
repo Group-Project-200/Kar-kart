@@ -1,3 +1,11 @@
+"""
+track.py
+--------
+Selectable object
+Usage: draw track picture on map cards and retreive their map.
+
+"""
+
 from __future__ import annotations
 
 import pygame
@@ -7,6 +15,7 @@ from karkart.ui.ui_object import UIObject
 
 
 class Track(UIObject):
+    """Store each track name and picture."""
 
     def __init__(self, pic_path: str, name: str, corr_map: str | None = None) -> None:
         self.image = pygame.image.load(pic_path).convert_alpha()
@@ -16,18 +25,19 @@ class Track(UIObject):
         super().__init__(0, 0, 0, 0)
 
     def handle_event(self, event) -> None:
-
         return None
 
     def draw(self, surface: pygame.Surface) -> None:
+        """Draw picture of the track."""
 
         scaled = pygame.transform.scale(self.image, (self.width, self.height))
-
         subsurf = pygame.Surface(scaled.get_size(), pygame.SRCALPHA)
         pygame.draw.rect(subsurf, Colors.WHITE, subsurf.get_rect())
         scaled.blit(subsurf, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
 
         surface.blit(scaled, (self.x, self.y))
+
+        # Draw border of the picture.
         pygame.draw.rect(
             surface,
             Colors.BLACK,

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from threading import Event, RLock
 from typing import TYPE_CHECKING
 
@@ -41,7 +39,7 @@ class World:
         self.player_car = player_car
         self.current_car = player_car
         self.ai_active = bool(ai_cars)
-        self.player_invincible = False
+        self.player_invincible: bool = False
 
         self.ai_cars = ai_cars
         self.camera = camera

@@ -123,6 +123,12 @@ class PhysicsScheduler(FixedRateThread):
         radius_sq = radius * radius
         player = world.player_car
         player_cp = world.player_state.list_counter
+
+        shield_active = (
+            world.powerups_manager.current is not None
+            and getattr(world.powerups_manager.current, "name", "") == "Shield"
+        )
+
         for ai_car, ai_state in zip(world.ai_cars, world.ai_states):
             _resolve_pair(
                 player,
@@ -131,8 +137,10 @@ class PhysicsScheduler(FixedRateThread):
                 ai_state.list_counter,
                 radius=radius,
                 radius_sq=radius_sq,
-                world=world,
+                player_invincible=shield_active,
+                player_car=player,
             )
+
         n = len(world.ai_cars)
         for i in range(n):
             for j in range(i + 1, n):
@@ -143,7 +151,6 @@ class PhysicsScheduler(FixedRateThread):
                     world.ai_states[j].list_counter,
                     radius=radius,
                     radius_sq=radius_sq,
-                    world=world,
                 )
 
     def _advance_player_checkpoints(self) -> None:
@@ -260,8 +267,7 @@ class CollisionScheduler(FixedRateThread):
         player_hit = world.collision_detector.border_check(
             player_dir_idx, player_offset
         )
-        if world.player_invincible:
-            player_hit = False
+
         player_normal = (
             world.collision_detector.estimate_normal(player_offset)
             if player_hit
@@ -325,17 +331,22 @@ def _resolve_pair(
     *,
     radius: float,
     radius_sq: float,
-    world: "World",
+    player_invincible: bool = False,
+    player_car: "Car | None" = None,
 ) -> None:
     p, q = a.physics, b.physics
+
     dx = p.car_x - q.car_x
     dy = p.car_y - q.car_y
     dist_sq = dx * dx + dy * dy
+
     if dist_sq >= radius_sq:
         return
+
     dist = dist_sq**0.5 or 0.001
     nx, ny = dx / dist, dy / dist
     overlap = radius - dist
+
     p.car_x += nx * overlap * 0.5
     p.car_y += ny * overlap * 0.5
     q.car_x -= nx * overlap * 0.5
@@ -343,30 +354,34 @@ def _resolve_pair(
 
     e = max(a.handling.car_restitution, b.handling.car_restitution)
 
-    if world.player_invincible and a is world.player_car:
-        q.velocity_x -= nx * e * 2.0
-        q.velocity_y -= ny * e * 2.0
-        q.speed *= 0.35
-        return
+    if player_invincible and player_car is not None:
+        if a is player_car:
+            q.velocity_x -= nx * e * 1.6
+            q.velocity_y -= ny * e * 1.6
+            q.speed *= 0.45
+            return
 
-    if world.player_invincible and b is world.player_car:
-        p.velocity_x += nx * e * 2.0
-        p.velocity_y += ny * e * 2.0
-        p.speed *= 0.35
-        return
+        if b is player_car:
+            p.velocity_x += nx * e * 1.6
+            p.velocity_y += ny * e * 1.6
+            p.speed *= 0.45
+            return
 
     vrel_n = (p.velocity_x - q.velocity_x) * nx + (p.velocity_y - q.velocity_y) * ny
+
     if vrel_n >= 0.0:
         return
+
     j = -(1.0 + e) * vrel_n * 0.5
+
     p.velocity_x += j * nx
     p.velocity_y += j * ny
     q.velocity_x -= j * nx
     q.velocity_y -= j * ny
 
-    # sync speed so physics doesn't fight the new velocity
     fwd_ax, fwd_ay = forward_vector(p.rotation)
     fwd_bx, fwd_by = forward_vector(q.rotation)
+
     p.speed = p.velocity_x * fwd_ax + p.velocity_y * fwd_ay
     q.speed = q.velocity_x * fwd_bx + q.velocity_y * fwd_by
 

@@ -1,3 +1,10 @@
+"""
+paths.py
+--------
+Store all important file paths as constants.
+
+"""
+
 from __future__ import annotations
 
 from pathlib import Path

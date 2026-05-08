@@ -1,9 +1,19 @@
+"""
+ui_object.py
+--------
+Non-selectable and selectable object
+Usage: store commonalities of each UI object
+
+"""
+
 from __future__ import annotations
 from abc import ABC, abstractmethod
 
 from karkart.constants import Colors
 
 class UIObject(ABC):
+    """Store position and dimensions."""
+
     @abstractmethod
     def __init__(
         self, center_x: float, center_y: float, width: float, height: float
@@ -28,10 +38,17 @@ class UIObject(ABC):
         return(self.x, self.y)
 
 class UISelectObject(UIObject, ABC):
+    """
+    Extension of general UIObject.
+    Store commonalities of all selectable UI objects.
+    """
+
     @abstractmethod
     def __init__(self, center_x: float, center_y: float, width: float, height: float) -> None:
         super().__init__(center_x, center_y, width, height)
 
+        # bord : outer border
+        # bord_2 : inner border
         self.unselect()
         self.bord_color = Colors.BLACK
         self.bord_thick = 2
