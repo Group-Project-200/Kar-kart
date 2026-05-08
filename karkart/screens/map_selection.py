@@ -67,7 +67,7 @@ class MapScreen(Screen):
         """Handle inputs and start the race when a track is chosen."""
         if event.type == pygame.MOUSEBUTTONDOWN:
             x, y = event.pos
-            print(x, y)
+
 
         if event.type != pygame.KEYDOWN:
             return None

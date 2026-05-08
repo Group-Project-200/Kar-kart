@@ -3,11 +3,13 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
+import random
 
 import pygame
 
 from karkart.paths import CAR_RENDER_DIR, MAP_DATA_FILE, MAPS_DIR
 from karkart.ui.track import Track
+
 
 with MAP_DATA_FILE.open() as _f:
     _MAP_DATA_KEYS: frozenset[str] = frozenset(json.load(_f).keys())
@@ -72,6 +74,7 @@ class AppData:
         self.current_car = None
         self.current_mode = None
 
+        self.randomised_maps_order = None
         self.championship_results = {"Osyra": [0,1], "Driftaroo": [0,2], "Zippa": [0,3], "Khepra": [0,4], "Player 1": [0,5]}
 
     _INITIAL_RESULTS = {"Osyra": [0,1], "Driftaroo": [0,2], "Zippa": [0,3], "Khepra": [0,4], "Player 1": [0,5]}
@@ -80,6 +83,10 @@ class AppData:
         for name, defaults in self._INITIAL_RESULTS.items():
             self.championship_results[name] = list(defaults)
         self.modes["Championship"]["loop"] = True
+
+    def randomise_map_selection(self):
+        self.randomised_maps_order = random.sample(self.tracks, 3)
+        self.set_current_map(self.randomised_maps_order[0])
 
     def add_track(self, track: Track) -> None:
         self.tracks.append(track)

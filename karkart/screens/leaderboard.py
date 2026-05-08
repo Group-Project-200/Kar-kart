@@ -201,7 +201,7 @@ class LeaderboardScreen(Screen):
     def _get_buttons(self) -> list[tuple[str, str, pygame.Rect]]:
         if self._is_championship() and self.counter < 2:
             return [
-                ("NEXT RACE", "map", self.next_race_rect),
+                ("NEXT RACE", "game", self.next_race_rect),
                 ("MAIN MENU", "start", self.main_menu_rect),
             ]
 
@@ -419,7 +419,14 @@ class LeaderboardScreen(Screen):
                 name, target, _ = self.buttons[self.selected_button]
 
                 if name == "NEXT RACE":
+                    from karkart.screens.gameplay import GamePlay
                     self._next_check()
+                    self.manager.app_data.set_current_map(self.manager.app_data.randomised_maps_order[self.counter])
+                    if "game" in self.manager.screens:
+                        del self.manager.screens["game"]
+                    new_game = GamePlay(self.manager, "game")
+                    self.manager.add_screen(GamePlay(self.manager, "game"))
+                    self.manager.change_screen("game")
                 elif name == "PLAY AGAIN" or "MAIN MENU":
                     self.counter = 0
 
@@ -439,7 +446,14 @@ class LeaderboardScreen(Screen):
                     self.selected_button = i
 
                     if name == "NEXT RACE":
+                        from karkart.screens.gameplay import GamePlay
                         self._next_check()
+                        self.manager.app_data.set_current_map(self.manager.app_data.randomised_maps_order[self.counter])
+                        if "game" in self.manager.screens:
+                            del self.manager.screens["game"]
+                        new_game = GamePlay(self.manager, "game")
+                        self.manager.add_screen(GamePlay(self.manager, "game"))
+                        self.manager.change_screen("game")
                     elif name == "PLAY AGAIN" or "MAIN MENU":
                         self.counter = 0
 

@@ -29,6 +29,7 @@ from karkart.rendering.preview import (
     render_preview_debug_frame,
 )
 from karkart.screens.screen_object import Screen
+from karkart.screens.gameplay import GamePlay
 from karkart.ui import BackButton, HelpIcon, SettingsIcon
 
 
@@ -138,7 +139,12 @@ class CarScreen(Screen):
                 # Save the chosen car in shared app data so the next screens can use it.
                 car_name = self.car_names[self.selected]
                 self.manager.app_data.set_current_car(car_name)
-                self.manager.change_screen("map")
+                if self.manager.app_data.current_mode == "Championship":
+                    self.manager.app_data.randomise_map_selection()
+                    self.manager.add_screen(GamePlay(self.manager, "game"))
+                    self.manager.change_screen("game")
+                else:
+                    self.manager.change_screen("map")
 
     def update(self) -> None:
         pass
