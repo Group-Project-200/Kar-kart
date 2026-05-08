@@ -20,6 +20,7 @@ class AudioManager:
 
     @staticmethod
     def start_background_music(music_label: str = "Music 1"):
+        """Start background music."""
 
         try:
             pygame.mixer.music.load(MUSIC_PATHS[music_label])
@@ -29,4 +30,6 @@ class AudioManager:
 
     @staticmethod
     def stop_background_music():
+        """Stop background music."""
+
         pygame.mixer.music.stop()        

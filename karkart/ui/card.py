@@ -1,3 +1,15 @@
+"""
+card.py
+--------
+Selectable object
+Usage: print a text OR enhance an action
+
+Interaction:
+- WASD/ARROWS to move pointer
+- RETURN to click on the card
+
+"""
+
 from __future__ import annotations
 from abc import ABC, abstractmethod
 
@@ -10,7 +22,7 @@ from karkart.ui.ui_object import UISelectObject
 
 
 class Card(UISelectObject, ABC):
-    """A bordered rectangular card. ``(x, y)`` is the *centre*."""
+    """An abstract bordered rectangular card. Created by giving the center."""
 
     @abstractmethod
     def __init__(
@@ -18,9 +30,12 @@ class Card(UISelectObject, ABC):
     ) -> None:
         super().__init__(center_x, center_y, width, height)
         self.text = None
-        self.border_radius = 8
+        self.border_radius: int = 8
 
     def draw(self, surface: pygame.Surface) -> None:
+
+        """Draw 3 layers of the button"""
+
         self.outer_card = pygame.Rect(self.x, self.y, self.width, self.height)
         pygame.draw.rect(surface, self.bord_2_color, self.outer_card, border_radius=self.border_radius)
         pygame.draw.rect(
@@ -32,8 +47,9 @@ class Card(UISelectObject, ABC):
 
 
 class MapCard(Card):
+    """Card used in map selection screen to showcase tracks."""
 
-    def __init__(self, track, manager) -> None:
+    def __init__(self, track: Track, manager: ScreenManager) -> None:
         self.width, self.height = 220, 190
         super().__init__(0, 0, self.width, self.height)
 
@@ -41,20 +57,25 @@ class MapCard(Card):
         self.manager = manager
 
     def draw(self, surface: pygame.Surface) -> None:
+        """Draw a card at the basis with a label stating the name of the track."""
+
         super().draw(surface)
+
+        # Draw the image.
         self.track.draw(surface)
 
+        # Draw the label with the name.
         name_rect = pygame.Rect(self.x + (self.width-self.track.get_width()) / 2, self.y + 5, self.track.get_width(), 20)
         pygame.draw.rect(surface, self.color, name_rect, border_radius=4)
         pygame.draw.rect(
             surface, self.bord_color, name_rect, self.bord_thick, border_radius=4
         )
-
         name_font = pygame.font.Font(str(PIXEL_FONT), 9)
         name_text = name_font.render(self.track.get_name(), True, Colors.WHITE)
         surface.blit(name_text, name_text.get_rect(center=name_rect.center))
 
     def set_position(self, x: float, y: float) -> None:
+        """Function used primarly inside container to modify object position."""
 
         self.x = x
         self.y = y
@@ -63,17 +84,17 @@ class MapCard(Card):
             self.y + 30,
         )
 
-    def get_action(self):
+    def get_action(self) -> Track:
         return self.track
 
 
 class PopUpCard(Card):
-    """Selectable card showing an option in the pause menu."""
+    """Card used for pop-up options"""
 
     def __init__(
         self,
         text: str,
-        action: Screen | None = None,
+        action: str | None = None,
         width: int | None = 200,
         height: int | None = 50,
     ) -> None:
@@ -81,34 +102,37 @@ class PopUpCard(Card):
         self.text = text
         self.action = action
 
-    def handle_event(self, event):
+    def handle_event(self, event) -> None:
         pass
 
     def draw(self, surface: pygame.Surface) -> None:
+        """ Draw card and its text"""
+
+        # Draw the card.
         self.outer_card = pygame.Rect(self.x, self.y, self.width, self.height)
         pygame.draw.rect(surface, self.color, self.outer_card, border_radius=self.border_radius)
         super().draw(surface)
 
+        # Draw the text
         name_font = pygame.font.Font(str(PIXEL_FONT), 12)
         name_text = name_font.render(self.text, True, Colors.WHITE)
         surface.blit(name_text, name_text.get_rect(center=self.outer_card.center))
 
-    def get_action(self):
+    def get_action(self) -> str:
         return self.action
 
-    def get_text(self):
+    def get_text(self) -> str:
         return self.text
 
 
 class TextCard(Card):
-    """
-    Text card of selection screens.
-    """
+    """Text card of selection screens."""
 
     def __init__(self, text: str, width: int, height=None, font_size=15) -> None:
         super().__init__(0, 0, 0, 0)
         self.text = text
 
+        # Store font, rendered text, center coordinates, real coordinates and area of the card.
         instr_font = pygame.font.Font(str(PIXEL_FONT), font_size)
         self.render_text = instr_font.render(text, True, Colors.WHITE)
         self.center = self.render_text.get_rect(center=(sp.CENTER_X, sp.XTOP))
@@ -124,6 +148,8 @@ class TextCard(Card):
         self.instr_rect = pygame.Rect(self.x, self.y, self.width, self.height)
 
     def draw(self, surface: pygame.Surface) -> None:
+        """Draw 3 layers of the card + text."""
+
         pygame.draw.rect(surface, self.color, self.instr_rect, border_radius=self.border_radius)
         pygame.draw.rect(
             surface,
@@ -137,11 +163,14 @@ class TextCard(Card):
         )
         surface.blit(self.render_text, self.center)
 
-    def set_position(self, x, y):
+    def set_position(self, x: float, y: float):
+        """Function used primarly inside container to modify object position and the one of its text."""
+
         super().set_position(x, y)
         self.center.x = self.x + (self.width - self.render_text.get_width()) / 2
         self.center.y = self.y + (self.height - self.render_text.get_height()) / 2
         self.instr_rect = pygame.Rect(self.x, self.y, self.width, self.height)
+
 
 class HelpTextCard(Card):
     """Single card that draws help text block."""
@@ -166,16 +195,18 @@ class HelpTextCard(Card):
             "Press H or ESC to close Help Menu",
         ]
 
-    def get_action(self):
+    def get_action(self) -> None:
         return None
     
-    def get_text(self):
+    def get_text(self) -> [str]:
         return self.lines
 
     def handle_event(self, event) -> None:
         return None
 
     def draw(self, surface: pygame.Surface) -> None:
+        """Draw content of help button."""
+
         rect = pygame.Rect(self.x, self.y, self.width, self.height)
         pygame.draw.rect(surface, self.color, rect, border_radius=self.border_radius)
         pygame.draw.rect(surface, self.bord_color, rect, self.bord_thick, border_radius=self.border_radius)

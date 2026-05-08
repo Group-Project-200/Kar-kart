@@ -18,13 +18,13 @@ from karkart.screens.pop_up_menus import (
     ChampionshipQuitConfirmMenu,
     ConfirmSettingsMenu,
     HelpMenu,
+    ModeQuitConfirmMenu,
     PauseMenu,
     QuitConfirmMenu,
     SettingsMenu,
 )
 from karkart.screen_manager import ScreenManager
 from karkart.screens.car_selection import CarScreen
-from karkart.screens.end import EndScreen
 from karkart.screens.map_selection import MapScreen
 from karkart.screens.race_selection import RaceSelector
 from karkart.screens.start import StartScreen
@@ -58,10 +58,10 @@ def main() -> None:
 
     manager.add_screen(PauseMenu(manager, "pause"))
     manager.add_screen(QuitConfirmMenu(manager, "quit_confirm"))
+    manager.add_screen(ModeQuitConfirmMenu(manager, "quit_mode"))
     manager.add_screen(ChampionshipQuitConfirmMenu(manager, "championship_quit_confirm"))
     manager.add_screen(LeaderboardScreen(manager, "leaderboard"))
     manager.add_screen(WinnerScreen(manager, "winner_screen"))
-    manager.add_screen(EndScreen(manager, "end"))
 
     manager.change_screen("start")
 

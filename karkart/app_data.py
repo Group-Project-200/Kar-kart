@@ -1,3 +1,10 @@
+"""
+app_data.py
+--------
+Store information of the whole system
+
+"""
+
 from __future__ import annotations
 
 import json
@@ -12,6 +19,7 @@ from karkart.ui.track import Track
 with MAP_DATA_FILE.open() as _f:
     _MAP_DATA_KEYS: frozenset[str] = frozenset(json.load(_f).keys())
 
+# All tracks in the system.
 _ALLOWED_TRACKS: frozenset[str] = frozenset(
     {
         "Hells Blaze",
@@ -23,6 +31,7 @@ _ALLOWED_TRACKS: frozenset[str] = frozenset(
 
 
 def load_all_car_stacks() -> dict[str, list[pygame.Surface]]:
+    """Load whole cars using stacks."""
 
     if not CAR_RENDER_DIR.is_dir():
         raise RuntimeError(f"Car render folder not found: {CAR_RENDER_DIR}")
@@ -45,11 +54,12 @@ def load_all_car_stacks() -> dict[str, list[pygame.Surface]]:
 
 
 class AppData:
+    """Store all shared information about the system"""
 
     def __init__(self) -> None:
         self.tracks: list[Track] = []
         self.cars: dict[str, list[pygame.Surface]] = load_all_car_stacks()
-        self.modes = {
+        self.modes: {str : {str : bool}} = {
             "Time Trial": {"Ai": False, "Items": False, "loop": False},
             "Race Mode": {"Ai": True, "Items": True, "loop": False},
             "Championship": {"Ai": True, "Items": True, "loop": True},
@@ -77,24 +87,35 @@ class AppData:
     _INITIAL_RESULTS = {"Osyra": [0,1], "Driftaroo": [0,2], "Zippa": [0,3], "Khepra": [0,4], "Player 1": [0,5]}
 
     def reset_championship(self) -> None:
+        """Reset default championship info."""
+
         for name, defaults in self._INITIAL_RESULTS.items():
             self.championship_results[name] = list(defaults)
         self.modes["Championship"]["loop"] = True
 
     def add_track(self, track: Track) -> None:
+        """Add new track to the system."""
+
         self.tracks.append(track)
 
     def get_tracks(self) -> list[Track]:
+        """Get list of tracks."""
+
         return self.tracks
 
     def set_current_map(self, track: Track) -> None:
+        """Set map to race on."""
+
         self.current_map = track
 
-    def set_current_car(self, car_name):
+    def set_current_car(self, car_name: str):
+        """Set car to drive on."""
+
         self.current_car_name = car_name
         self.current_car = self.cars[self.current_car_name]
 
     def return_map_layers(self) -> list[pygame.Surface]:
+        """Return all layers of maps."""
 
         if not (self.current_map and self.current_map.corr_map):
             return []

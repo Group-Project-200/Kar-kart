@@ -1,3 +1,11 @@
+"""
+arrow.py
+--------
+Selectable object
+Usage: in Arrow Container to decide on settings
+
+"""
+
 from __future__ import annotations
 
 import pygame
@@ -14,26 +22,29 @@ class Arrow(UISelectObject):
         self.direction = direction
 
     def draw(self, surface):
+        """Draw 3 layers of the arrow"""
         pygame.draw.polygon(surface, self.color, self.points)
         pygame.draw.polygon(surface, self.bord_2_color, self.points, self.bord_2_thick)
         pygame.draw.polygon(surface, self.bord_color, self.points, self.bord_thick)
 
     def set_position(self, x: float, y: float) -> None:
-        """Place the arrow and identify all points."""
+        """Place the arrow in the correct direction and identify all points."""
+
         super().set_position(x, y)
 
         self.x = x
         self.y = y
 
+        # Based on direction, points are decided to draw the polygons
         if self.direction == "left":
 
-            self.points = (
+            self.points: (float, float, float) = (
                 (self.x + self.width, self.y),
                 (self.x, self.y + self.height / 2),
                 (self.x + self.width, self.y + self.height),
             )
         elif self.direction == "right":
-            self.points = (
+            self.points: (float, float, float) = (
                 (self.x, self.y),
                 (self.x + self.width, self.y + self.height / 2),
                 (self.x, self.y + self.height),

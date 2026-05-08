@@ -1,3 +1,10 @@
+"""
+__init__.py
+--------
+Pre-import all UI Objects
+
+"""
+
 from karkart.ui.arrow import Arrow
 from karkart.ui.button import BackButton, Button,TextButton
 from karkart.ui.card import Card, HelpTextCard, MapCard, PopUpCard, TextCard
