@@ -7,6 +7,7 @@ Run this file to launch the game::
 
 from __future__ import annotations
 
+import argparse
 import sys
 
 import pygame
@@ -37,9 +38,22 @@ TARGET_FPS = 60
 _FRAME_BUDGET_MS: float = 1000.0 / TARGET_FPS  # ≈ 16.67 ms
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        add_help=False,
+        description="Kar-Kart launch options.",
+    )
+    parser.add_argument("-h", "--help", "-help", action="help", help="Show this help message and exit.")
+    parser.add_argument("-f", "--fullscreen", action="store_true", help="Launch in fullscreen (includes bugs and mismatched menus).")
+    return parser.parse_args()
+
+
 def main() -> None:
+    args = parse_args()
     pygame.init()
-    screen = pygame.display.set_mode((sp.WIDTH, sp.HEIGHT))
+    screen_flags = pygame.FULLSCREEN if args.fullscreen else 0
+    window_size = (0, 0) if args.fullscreen else (sp.WIDTH, sp.HEIGHT)
+    screen = pygame.display.set_mode(window_size, screen_flags)
     clock = pygame.time.Clock()
 
     # Shared runtime state + router for swapping between screens.

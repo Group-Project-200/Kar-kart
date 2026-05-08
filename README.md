@@ -1,29 +1,31 @@
 # Kar-Kart
 
-Kar-Kart is a top-down pixel-art kart racer built with `pygame`. The
-player races against CPU opponents on maps loaded from `resources/maps`.
-Collision is handled with per-pixel map masks, and AI uses A* pathfinding
-on a padded wall grid.
+A top-down pixel-art kart racer built with `pygame`. The cars have a 
+pseudo-3d render and are affected by collisions and power-ups, like 
+any other arcade racer. There are three distinct game-modes, with
+Time Trial, Race and Championship. Your goal is to finish the fastest.
 
 ## Getting started
 
-Requires Python 3.10+ and `pygame`. No other dependencies.
+Look at 'REQUIREMENTS.md' for the requirements.
+
+To run the program, run main.py from the Kar-Kart directory with the
+following commend:
 
 ```bash
-pip install pygame
-python main.py
+python3 main.py
 ```
 
 ## Controls
 
-| Key       | Action                                           |
-| --------- | ------------------------------------------------ |
-| `W` / `S` | Throttle / brake-reverse                         |
-| `A` / `D` | Steer left / right                               |
-| `SPACE`   | Hold to drift — release for a boost              |
-| `F1`      | Toggle checkpoint debug overlay                  |
-| `ESC`     | Pause / back                                     |
-| `RETURN`  | Confirm selection                                |
+| Key       | Action                                               |
+| --------- | ---------------------------------------------------- |
+| `W` / `S` | Throttle / brake-reverse and selection in the screens|
+| `A` / `D` | Steer left / right and selection in the screens      |
+| `SPACE`   | Hold to drift — release for a boost                  |
+| `F1`      | Toggle checkpoint debug overlay                      |
+| `ESC`     | Pause / back                                         |
+| `RETURN`  | Confirm selection                                    |
 
 The in-race HUD shows current lap, checkpoint progress, speed, and
 position (order of checkpoints cleared vs. the AI).
@@ -79,69 +81,18 @@ Kar-kart/
 ## Frame flow
 
 1. `main.py` pulls the active screen from `ScreenManager` and dispatches
-   events → `update()` → `draw()`.
-2. `GamePlay.update()` runs the race countdown and then starts fixed-rate
-   background threads for physics, collision, and AI.
-3. `draw()` reads the latest world snapshot and uses
-   `Renderer.render_frame()` to compose the frame: map → cars → sparks → HUD.
-4. If a frame busts the ~16.7 ms budget, `main.py` skips the next draw and
-   keeps the last image while the simulation continues.
+   events -> `update()` -> `draw()`.
+2. `GamePlay.update()` alternates work on even / odd frames:
+   * *Even* — mask collisions (player + AI) and car-to-car overlap.
+   * *Odd* — checkpoint bookkeeping and the AI planning/steering.
+   * *Every frame* steps `Car.step_physics()` for all cars, emits
+     sparks, and moves the camera — motion never stutters.
+3. `draw()` composes a pixelated frame: map (camera-rotated) → cars
+   (rotated sprite stacks) → HUD at full resolution.
+4. If a frame busts the ~16.7 ms budget, `main.py` skips the next
+   `draw()` and holds the last image. Physics keeps running so the
+   simulation stays in sync.
 
-## Handling
-
-Every tunable constant lives on `karkart.physics.car.CarHandling` —
-rotation response, drift skew, boost tiers, overspeed curves, and
-slip / grip blending are isolated fields on that dataclass.
-
-## Checkpoints
-
-`Checkpoint.check()` tests whether the car hitbox intersects the checkpoint
-rect. Every racer owns its own cloned `Checkpoint` list and `RacerState`, so
-progression never leaks between cars.
-
-## Car-to-car collision
-
-A distance test against `_CAR_COLLISION_RADIUS` keeps the bump-and-push
-feel cheap. On overlap both cars are pushed apart along the collision
-axis and lose some scalar speed; the car further along the track keeps
-more of its momentum.
-
-## AI opponent
-
-Every AI spawns as a regular `Car` with its own `Stacker`,
-`CollisionDetector`, `RacerState`, and `AIController`. The only
-difference from the player is what writes into its `ControlState`.
-
-### Pathfinding — `karkart/ai/pathfinder.py`
-
-`AStarPathfinder` builds a 2D occupancy grid once per race: it samples
-the wall mask at one cell per `cell_size` pixels, then a multi-source
-BFS from every wall cell marks any free cell within `padding` cells as
-blocked. That padding keeps the racing line clear of walls without any
-hand-placed waypoints. Queries use A* with 8-directional movement and a
-Euclidean heuristic; if an endpoint lands inside the padded zone, a
-small BFS snaps it to the nearest free cell so planning still succeeds.
-
-### Steering — `karkart/ai/ai_controller.py`
-
-For each checkpoint the controller asks the pathfinder for a world-space
-path, then each AI tick:
-
-1. Pops any waypoint within `WAYPOINT_RADIUS`.
-2. Aims at the waypoint `LOOKAHEAD` steps ahead.
-3. Sets `steer_input` and throttle, cutting throttle on sharp turns so
-   the car can actually rotate.
-4. Replans on a new goal or every `REPLAN_EVERY_N_WAYPOINTS` waypoints.
-
-If the car gets stuck, a reverse / reorient recovery kicks in. Two
-triggers feed it:
-
-* **Stillness** — barely moving for `STILL_FRAME_LIMIT` ticks.
-* **No progress** — can't get meaningfully closer to the goal for
-  `NO_PROGRESS_FRAME_LIMIT` ticks.
-
-During reorientation the AI forces throttle on and holds a minimum
-forward speed so steering always engages.
 
 ## Adding a track
 
@@ -155,112 +106,91 @@ forward speed so steering always engages.
    python3 -m karkart.tools.map_editor
    ```
 
-   The editor loads available maps from `resources/maps` and saves the
-   selected map data to `map_data.json` when the window closes.
+## Class diagrams
 
-## Class diagram
+- legend: `[abs]` abstract · `*` many · `→` owns / holds · `⇢` reads or writes (no ownership)
 
-```mermaid
-classDiagram
-    class GamePlay {
-        +current_car: Car
-        +ai_cars: list~Car~
-        +current_map: Map
-        +current_camera: Camera
-        +current_renderer: Renderer
-        +pathfinder: AStarPathfinder
-        +ai_controllers: list~AIController~
-        +player_checkpoints: list~Checkpoint~
-        +ai_checkpoints: list~list~
-        +update()
-        +draw(surface)
-    }
+### Screens & UI
 
-    class Car {
-        +handling: CarHandling
-        +physics: PhysicsState
-        +controls: ControlState
-        +step_physics_with_controls()
-    }
+- `ScreenManager` — stack-based router, screens registered by label; pop-ups draw over the screen below
+- `AppData` — shared model (selected car/map, race config) that survives screen transitions
+- every screen inherits `Screen` (ABC); pop-ups are flagged `is_popup = True`
+- pop-up dim is single-layer: `ScreenManager` calls `off_black_layer()` on the incoming screen whenever the outgoing one was a pop-up — so the dim never stacks (or fails to unstack) across nested pop-ups
+- widget tree rooted at `UIObject`; `UISelectObject` adds focus/activation
 
-    class CarHandling {
-        +max_speed
-        +throttle_acceleration
-        +max_turn_rate
-        +drift_charge_short_frames
-        +drift_charge_long_frames
-        +short_boost: BoostTier
-        +long_boost: BoostTier
-    }
+Inheritance:
 
-    class Map {
-        +dimensions
-        +masks
-        +checkpoints_list
-    }
-
-    class Checkpoint {
-        +rect
-        +passed
-        +check(car_hitbox) bool
-    }
-
-    class RacerState {
-        +list_counter
-        +current_lap
-        +total_checkpoints
-        +last_pass_order
-    }
-
-    class AIController {
-        +car: Car
-        +pathfinder: AStarPathfinder
-        +checkpoints: list~Checkpoint~
-        +racer_state: RacerState
-        +update()
-    }
-
-    class AStarPathfinder {
-        +cell_size
-        +padding
-        +find_path(start, goal) list
-    }
-
-    class Renderer {
-        +map: Map
-        +stacker: Stacker
-        +render_frame()
-    }
-
-    GamePlay *-- "1..*" Car
-    GamePlay *-- Map
-    GamePlay *-- Renderer
-    GamePlay *-- AStarPathfinder
-    GamePlay *-- "0..*" AIController
-    GamePlay *-- "1..*" RacerState
-
-    Car *-- CarHandling
-    AIController --> Car
-    AIController --> AStarPathfinder
-    AIController --> RacerState
-    AIController --> Checkpoint
-    Map "1" *-- "*" Checkpoint
-    Renderer --> Map
 ```
-## Credits
+Screen [abs]
+├── StartScreen · RaceSelector · CarScreen · MapScreen
+├── GamePlay · LeaderboardScreen · WinnerScreen · EndScreen
+└── PopUpMenu [abs]
+    ├── PauseMenu · SettingsMenu · HelpMenu
+    └── _BaseQuitConfirmMenu
+        ├── QuitConfirmMenu · ChampionshipQuitConfirmMenu
+        └── ConfirmSettingsMenu
 
-### Music
-"Backup Plan" by Zane Little Music
-From the album "Another Bag of Chips"
-Licensed under CC0 1.0 Universal (Public Domain)
-Source: https://opengameart.org/content/10-more-chiptune-tracks-another-bag-of-chips
+UIObject [abs]
+├── Container
+│   └── SelectContainer ── MapContainer · PopUpContainer · ArrowContainer
+├── Track
+└── UISelectObject [abs]
+    ├── Card [abs]   ── MapCard · PopUpCard · TextCard · HelpTextCard
+    ├── Button       ── BackButton · TextButton
+    ├── Arrow
+    └── _Icon [abs]  ── SettingsIcon · HelpIcon
+```
 
-"Old Fashion" by Buffy Music 
-From the album "Outro Party" 
-Licensed under CC0 1.0 Universal (Public Domain). 
-Source: https://opengameart.org/content/outro-party-music
+Wiring:
 
-"Asphalt" by Remix_Killa Music 
-From the track "Asphalt" 
-Licensed under GNU GPL 3.0 . 
-Source: https://opengameart.org/content/asphalt-0
+- `ScreenManager` → `AppData`; routes every `Screen` on a label-keyed stack (`StartScreen`, `RaceSelector`, `CarScreen`, `MapScreen`, `GamePlay`, `LeaderboardScreen`, `WinnerScreen`, `EndScreen`, all `PopUpMenu`s)
+- `PopUpMenu` → `Container`/`SelectContainer` (body) + `TextCard` (title)
+- `HelpMenu` → `HelpTextCard` · `_BaseQuitConfirmMenu` → 2 × `TextButton` (Yes / No) + `TextCard` (description)
+- `MapContainer` → `MapCard*` · `PopUpContainer` → `TextButton*` · `ArrowContainer` → `Arrow×2`
+- `AppData` → `Track*`
+- `LeaderboardScreen` ⇢ `Leaderboard` (singleton `GAME_LEADERBOARD`) → `RaceResult*`
+- `CarScreen` uses preview pipeline: `RenderPipeline` → `RenderSetup` · `MapCache` (preview-side, distinct from `rendering/map.py`'s `MapCache`)
+
+### Gameplay
+
+- `GamePlay` — race orchestrator; owns `World`, `Renderer`, threads, start/end screens
+- threads ↔ render via `SnapshotBuffer`: physics writes `WorldSnapshot`, draw reads latest (no lock)
+- `Car` is shared by player and AI; only the `ControlState` writer differs
+
+Inheritance:
+
+```
+threading.Thread
+└── FixedRateThread ── PhysicsScheduler · CollisionScheduler · AIScheduler
+```
+
+Composition (who owns what):
+
+```
+GamePlay → GameConfig
+├── World
+│   ├── Car (1..*) → CarHandling (→ BoostTier×2) · PhysicsState · ControlState
+│   ├── RacerState (1..*)
+│   ├── AIController (0..*)
+│   └── CollisionDetector
+├── Renderer
+│   ├── Map → MapData · MapCache · Checkpoint*
+│   ├── Stacker
+│   └── SparkManager → Spark*
+├── Camera → CameraFollowSettings
+├── SnapshotBuffer → WorldSnapshot
+│                    ├── player: CarSnapshot · ai: CarSnapshot*
+│                    ├── player_racer: RacerSnapshot · ai_racers: RacerSnapshot*
+│                    └── sparks: SparkSnapshot*
+├── PhysicsScheduler · CollisionScheduler · AIScheduler
+├── PowerupsManager → SpeedBoost* · Shield* · EMPJammer* · PowerupRendering
+└── StartSequence
+```
+
+Cross-refs (no ownership):
+
+- `AIController` ⇢ `Car` · `AStarPathfinder` · `Checkpoint` · `RacerState`
+- `CollisionDetector` ⇢ `Map`
+- `PhysicsScheduler` ⇢ publishes `WorldSnapshot` to `SnapshotBuffer`
+- `GamePlay` ⇢ reads `WorldSnapshot` from `SnapshotBuffer` each draw
+- `GamePlay` ⇢ `LeaderboardScreen` on race finish; appends a `RaceResult` to `GAME_LEADERBOARD`
