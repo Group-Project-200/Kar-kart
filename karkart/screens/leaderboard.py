@@ -1,3 +1,9 @@
+"""Leaderboard screen — shows up after a race ends.
+
+Championship mode cycles through races until counter hits 3, then flips to
+the winner screen. Single race just offers play again / main menu.
+"""
+
 import math
 import time
 from dataclasses import dataclass, field

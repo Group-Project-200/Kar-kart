@@ -11,9 +11,8 @@ What happens in the program:
 screen (`race_selector`), where they choose the game mode.
 """
 
-from __future__ import annotations
-
-import pygame, time
+import pygame
+import time
 
 from karkart.constants import Colors, ScreenPositions as sp
 from karkart.paths import PICTURES_DIR, PIXEL_FONT

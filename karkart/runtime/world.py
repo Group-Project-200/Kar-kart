@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from threading import Event, RLock
 from typing import TYPE_CHECKING
 

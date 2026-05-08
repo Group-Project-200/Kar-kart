@@ -14,8 +14,6 @@ What the code does:
   can read it and configure gameplay.
 """
 
-from __future__ import annotations
-
 import math
 
 import pygame
